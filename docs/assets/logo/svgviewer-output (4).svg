@@ -1,0 +1,13 @@
+<svg width="680" height="190" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Scout wordmark logo</title>
+<desc>The word Scout set in Chakra Petch bold, outlined to paths, charcoal colored, with the letter O replaced by a minimalist monocular symbol in emerald green with a dark lens and a small white reflection.</desc>
+<path d="M50 108V208H184V149L217 116H424L458 150V266L425 299H160L52 407V592L160 700H476L584 592V491H450V551L417 584H219L186 551V448L219 415H484L592 307V110L482 0H158Z" transform="translate(200.00,150) scale(0.09000,-0.09000)" fill="#1F2937"/>
+<path d="M50 102V396L151 498H425L528 394V302H396V351L361 386H217L182 351V147L217 112H361L396 147V196H528V104L425 0H151Z" transform="translate(256.33,150) scale(0.09000,-0.09000)" fill="#1F2937"/>
+<g transform="translate(342,118) rotate(-8)">
+<circle r="32" fill="none" stroke="#18A058" stroke-width="7"/>
+<circle r="22" fill="#0B0F14"/>
+<ellipse cx="-8" cy="-9" rx="6" ry="3" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+</g>
+<path d="M55 105V498H187V146L221 112H301L399 210V498H531V0H409V85L323 0H160Z" transform="translate(380.00,150) scale(0.09000,-0.09000)" fill="#1F2937"/>
+<path d="M105 102V387H15V498H107V660H237V498H389V386H237V145L271 112H389V0H208Z" transform="translate(432.19,150) scale(0.09000,-0.09000)" fill="#1F2937"/>
+</svg>

@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+**/.venv/
+.venv/
+
+# builds
+dist/
+build/
+.uv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# python
+.cache/
+
+# tooling
+.plasmo/
+chrome-extension/*
+!.plasmo/
+*.tsbuildinfo
+pytest_cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tanstack/
+
+# editor / os
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*

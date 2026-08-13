@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout — The startup job search, with a memory.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --emerald:#18A058; --emerald-dark:#0F6E56; --charcoal:#1F2937; --near-black:#0B0F14;
+  --paper:#FAFAF8; --white:#FFFFFF; --line:#E5E3DC; --muted:#6B7280;
+  --line-strong:#D6D3C9; --muted-2:#9CA3AF;
+  --emerald-tint:#E4F3EA; --emerald-tint-strong:#CFEBDA;
+  --amber:#B8791A; --amber-tint:#FBF1DF;
+  --slate:#3E5C8A; --slate-tint:#E8EEF6;
+  --brick:#A23B2A; --brick-tint:#F6E4DF;
+  --cream:#F3EEE3;
+  --shadow-sm:0 1px 2px rgba(11,15,20,.05); --shadow-md:0 6px 20px rgba(11,15,20,.07); --shadow-lg:0 24px 60px rgba(11,15,20,.16);
+  --r-sm:8px; --r-md:14px; --r-lg:22px; --r-xl:32px; --r-pill:999px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:#EBE8E1;font-family:'Inter',Arial,sans-serif;color:var(--charcoal);-webkit-font-smoothing:antialiased;}
+img,svg{display:block;}
+a{color:inherit;}
+.wrap{max-width:1160px;margin:0 auto;padding:0 40px;}
+@media(max-width:860px){.wrap{padding:0 22px;}}
+
+/* ---------- outer site frame ---------- */
+.site-shell{max-width:1360px;margin:0 auto;padding:22px;}
+.site{background:var(--paper);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);position:relative;}
+/* note: overflow:hidden was removed here because it breaks position:sticky
+   for the scroll-driven core-loop section below (an ancestor with any
+   overflow other than visible becomes sticky's containing block, which
+   stops it from pinning to the viewport). Every decorative glow that used
+   to rely on this already clips itself locally (.hero, .dark-section,
+   .t-card all set their own overflow:hidden), so corner rounding on
+   .site is unaffected. */
+
+/* ---------- nav ---------- */
+.navbar{position:sticky;top:0;z-index:40;background:rgba(250,250,248,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 0;}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;}
+.brand span{font-family:'Fraunces',serif;font-weight:600;font-size:19px;color:var(--charcoal);}
+.nav-links{display:flex;gap:30px;list-style:none;margin:0;padding:0;}
+.nav-links a{font-size:14px;font-weight:500;color:var(--muted);text-decoration:none;}
+.nav-links a:hover{color:var(--charcoal);}
+.nav-cta{display:flex;gap:10px;align-items:center;}
+@media(max-width:760px){.nav-links{display:none;}}
+
+.btn{font-family:'Inter';font-weight:600;font-size:14px;border-radius:var(--r-pill);padding:11px 22px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+.btn-primary{background:var(--charcoal);color:#fff;}
+.btn-primary:hover{background:var(--near-black);}
+.btn-accent{background:var(--emerald);color:#fff;}
+.btn-accent:hover{background:var(--emerald-dark);}
+.btn-secondary{background:#fff;color:var(--charcoal);border-color:var(--line-strong);}
+.btn-secondary:hover{border-color:var(--charcoal);}
+.btn-ghost{background:transparent;color:var(--charcoal);}
+
+/* ---------- hero ---------- */
+.hero{padding:76px 0 30px;position:relative;overflow:hidden;}
+.hero-glow{position:absolute;top:-180px;right:-120px;width:520px;height:520px;border-radius:50%;
+  background:radial-gradient(circle,rgba(24,160,88,.16) 0%,rgba(24,160,88,0) 68%);pointer-events:none;}
+.eyebrow-pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--emerald-dark);background:var(--emerald-tint);padding:6px 14px 6px 10px;border-radius:var(--r-pill);margin-bottom:22px;position:relative;z-index:1;}
+.eyebrow-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hero h1{font-family:'Fraunces',serif;font-weight:600;font-size:58px;line-height:1.05;letter-spacing:-1.2px;margin:0 0 22px;max-width:720px;position:relative;z-index:1;}
+.hero h1 em{font-style:normal;color:var(--emerald-dark);}
+.hero p.sub{font-size:17px;line-height:1.65;color:var(--muted);max-width:520px;margin:0 0 34px;position:relative;z-index:1;}
+.hero-ctas{display:flex;gap:12px;margin-bottom:14px;position:relative;z-index:1;}
+.hero-note{font-size:12.5px;color:var(--muted-2);position:relative;z-index:1;}
+@media(max-width:860px){.hero h1{font-size:38px;}}
+
+/* ---------- bento ---------- */
+.bento{display:grid;grid-template-columns:1.05fr 0.95fr;gap:16px;margin-top:56px;position:relative;z-index:1;}
+.bento-right{display:grid;grid-template-rows:auto auto;gap:16px;}
+.bento-right-bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:860px){.bento{grid-template-columns:1fr;}}
+
+.tile{border-radius:var(--r-lg);}
+.startup-mock{padding:26px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;}
+.startup-mock-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.logo-chip{width:42px;height:42px;border-radius:11px;background:var(--charcoal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+.startup-mock h3{font-size:17px;margin:0 0 3px;}
+.startup-mock .sub{font-size:13px;color:var(--muted);margin:0;}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);}
+.badge .d{width:6px;height:6px;border-radius:50%;}
+.b-interview{background:var(--emerald-tint);color:var(--emerald-dark);}.b-interview .d{background:var(--emerald-dark);}
+.b-applied{background:var(--slate-tint);color:var(--slate);}.b-applied .d{background:var(--slate);}
+.b-saved{background:#F0EFEA;color:#5B5F66;}.b-saved .d{background:#9CA3AF;}
+.job-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-top:1px solid var(--line);font-size:13.5px;}
+.job-row .role{font-weight:600;}
+.job-row .pay{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:12.5px;}
+.startup-mock-foot{margin-top:auto;padding-top:18px;display:flex;align-items:center;justify-content:space-between;}
+.mini-note{font-size:11.5px;color:var(--muted-2);display:flex;align-items:center;gap:6px;}
+.mini-note svg{width:13px;height:13px;stroke:var(--muted-2);}
+
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-track{fill:none;stroke:var(--line);}
+.ring-progress{fill:none;stroke-linecap:round;}
+.ring-core{position:absolute;border-radius:50%;background:var(--charcoal);display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.ring-score{font-family:'JetBrains Mono',monospace;font-weight:600;color:#fff;}
+
+.match-panel{padding:22px 24px;background:linear-gradient(160deg,#fff 0%,var(--emerald-tint) 130%);border:1px solid var(--emerald-tint-strong);display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;}
+.match-panel .top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
+.match-panel .top .lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--emerald-dark);display:flex;align-items:center;gap:6px;}
+.match-panel .top .lbl svg{width:13px;height:13px;}
+.match-explain{font-size:13px;line-height:1.6;color:var(--charcoal);background:rgba(255,255,255,.7);border:1px solid var(--emerald-tint-strong);border-radius:var(--r-md);padding:13px 15px;position:relative;z-index:1;}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:1;}
+.chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:6px;}
+.chip-match{background:#fff;color:var(--emerald-dark);border:1px solid var(--emerald-tint-strong);}
+.chip-gap{background:#fff;color:var(--muted);border:1px solid var(--line-strong);}
+
+.trust-card{padding:18px 18px;background:var(--near-black);color:#fff;display:flex;flex-direction:column;gap:10px;}
+.trust-card.alt{background:var(--cream);color:var(--charcoal);border:1px solid var(--line-strong);}
+.trust-card svg{width:18px;height:18px;stroke:var(--emerald);}
+.trust-card.alt svg{stroke:var(--emerald-dark);}
+.trust-card b{display:block;font-size:13px;line-height:1.4;}
+.trust-card p{margin:0;font-size:11.5px;color:#9AA6B2;line-height:1.5;}
+.trust-card.alt p{color:var(--muted);}
+
+/* ---------- sources logo cloud ---------- */
+.sources{padding:76px 0 90px;position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:
+  radial-gradient(ellipse 900px 300px at 50% 0%, rgba(24,160,88,.05) 0%, rgba(24,160,88,0) 70%);}
+.sources-head{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:40px;}
+.sources-head .lens{width:36px;height:36px;flex-shrink:0;}
+.sources-head b{font-family:'Fraunces',serif;font-weight:600;font-size:24px;}
+.sources-head span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;}
+.logo-cloud{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;}
+.logo-card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);
+  padding:20px 26px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;min-width:172px;
+  transition:box-shadow .15s ease, transform .15s ease;}
+.logo-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.logo-card.dark{background:var(--near-black);border-color:var(--near-black);}
+.logo-card img{height:22px;width:auto;object-fit:contain;}
+.logo-card .globe-mark{width:26px;height:26px;border-radius:7px;background:var(--charcoal);display:flex;align-items:center;justify-content:center;}
+.logo-card .globe-mark svg{width:15px;height:15px;stroke:#fff;}
+.tier-pill{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);}
+.tier-api{background:var(--emerald-tint);color:var(--emerald-dark);}
+.tier-crawl{background:var(--amber-tint);color:var(--amber);}
+.tier-capture{background:var(--slate-tint);color:var(--slate);}
+.logo-card.dark .tier-capture{background:rgba(62,92,138,.28);color:#A9C0E8;}
+.sources-note{text-align:center;font-size:12px;color:var(--muted-2);max-width:480px;margin:28px auto 0;line-height:1.6;}
+
+/* ---------- scout globe (where scout looks) ---------- */
+.scout-globe{position:relative;max-width:760px;margin:8px auto 0;aspect-ratio:807/300;}
+.globe-visual{position:absolute;inset:0;}
+.globe-grid-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;}
+.globe-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
+.globe-links path{fill:none;stroke:var(--emerald);stroke-width:1.4;stroke-linecap:round;stroke-dasharray:2.5 5.5;opacity:.3;animation:linkscan 3.6s ease-in-out infinite;}
+.globe-links path:nth-child(1){animation-delay:0s;}
+.globe-links path:nth-child(2){animation-delay:.35s;}
+.globe-links path:nth-child(3){animation-delay:.7s;}
+.globe-links path:nth-child(4){animation-delay:1.05s;}
+.globe-links path:nth-child(5){animation-delay:1.4s;}
+.globe-links path:nth-child(6){animation-delay:1.75s;}
+@keyframes linkscan{0%,100%{opacity:.18;}50%{opacity:.62;}}
+.globe-eye{position:absolute;left:50.3%;top:7.5%;transform:translate(-50%,-58%);width:50px;height:50px;z-index:3;}
+.globe-eye svg{width:100%;height:100%;filter:drop-shadow(0 3px 8px rgba(24,160,88,.28));}
+.globe-eye .eye-glow{position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle,rgba(24,160,88,.24) 0%,rgba(24,160,88,0) 72%);z-index:-1;}
+.globe-nodes{position:absolute;inset:0;}
+.orbit-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2;}
+.node-card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-sm);padding:9px 14px;display:flex;align-items:center;gap:7px;white-space:nowrap;transition:box-shadow .15s ease,transform .15s ease;}
+.node-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px);}
+.node-card.dark{background:var(--near-black);border-color:var(--near-black);}
+.node-card img{height:16px;width:auto;object-fit:contain;display:block;}
+.node-card .node-mark{width:22px;height:22px;border-radius:6px;background:var(--charcoal);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.node-card .node-mark svg{width:13px;height:13px;stroke:#fff;}
+.node-card .node-label{font-size:12.5px;font-weight:600;}
+.orbit-node .tier-pill{font-size:9px;padding:2.5px 8px;}
+
+/* below ~680px the absolute dome layout gets too cramped to read —
+   shrink the grid+eye to a small decorative marker and drop the six
+   sources into a plain wrapped row underneath it. */
+@media(max-width:680px){
+  .scout-globe{aspect-ratio:auto;display:flex;flex-direction:column;align-items:center;}
+  .globe-visual{position:relative;inset:auto;width:100%;max-width:280px;aspect-ratio:807/300;margin:0 auto 22px;opacity:.9;}
+  .globe-nodes{position:static;}
+  .orbit-node{position:static;transform:none;flex-direction:row;display:inline-flex;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--line);border-radius:var(--r-pill);box-shadow:var(--shadow-sm);padding:7px 8px 7px 7px;}
+  .globe-nodes{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
+  .node-card{background:transparent;border:none;box-shadow:none;padding:0;border-radius:0;}
+  .node-card.dark{background:transparent;}
+  .node-card img{height:13px;}
+  .node-card .node-mark{width:18px;height:18px;}
+  .node-card .node-mark svg{width:10px;height:10px;}
+  .node-card .node-label{font-size:11px;}
+  .orbit-node .tier-pill{font-size:8.5px;padding:2px 7px;}
+}
+
+/* ---------- section shared ---------- */
+.section{padding:96px 0;}
+.kicker{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--emerald-dark);font-weight:600;margin:0 0 12px;text-align:center;}
+h2.head{font-family:'Fraunces',serif;font-weight:600;font-size:36px;text-align:center;margin:0 0 16px;letter-spacing:-.4px;}
+p.lede{font-size:15.5px;color:var(--muted);text-align:center;max-width:560px;margin:0 auto 56px;line-height:1.65;}
+
+/* ---------- workflow interactive tour ---------- */
+.tour{position:relative;margin-top:44px;}
+.tour input[type=radio]{position:absolute;opacity:0;pointer-events:none;}
+.tour-scroll{position:relative;height:600vh;}
+.tour-layout{display:grid;grid-template-columns:330px 1fr;gap:22px;align-items:start;}
+.tour-scroll .tour-layout{position:sticky;top:96px;}
+.scroll-hint{position:absolute;top:-30px;right:0;font-size:11.5px;color:var(--muted-2);display:flex;align-items:center;gap:6px;}
+.scroll-hint svg{width:13px;height:13px;stroke:var(--muted-2);animation:bob 1.6s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(4px);}}
+@media(max-width:860px){
+  .tour-layout{grid-template-columns:1fr;}
+  .tour-scroll{height:auto;}
+  .tour-scroll .tour-layout{position:static;top:auto;}
+  .scroll-hint{display:none;}
+}
+
+.stepper{display:flex;flex-direction:column;gap:3px;position:relative;}
+.stepper::before{content:'';position:absolute;left:29px;top:6px;bottom:6px;width:1px;background:var(--line);z-index:0;}
+.step-tab{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;cursor:pointer;
+  position:relative;z-index:1;transition:background .15s ease;}
+.step-tab:hover{background:#F1EFE9;}
+.step-tab .num{width:30px;height:30px;border-radius:50%;background:var(--paper);border:1px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;
+  font-weight:700;color:var(--muted-2);flex-shrink:0;transition:all .2s ease;}
+.step-tab .body{min-width:0;flex:1;}
+.step-tab b{font-size:13.5px;display:block;color:var(--muted);transition:color .2s ease;}
+.step-tab .sub{font-size:11px;color:var(--muted-2);display:block;margin-top:1px;}
+.step-tab .who-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--line-strong);}
+.step-tab .rail{position:absolute;left:12px;right:12px;bottom:2px;height:2px;background:transparent;border-radius:2px;overflow:hidden;}
+.step-tab .rail i{display:block;height:100%;width:0;background:var(--emerald);}
+
+/* active state, wired per radio via general sibling combinator */
+#ts1:checked ~ .tour-layout label[for=ts1] .num,
+#ts2:checked ~ .tour-layout label[for=ts2] .num,
+#ts3:checked ~ .tour-layout label[for=ts3] .num,
+#ts4:checked ~ .tour-layout label[for=ts4] .num,
+#ts5:checked ~ .tour-layout label[for=ts5] .num,
+#ts6:checked ~ .tour-layout label[for=ts6] .num,
+#ts7:checked ~ .tour-layout label[for=ts7] .num,
+#ts8:checked ~ .tour-layout label[for=ts8] .num,
+#ts9:checked ~ .tour-layout label[for=ts9] .num{
+  background:var(--charcoal);border-color:var(--charcoal);color:#fff;
+}
+#ts1:checked ~ .tour-layout label[for=ts1],
+#ts2:checked ~ .tour-layout label[for=ts2],
+#ts3:checked ~ .tour-layout label[for=ts3],
+#ts4:checked ~ .tour-layout label[for=ts4],
+#ts5:checked ~ .tour-layout label[for=ts5],
+#ts6:checked ~ .tour-layout label[for=ts6],
+#ts7:checked ~ .tour-layout label[for=ts7],
+#ts8:checked ~ .tour-layout label[for=ts8],
+#ts9:checked ~ .tour-layout label[for=ts9]{
+  background:#fff;box-shadow:var(--shadow-sm);
+}
+#ts1:checked ~ .tour-layout label[for=ts1] b,
+#ts2:checked ~ .tour-layout label[for=ts2] b,
+#ts3:checked ~ .tour-layout label[for=ts3] b,
+#ts4:checked ~ .tour-layout label[for=ts4] b,
+#ts5:checked ~ .tour-layout label[for=ts5] b,
+#ts6:checked ~ .tour-layout label[for=ts6] b,
+#ts7:checked ~ .tour-layout label[for=ts7] b,
+#ts8:checked ~ .tour-layout label[for=ts8] b,
+#ts9:checked ~ .tour-layout label[for=ts9] b{color:var(--charcoal);}
+#ts1:checked ~ .tour-layout label[for=ts1] .rail i,
+#ts2:checked ~ .tour-layout label[for=ts2] .rail i,
+#ts3:checked ~ .tour-layout label[for=ts3] .rail i,
+#ts4:checked ~ .tour-layout label[for=ts4] .rail i,
+#ts5:checked ~ .tour-layout label[for=ts5] .rail i,
+#ts6:checked ~ .tour-layout label[for=ts6] .rail i,
+#ts7:checked ~ .tour-layout label[for=ts7] .rail i,
+#ts8:checked ~ .tour-layout label[for=ts8] .rail i,
+#ts9:checked ~ .tour-layout label[for=ts9] .rail i{animation:railfill 4.2s linear forwards;}
+@keyframes railfill{from{width:0;}to{width:100%;}}
+
+.stage{background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:36px;min-height:340px;
+  box-shadow:var(--shadow-md);position:relative;overflow:hidden;}
+.stage-glow{position:absolute;top:-100px;right:-80px;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(24,160,88,.10) 0%,rgba(24,160,88,0) 70%);pointer-events:none;}
+.stage-panel{display:none;position:relative;animation:fadein .35s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+#ts1:checked ~ .tour-layout .stage-panel[data-n="1"],
+#ts2:checked ~ .tour-layout .stage-panel[data-n="2"],
+#ts3:checked ~ .tour-layout .stage-panel[data-n="3"],
+#ts4:checked ~ .tour-layout .stage-panel[data-n="4"],
+#ts5:checked ~ .tour-layout .stage-panel[data-n="5"],
+#ts6:checked ~ .tour-layout .stage-panel[data-n="6"],
+#ts7:checked ~ .tour-layout .stage-panel[data-n="7"],
+#ts8:checked ~ .tour-layout .stage-panel[data-n="8"],
+#ts9:checked ~ .tour-layout .stage-panel[data-n="9"]{display:block;}
+
+.stage-head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+.stage-icon{width:46px;height:46px;border-radius:13px;background:var(--emerald-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stage-icon svg{width:22px;height:22px;stroke:var(--emerald-dark);}
+.stage-icon.who-you{background:var(--cream);}
+.stage-icon.who-you svg{stroke:var(--charcoal);}
+.stage-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:24px;margin:0;}
+.stage-who{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;padding:4px 10px;border-radius:var(--r-pill);margin-left:auto;flex-shrink:0;}
+.stage-who.you{background:#F0EFEA;color:#5B5F66;}
+.stage-who.scout{background:var(--emerald-tint);color:var(--emerald-dark);}
+.stage-desc{font-size:14.5px;color:var(--muted);line-height:1.65;max-width:520px;margin:0 0 26px;}
+.stage-demo{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:20px 22px;}
+.stepdots{display:flex;justify-content:center;gap:6px;margin-top:20px;}
+.stepdots i{width:6px;height:6px;border-radius:50%;background:var(--line-strong);display:block;}
+#ts1:checked ~ .tour-layout .stepdots i:nth-child(1),
+#ts2:checked ~ .tour-layout .stepdots i:nth-child(2),
+#ts3:checked ~ .tour-layout .stepdots i:nth-child(3),
+#ts4:checked ~ .tour-layout .stepdots i:nth-child(4),
+#ts5:checked ~ .tour-layout .stepdots i:nth-child(5),
+#ts6:checked ~ .tour-layout .stepdots i:nth-child(6),
+#ts7:checked ~ .tour-layout .stepdots i:nth-child(7),
+#ts8:checked ~ .tour-layout .stepdots i:nth-child(8),
+#ts9:checked ~ .tour-layout .stepdots i:nth-child(9){background:var(--emerald);width:16px;border-radius:3px;}
+.stepdots i{transition:all .2s ease;}
+@media(max-width:560px){.stage{padding:24px;}}
+
+/* small demo widgets reused across stage panels */
+.dw-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.dw-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--r-pill);background:#fff;border:1px solid var(--line-strong);}
+.dw-arrow{color:var(--muted-2);font-size:16px;}
+.feature-split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
+@media(max-width:900px){.feature-split{grid-template-columns:1fr;gap:36px;}}
+.feature-split h2{font-family:'Fraunces',serif;font-weight:600;font-size:32px;text-align:left;margin:0 0 16px;letter-spacing:-.4px;}
+.feature-split p.lede{text-align:left;margin:0 0 26px;max-width:none;}
+.mini-list{list-style:none;margin:0 0 28px;padding:0;display:flex;flex-direction:column;gap:14px;}
+.mini-list li{display:flex;gap:12px;font-size:14px;align-items:flex-start;}
+.mini-list svg{width:16px;height:16px;stroke:var(--emerald-dark);flex-shrink:0;margin-top:3px;}
+
+.score-card-wrap{position:relative;}
+.score-glow{position:absolute;inset:-30px;background:radial-gradient(circle at 70% 20%,rgba(184,121,26,.14) 0%,rgba(184,121,26,0) 60%);pointer-events:none;}
+.score-card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:32px;box-shadow:var(--shadow-md);position:relative;}
+.score-card .head-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.score-card .head-row h4{font-size:15px;margin:0;}
+.score-card .head-row .sub{font-size:12.5px;color:var(--muted);}
+.score-breakdown{margin-top:20px;padding-top:20px;border-top:1px solid var(--line);}
+.score-breakdown .row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;}
+.score-breakdown .row .k{color:var(--muted);}
+.score-breakdown .row .v{font-family:'JetBrains Mono',monospace;font-weight:600;}
+
+/* ---------- signal ticker ---------- */
+.ticker-wrap{margin-top:76px;}
+.ticker-label{text-align:center;font-size:11.5px;color:var(--muted-2);margin-bottom:16px;}
+.ticker{display:flex;gap:10px;overflow-x:auto;padding:4px 4px 12px;justify-content:center;flex-wrap:wrap;}
+.tick{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:#fff;white-space:nowrap;}
+.tick .up{color:var(--emerald-dark);}
+.tick .down{color:var(--brick);}
+
+/* ---------- dark steps ---------- */
+.dark-section{background:var(--near-black);border-radius:var(--r-xl);padding:80px 56px;color:#fff;margin:0 20px;position:relative;overflow:hidden;}
+.dark-section::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(circle,rgba(24,160,88,.14) 0%,rgba(24,160,88,0) 65%);pointer-events:none;}
+.dark-section .kicker{color:#7FCBA0;position:relative;}
+.dark-section h2{color:#fff;position:relative;}
+.dark-section p.lede{color:#9AA6B2;position:relative;}
+.steps-timeline{position:relative;max-width:760px;margin:44px auto 0;}
+.steps-timeline::before{content:'';position:absolute;left:50%;top:6px;bottom:6px;width:1px;
+  background:repeating-linear-gradient(180deg,#2A3441 0,#2A3441 4px,transparent 4px,transparent 9px);
+  transform:translateX(-50%);}
+.step-row{display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;position:relative;margin-bottom:8px;}
+.step-node{grid-column:2;justify-self:center;width:40px;height:40px;border-radius:50%;background:var(--near-black);
+  border:1px solid #2A3441;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
+  font-weight:600;font-size:13px;color:#7FCBA0;z-index:2;}
+.step-row.now .step-node{background:var(--emerald);border-color:var(--emerald);color:#fff;}
+.step-card-h{background:#141A22;border:1px solid #232B36;border-radius:var(--r-lg);padding:22px 24px;position:relative;
+  border-left:3px solid var(--emerald-dark);}
+.step-row:nth-child(1) .step-card-h{grid-column:1;}
+.step-row:nth-child(2) .step-card-h{grid-column:3;}
+.step-row:nth-child(3) .step-card-h{grid-column:1;}
+.step-row:nth-child(4) .step-card-h{grid-column:3;}
+.step-card-h .top-line{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.step-icon{width:34px;height:34px;border-radius:9px;background:rgba(24,160,88,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-icon svg{width:17px;height:17px;stroke:#7FCBA0;}
+.step-tag{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#7FCBA0;
+  background:rgba(24,160,88,.12);padding:3px 9px;border-radius:var(--r-pill);}
+.step-time{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7688;}
+.step-card-h h4{font-size:15px;margin:0 0 8px;color:#fff;}
+.step-card-h p{font-size:13px;color:#9AA6B2;line-height:1.6;margin:0;}
+@media(max-width:700px){
+  .step-row{grid-template-columns:56px 1fr;}
+  .step-node{grid-column:1;}
+  .step-row:nth-child(n) .step-card-h{grid-column:2 !important;}
+  .steps-timeline::before{left:28px;}
+}
+
+/* ---------- sample cards ---------- */
+.sample-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:900px){.sample-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.sample-grid{grid-template-columns:1fr;}}
+.s-card{border-radius:var(--r-lg);padding:20px;transition:box-shadow .15s ease, transform .15s ease;position:relative;}
+.s-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px);}
+.s-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.s-card h3{font-size:14.5px;margin:0 0 2px;}
+.s-card .sub{font-size:12px;color:var(--muted);margin:0;}
+.s-card-meta{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.tag{font-size:11px;color:var(--charcoal);background:rgba(255,255,255,.65);border:1px solid rgba(31,41,55,.12);padding:3px 8px;border-radius:6px;}
+.bookmark{position:absolute;top:18px;right:18px;width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;}
+.bookmark svg{width:13px;height:13px;stroke:var(--charcoal);}
+.b-offer{background:var(--emerald);color:#fff;}.b-offer .d{background:#fff;}
+.b-rejected{background:var(--brick-tint);color:var(--brick);}.b-rejected .d{background:var(--brick);}
+.s-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid rgba(31,41,55,.08);}
+.s-card-foot span{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.job-dot{display:inline-flex;}
+.job-dot .dot{width:7px;height:7px;border-radius:50%;}
+.dot-running{background:var(--amber);animation:pulse 1.6s ease-in-out infinite;}
+
+/* ---------- testimonials ---------- */
+.t-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;}
+.t-head .left .kicker{text-align:left;}
+.t-head .left h2{text-align:left;margin-bottom:0;}
+.t-arrows{display:flex;gap:8px;}
+.t-arrow{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:#fff;cursor:pointer;}
+.t-arrow.filled{background:var(--charcoal);border-color:var(--charcoal);}
+.t-arrow svg{width:15px;height:15px;stroke:var(--charcoal);}
+.t-arrow.filled svg{stroke:#fff;}
+.t-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:900px){.t-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.t-grid{grid-template-columns:1fr;}}
+.t-card{border-radius:var(--r-lg);padding:22px;display:flex;flex-direction:column;justify-content:flex-end;min-height:260px;color:#fff;position:relative;overflow:hidden;}
+.t-card::after{content:'';position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none;}
+.t-card .init{position:absolute;top:20px;left:20px;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;backdrop-filter:blur(4px);}
+.t-card .quote-mark{position:absolute;top:16px;right:18px;font-family:'Fraunces',serif;font-size:52px;line-height:1;color:rgba(255,255,255,.14);}
+.t-quote{font-size:13.5px;line-height:1.55;margin:0 0 12px;position:relative;z-index:1;}
+.t-person b{display:block;font-size:12.5px;}
+.t-person span{font-size:11.5px;opacity:.75;}
+
+/* ---------- faq ---------- */
+.faq-layout{display:grid;grid-template-columns:0.85fr 1.15fr;gap:56px;}
+@media(max-width:860px){.faq-layout{grid-template-columns:1fr;}}
+.faq-left .kicker,.faq-left h2{text-align:left;}
+.faq-left p.lede{text-align:left;margin:0 0 32px;}
+.faq-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;background:var(--brick-tint);color:var(--brick);padding:6px 13px;border-radius:var(--r-pill);margin-bottom:18px;}
+.contact-card{background:var(--cream);border:1px solid var(--line-strong);border-radius:var(--r-lg);padding:22px;margin-top:20px;}
+.contact-card h5{font-size:14px;margin:0 0 6px;}
+.contact-card p{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.55;}
+.faq details{border-bottom:1px solid var(--line);padding:18px 0;}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:600;gap:16px;}
+.faq summary::-webkit-details-marker{display:none;}
+.faq summary .plus{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--muted);}
+.faq details[open] summary .plus{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+.faq p.a{font-size:13.5px;color:var(--muted);line-height:1.65;margin:12px 0 0;max-width:520px;}
+
+/* ---------- final cta + footer overlap ---------- */
+.cta-outer{padding:96px 0 0;position:relative;}
+.cta-final{text-align:center;color:#fff;padding-bottom:140px;}
+.cta-final h2{font-family:'Fraunces',serif;font-weight:600;font-size:40px;margin:0 0 16px;letter-spacing:-.5px;position:relative;}
+.cta-final p{color:#9AA6B2;font-size:15px;margin:0 0 32px;position:relative;}
+.cta-final .btn-row{display:flex;justify-content:center;gap:12px;position:relative;}
+
+.footer-card{background:#fff;border-radius:var(--r-xl);box-shadow:var(--shadow-lg);margin:-96px 20px 0;padding:48px 48px 28px;position:relative;z-index:2;}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+@media(max-width:760px){.foot-grid{grid-template-columns:1fr 1fr;}}
+.foot-brand p{font-size:13px;color:var(--muted);line-height:1.6;max-width:260px;margin:14px 0 0;}
+.foot-col h5{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted-2);margin:0 0 16px;}
+.foot-col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+.foot-col a{font-size:13.5px;color:var(--charcoal);text-decoration:none;}
+.foot-col a:hover{color:var(--emerald-dark);}
+.foot-bottom{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted-2);border-top:1px solid var(--line);padding-top:22px;}
+@media(max-width:600px){.foot-bottom{flex-direction:column;gap:8px;}}
+</style>
+</head>
+<body>
+<div class="site-shell">
+<div class="site">
+
+<!-- ============ NAV ============ -->
+<div class="navbar">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#">
+      <svg width="26" height="26" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/><ellipse cx="18" cy="17" rx="2.6" ry="1.3" fill="#fff" opacity="0.85" transform="rotate(-30 18 17)"/></svg>
+      <span>Scout</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#sources">Sources</a></li>
+      <li><a href="#workflow">How it works</a></li>
+      <li><a href="#matching">Matching</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#">Sign in</a>
+      <a class="btn btn-primary" href="#">Start for free</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap">
+    <span class="eyebrow-pill"><span class="dot"></span>Now enriching from YC + careers pages</span>
+    <h1>The startup job search,<br><em>with a memory.</em></h1>
+    <p class="sub">Save a company once. Scout enriches it, scores your real fit, and drafts the first version of your resume and outreach — so the next application doesn't start from zero either.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-accent" href="#">Start for free</a>
+      <a class="btn btn-secondary" href="#workflow">See how it works</a>
+    </div>
+    <p class="hero-note">No credit card. No auto-apply — you review and send everything yourself.</p>
+
+    <!-- bento -->
+    <div class="bento">
+      <div class="tile startup-mock">
+        <div class="startup-mock-head">
+          <div style="display:flex;gap:12px;">
+            <div class="logo-chip">AR</div>
+            <div><h3>Acme Robotics</h3><p class="sub">Series A · Hardware · Enriched 3d ago</p></div>
+          </div>
+          <span class="badge b-interview"><span class="d"></span>Interview</span>
+        </div>
+        <div class="job-row"><span class="role">Backend Engineer</span><span class="pay">$140k–$180k</span></div>
+        <div class="job-row"><span class="role">Robotics Software Lead</span><span class="pay">$170k–$210k</span></div>
+        <div class="job-row"><span class="role">Founding Applications Eng.</span><span class="pay">$150k–$195k</span></div>
+        <div class="startup-mock-foot">
+          <span class="mini-note"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Enrichment: succeeded</span>
+          <span class="mini-note"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Source: YC</span>
+        </div>
+      </div>
+
+      <div class="bento-right">
+        <div class="tile match-panel">
+          <div class="top">
+            <span class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:#0F6E56;"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>Fit score</span>
+            <div class="ring-wrap" style="width:52px;height:52px;">
+              <svg width="52" height="52" viewBox="0 0 52 52">
+                <circle class="ring-track" cx="26" cy="26" r="21" stroke-width="5"/>
+                <circle class="ring-progress" cx="26" cy="26" r="21" stroke-width="5" style="stroke:#18A058" stroke-dasharray="132" stroke-dashoffset="17"/>
+              </svg>
+              <div class="ring-core" style="width:35px;height:35px;"><span class="ring-score" style="font-size:12px;">87</span></div>
+            </div>
+          </div>
+          <p class="match-explain">Strong overlap with your recent backend and API work — 3 years of Python matches their stated requirement directly.</p>
+          <div class="chip-row">
+            <span class="chip chip-match">PYTHON</span>
+            <span class="chip chip-match">FASTAPI</span>
+            <span class="chip chip-gap">K8S — GAP</span>
+          </div>
+        </div>
+        <div class="bento-right-bottom">
+          <div class="tile trust-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            <b>You always click send</b>
+            <p>Scout never auto-submits.</p>
+          </div>
+          <div class="tile trust-card alt">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+            <b>Grounded in your CV</b>
+            <p>No invented experience.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOURCES LOGO CLOUD ============ -->
+<section class="sources" id="sources">
+  <div class="wrap">
+    <div class="sources-head">
+      <svg class="lens" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/><ellipse cx="18" cy="17" rx="2.6" ry="1.3" fill="#fff" opacity="0.85" transform="rotate(-30 18 17)"/></svg>
+      <div><b>Where Scout looks</b><span>Six sources, each handled by how it can actually be captured</span></div>
+    </div>
+
+    <div class="scout-globe">
+      <div class="globe-visual">
+        <img src="assets/globe-grid.png" alt="" class="globe-grid-img">
+
+        <svg class="globe-links" viewBox="0 0 807 300" preserveAspectRatio="none">
+          <path d="M406,28 Q322,88 232,128"/>
+          <path d="M406,28 Q492,88 578,128"/>
+          <path d="M406,28 Q250,160 92,226"/>
+          <path d="M406,28 Q362,172 320,228"/>
+          <path d="M406,28 Q452,172 488,228"/>
+          <path d="M406,28 Q564,160 716,226"/>
+        </svg>
+
+        <div class="globe-eye" title="Scout">
+          <span class="eye-glow"></span>
+          <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/><ellipse cx="18" cy="17" rx="2.6" ry="1.3" fill="#fff" opacity="0.85" transform="rotate(-30 18 17)"/></svg>
+        </div>
+      </div>
+
+      <div class="globe-nodes">
+        <div class="orbit-node" style="left:28.7%;top:43.5%;">
+          <div class="node-card"><img src="assets/logos/yc.png" alt="Y Combinator"></div>
+          <span class="tier-pill tier-api">Direct API</span>
+        </div>
+        <div class="orbit-node" style="left:71.3%;top:43.5%;">
+          <div class="node-card"><img src="assets/logos/producthunt.png" alt="Product Hunt" style="height:15px;"></div>
+          <span class="tier-pill tier-api">Direct API</span>
+        </div>
+        <div class="orbit-node" style="left:11.4%;top:77%;">
+          <div class="node-card"><img src="assets/logos/wellfound-black.png" alt="Wellfound"></div>
+          <span class="tier-pill tier-crawl">Permitted crawl</span>
+        </div>
+        <div class="orbit-node" style="left:39.6%;top:77%;">
+          <div class="node-card dark"><img src="assets/logos/techstars-white.png" alt="Techstars" style="height:12px;"></div>
+          <span class="tier-pill tier-crawl">Permitted crawl</span>
+        </div>
+        <div class="orbit-node" style="left:60.4%;top:77%;">
+          <div class="node-card"><div class="node-mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg></div><span class="node-label">Careers pages</span></div>
+          <span class="tier-pill tier-crawl">Permitted crawl</span>
+        </div>
+        <div class="orbit-node" style="left:88.7%;top:77%;">
+          <div class="node-card"><img src="assets/logos/linkedin.png" alt="LinkedIn" style="height:16px;"></div>
+          <span class="tier-pill tier-capture">User-capture only</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="sources-note">Every source is classified by how it can be captured — direct API, permitted crawl, or user-capture only. LinkedIn saves come exclusively from your own browser, on your explicit action — there's no server-side LinkedIn crawler.</p>
+  </div>
+</section>
+
+<!-- ============ WORKFLOW ============ -->
+<section class="section" id="workflow">
+  <div class="wrap">
+    <p class="kicker">The core loop</p>
+    <h2 class="head">Nine steps, once each — Scout remembers the rest</h2>
+    <p class="lede">This is the actual sequence a saved company moves through. Click a step, or let it play — nothing here is decorative, each stage is a real, independently-triggerable part of the pipeline.</p>
+
+    <div class="tour">
+     <div class="tour-scroll">
+      <input type="radio" name="tourstep" id="ts1" checked>
+      <input type="radio" name="tourstep" id="ts2">
+      <input type="radio" name="tourstep" id="ts3">
+      <input type="radio" name="tourstep" id="ts4">
+      <input type="radio" name="tourstep" id="ts5">
+      <input type="radio" name="tourstep" id="ts6">
+      <input type="radio" name="tourstep" id="ts7">
+      <input type="radio" name="tourstep" id="ts8">
+      <input type="radio" name="tourstep" id="ts9">
+
+      <div class="tour-layout">
+        <span class="scroll-hint"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Scroll to move through the loop</span>
+        <div class="stepper">
+          <label class="step-tab" for="ts1"><span class="num">1</span><span class="body"><b>Discover</b><span class="sub">Find it anywhere</span></span><span class="who-dot" style="background:var(--charcoal);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts2"><span class="num">2</span><span class="body"><b>Save</b><span class="sub">One click, any page</span></span><span class="who-dot" style="background:var(--charcoal);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts3"><span class="num">3</span><span class="body"><b>Enrich</b><span class="sub">AI reads the details</span></span><span class="who-dot" style="background:var(--emerald);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts4"><span class="num">4</span><span class="body"><b>Analyze</b><span class="sub">Stage, culture, signals</span></span><span class="who-dot" style="background:var(--emerald);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts5"><span class="num">5</span><span class="body"><b>Match</b><span class="sub">Scored against your CV</span></span><span class="who-dot" style="background:var(--emerald);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts6"><span class="num">6</span><span class="body"><b>Generate</b><span class="sub">Resume + outreach</span></span><span class="who-dot" style="background:var(--emerald);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts7"><span class="num">7</span><span class="body"><b>Apply</b><span class="sub">You review, you send</span></span><span class="who-dot" style="background:var(--charcoal);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts8"><span class="num">8</span><span class="body"><b>Track</b><span class="sub">One pipeline view</span></span><span class="who-dot" style="background:var(--charcoal);"></span><span class="rail"><i></i></span></label>
+          <label class="step-tab" for="ts9"><span class="num">9</span><span class="body"><b>Follow up</b><span class="sub">Nudged at the right time</span></span><span class="who-dot" style="background:var(--emerald);"></span><span class="rail"><i></i></span></label>
+        </div>
+
+        <div class="stage">
+          <div class="stage-glow"></div>
+
+          <div class="stage-panel" data-n="1">
+            <div class="stage-head"><div class="stage-icon who-you"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><h3>Discover</h3><span class="stage-who you">You</span></div>
+            <p class="stage-desc">You find a company organically — a YC listing, a founder's tweet, a friend's referral. Scout doesn't push opportunities at you here; discovery still starts with you.</p>
+            <div class="stage-demo dw-row">
+              <span class="dw-chip"><img src="assets/logos/yc.png" style="height:12px;" alt=""></span>
+              <span class="dw-chip">Founder's tweet</span>
+              <span class="dw-chip">Referral</span>
+              <span class="dw-arrow">→</span>
+              <span class="dw-chip" style="background:var(--charcoal);color:#fff;border-color:var(--charcoal);">Worth a closer look</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="2">
+            <div class="stage-head"><div class="stage-icon who-you"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div><h3>Save</h3><span class="stage-who you">You</span></div>
+            <p class="stage-desc">One click, from any supported page. The extension pre-fills what it can — company name, source URL, a raw snapshot — before you click anything else.</p>
+            <div class="stage-demo">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;"><div class="logo-chip" style="width:32px;height:32px;font-size:11px;">AR</div><div><b style="font-size:13px;display:block;">Acme Robotics</b><span style="font-size:11.5px;color:var(--muted);">Detected: YC company page</span></div></div>
+                <span class="dw-chip" style="background:var(--emerald);color:#fff;border-color:var(--emerald);">Saved</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="3">
+            <div class="stage-head"><div class="stage-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg></div><h3>Enrich</h3><span class="stage-who scout">Scout</span></div>
+            <p class="stage-desc">Careers page, tech stack, funding, and founder background — pulled and summarized in the background, usually inside a couple of minutes.</p>
+            <div class="stage-demo dw-row" style="gap:16px;">
+              <span class="job-dot" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--emerald);display:inline-block;"></span>Queued</span>
+              <span class="dw-arrow">→</span>
+              <span class="job-dot" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);"><span class="dot dot-running" style="width:7px;height:7px;border-radius:50%;display:inline-block;"></span>Running</span>
+              <span class="dw-arrow">→</span>
+              <span class="job-dot" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--emerald-dark);"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--emerald);display:inline-block;"></span>Succeeded</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="4">
+            <div class="stage-head"><div class="stage-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg></div><h3>Analyze</h3><span class="stage-who scout">Scout</span></div>
+            <p class="stage-desc">Stage, culture signals, and hiring status get structured — so the workspace holds a real profile, not just a bookmark.</p>
+            <div class="stage-demo dw-row">
+              <span class="dw-chip">Stage: Series A</span>
+              <span class="dw-chip">Hiring: Actively</span>
+              <span class="dw-chip">Remote-first</span>
+              <span class="dw-chip">Enriched 3d ago</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="5">
+            <div class="stage-head"><div class="stage-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Match</h3><span class="stage-who scout">Scout</span></div>
+            <p class="stage-desc">Scored against your CV, with matched skills and gaps always shown together — a score with no gaps is treated as a bug, not a perfect fit.</p>
+            <div class="stage-demo" style="display:flex;align-items:center;gap:20px;">
+              <div class="ring-wrap" style="width:52px;height:52px;flex-shrink:0;"><svg width="52" height="52" viewBox="0 0 52 52"><circle class="ring-track" cx="26" cy="26" r="21" stroke-width="5"/><circle class="ring-progress" cx="26" cy="26" r="21" stroke-width="5" style="stroke:#18A058" stroke-dasharray="132" stroke-dashoffset="17"/></svg><div class="ring-core" style="width:35px;height:35px;"><span class="ring-score" style="font-size:12px;">87</span></div></div>
+              <div class="dw-row"><span class="chip chip-match">PYTHON</span><span class="chip chip-match">FASTAPI</span><span class="chip chip-gap">K8S — GAP</span></div>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="6">
+            <div class="stage-head"><div class="stage-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></div><h3>Generate</h3><span class="stage-who scout">Scout</span></div>
+            <p class="stage-desc">A tailored resume, cover letter, and intro — grounded only in what's already in your base CV. Nothing invented, nothing overwritten.</p>
+            <div class="stage-demo" style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:13px;color:var(--muted);">Base resume</span>
+              <span class="dw-arrow">→</span>
+              <span class="dw-chip" style="background:var(--emerald-tint);color:var(--emerald-dark);border-color:var(--emerald-tint-strong);">v3 · tailored for Acme Robotics</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="7">
+            <div class="stage-head"><div class="stage-icon who-you"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></div><h3>Apply</h3><span class="stage-who you">You</span></div>
+            <p class="stage-desc">Every generated version is blocked from download or send until you explicitly mark it reviewed — Scout never auto-submits on your behalf.</p>
+            <div class="stage-demo dw-row">
+              <span class="dw-chip" style="color:var(--muted-2);">reviewed_at: null</span>
+              <span class="dw-arrow">→</span>
+              <span class="dw-chip" style="background:var(--charcoal);color:#fff;border-color:var(--charcoal);">You click "Mark reviewed"</span>
+              <span class="dw-arrow">→</span>
+              <span class="dw-chip" style="background:var(--emerald);color:#fff;border-color:var(--emerald);">Send</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="8">
+            <div class="stage-head"><div class="stage-icon who-you"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg></div><h3>Track</h3><span class="stage-who you">You</span></div>
+            <p class="stage-desc">One pipeline view across seven statuses — saved through offer or rejected — instead of a spreadsheet that goes stale within a week.</p>
+            <div class="stage-demo dw-row">
+              <span class="badge b-saved"><span class="d"></span>Saved</span>
+              <span class="badge" style="background:var(--amber-tint);color:var(--amber);"><span class="d" style="background:var(--amber);"></span>Interested</span>
+              <span class="badge b-applied"><span class="d"></span>Applied</span>
+              <span class="badge b-interview"><span class="d"></span>Interview</span>
+            </div>
+          </div>
+
+          <div class="stage-panel" data-n="9">
+            <div class="stage-head"><div class="stage-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><h3>Follow up</h3><span class="stage-who scout">Scout suggests</span></div>
+            <p class="stage-desc">Nudged at the right time based on time-since-applied — Scout can draft the follow-up on request, but you decide whether it gets sent.</p>
+            <div class="stage-demo dw-row">
+              <span class="dw-chip">Applied 7 days ago</span>
+              <span class="dw-arrow">→</span>
+              <span class="dw-chip" style="background:var(--emerald-tint);color:var(--emerald-dark);border-color:var(--emerald-tint-strong);">Suggested: send a follow-up today</span>
+            </div>
+          </div>
+
+          <div class="stepdots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+     </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MATCHING FEATURE ============ -->
+<section class="section" id="matching">
+  <div class="wrap">
+    <div class="feature-split">
+      <div>
+        <p class="kicker" style="text-align:left;">Opportunity matching</p>
+        <h2>A fit score you can actually question</h2>
+        <p class="lede">Most matching tools give you a number and ask you to trust it. Scout shows its work — every score ships with the skills that matched, the gaps that didn't, and a plain-language reason, because an overconfident score can talk you out of a good application just as easily as into a bad one.</p>
+        <ul class="mini-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Two-stage scoring: fast embedding similarity narrows the field, then a closer pass checks explicit requirements.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Gaps are always shown alongside matches — a score with no gaps is treated as a bug, not a perfect fit.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Recalculates automatically when you update your CV or save a new role.</li>
+        </ul>
+        <a class="btn btn-primary" href="#">See how scoring works</a>
+      </div>
+      <div class="score-card-wrap">
+        <div class="score-glow"></div>
+        <div class="score-card">
+          <div class="head-row">
+            <div><h4>Senior UX Designer</h4><span class="sub">Northwind Labs · London, Hybrid</span></div>
+            <div class="ring-wrap" style="width:64px;height:64px;">
+              <svg width="64" height="64" viewBox="0 0 64 64">
+                <circle class="ring-track" cx="32" cy="32" r="27" stroke-width="6"/>
+                <circle class="ring-progress" cx="32" cy="32" r="27" stroke-width="6" style="stroke:#B8791A" stroke-dasharray="170" stroke-dashoffset="80"/>
+              </svg>
+              <div class="ring-core" style="width:44px;height:44px;"><span class="ring-score" style="font-size:14px;">62</span></div>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip chip-match">DESIGN SYSTEMS</span>
+            <span class="chip chip-match">FIGMA</span>
+            <span class="chip chip-gap">B2B SAAS — GAP</span>
+          </div>
+          <div class="score-breakdown">
+            <div class="row"><span class="k">Matched skills</span><span class="v">6 / 8</span></div>
+            <div class="row"><span class="k">Explicit requirement gaps</span><span class="v">2</span></div>
+            <div class="row"><span class="k">Confidence</span><span class="v" style="color:var(--amber);">MODERATE</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticker-wrap">
+      <p class="ticker-label">Illustrative hiring-signal deltas the enrichment pipeline can surface per company — sample output, not live data</p>
+      <div class="ticker">
+        <span class="tick">AI / ML roles <span class="up">↗ +142%</span></span>
+        <span class="tick">Series A postings <span class="up">↗ +18%</span></span>
+        <span class="tick">Remote roles <span class="down">↘ −6%</span></span>
+        <span class="tick">Design systems roles <span class="up">↗ +64%</span></span>
+        <span class="tick">Contract roles <span class="down">↘ −12%</span></span>
+        <span class="tick">Founding engineer roles <span class="up">↗ +37%</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DARK STEPS ============ -->
+<div class="dark-section">
+  <p class="kicker">How it works</p>
+  <h2 class="head">Save normally. Scout does the rest.</h2>
+  <p class="lede">Four moments the extension and dashboard hand off to each other automatically — you only ever touch two of them.</p>
+  <div class="steps-timeline">
+
+    <div class="step-row">
+      <div class="step-node">1</div>
+      <div class="step-card-h">
+        <div class="top-line">
+          <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></div>
+          <span class="step-tag">You</span>
+          <span class="step-time">Instant</span>
+        </div>
+        <h4>Save from any page</h4>
+        <p>One click on a YC listing, a careers page, or a job post. The extension pre-fills what it can before you click anything.</p>
+      </div>
+    </div>
+
+    <div class="step-row now">
+      <div class="step-node">2</div>
+      <div class="step-card-h">
+        <div class="top-line">
+          <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg></div>
+          <span class="step-tag">Scout</span>
+          <span class="step-time">~2 min</span>
+        </div>
+        <h4>Enrichment runs in the background</h4>
+        <p>Careers page, tech stack, funding, and founder background — pulled and summarized, usually inside a couple of minutes.</p>
+      </div>
+    </div>
+
+    <div class="step-row now">
+      <div class="step-node">3</div>
+      <div class="step-card-h">
+        <div class="top-line">
+          <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <span class="step-tag">Scout</span>
+          <span class="step-time">Cached</span>
+        </div>
+        <h4>Fit is scored, with reasons</h4>
+        <p>Your CV is checked against the role, not just matched by keyword — matched skills and gaps are stored, not regenerated on every view.</p>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-node">4</div>
+      <div class="step-card-h">
+        <div class="top-line">
+          <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></div>
+          <span class="step-tag">You</span>
+          <span class="step-time">You decide</span>
+        </div>
+        <h4>Review and send</h4>
+        <p>Generated resume and outreach are editable from the start, diffed against your base resume, and never sent without your review.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ SAMPLE WORKSPACE ============ -->
+<section class="section" id="opportunities">
+  <div class="wrap">
+    <p class="kicker">Your workspace</p>
+    <h2 class="head">Every save becomes a structured record</h2>
+    <p class="lede">Not a bookmark — a card with a status, a score, and a paper trail back to the source. This is what a Startup Workspace looks like after a few weeks of saving.</p>
+    <div class="sample-grid">
+
+      <div class="s-card" style="background:var(--slate-tint); border:1px solid #D3DFEE;">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;">NL</div><div><h3>Northwind Labs</h3><p class="sub">Seed · Design tools</p></div></div>
+        </div>
+        <span class="badge b-applied"><span class="d"></span>Applied</span>
+        <div class="s-card-meta"><span class="tag">Remote</span><span class="tag">Design</span></div>
+        <div class="s-card-foot"><span>Applied 6d ago</span><div class="ring-wrap" style="width:30px;height:30px;"><svg width="30" height="30" viewBox="0 0 30 30"><circle class="ring-track" cx="15" cy="15" r="12" stroke-width="3"/><circle class="ring-progress" cx="15" cy="15" r="12" stroke-width="3" style="stroke:#3E5C8A" stroke-dasharray="75" stroke-dashoffset="25"/></svg><div class="ring-core" style="width:20px;height:20px;"><span class="ring-score" style="font-size:8px;">71</span></div></div></div>
+      </div>
+
+      <div class="s-card" style="background:var(--emerald-tint); border:1px solid var(--emerald-tint-strong);">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;">FL</div><div><h3>Ferro Labs</h3><p class="sub">Series B · Infra</p></div></div>
+        </div>
+        <span class="badge b-interview"><span class="d"></span>Interview</span>
+        <div class="s-card-meta"><span class="tag">Hybrid · NYC</span><span class="tag">Backend</span></div>
+        <div class="s-card-foot"><span>Interview in 3d</span><div class="ring-wrap" style="width:30px;height:30px;"><svg width="30" height="30" viewBox="0 0 30 30"><circle class="ring-track" cx="15" cy="15" r="12" stroke-width="3"/><circle class="ring-progress" cx="15" cy="15" r="12" stroke-width="3" style="stroke:#18A058" stroke-dasharray="75" stroke-dashoffset="9"/></svg><div class="ring-core" style="width:20px;height:20px;"><span class="ring-score" style="font-size:8px;">88</span></div></div></div>
+      </div>
+
+      <div class="s-card" style="background:var(--cream); border:1px solid var(--line-strong);">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;">QT</div><div><h3>Quiet Table</h3><p class="sub">Pre-seed · Consumer</p></div></div>
+        </div>
+        <span class="badge b-saved"><span class="d"></span>Saved</span>
+        <div class="s-card-meta"><span class="tag">Remote</span><span class="tag">Full-stack</span></div>
+        <div class="s-card-foot"><span>Enriching…</span><span class="job-dot"><span class="dot dot-running"></span></span></div>
+      </div>
+
+      <div class="s-card" style="background:var(--amber-tint); border:1px solid #F0DDB8;">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;">HX</div><div><h3>Helio X</h3><p class="sub">Series A · Climate</p></div></div>
+        </div>
+        <span class="badge" style="background:var(--amber-tint);color:var(--amber);border:1px solid #F0DDB8;"><span class="d" style="background:var(--amber);"></span>Interested</span>
+        <div class="s-card-meta"><span class="tag">Onsite · SF</span><span class="tag">Hardware</span></div>
+        <div class="s-card-foot"><span>Enriched 1d ago</span><div class="ring-wrap" style="width:30px;height:30px;"><svg width="30" height="30" viewBox="0 0 30 30"><circle class="ring-track" cx="15" cy="15" r="12" stroke-width="3"/><circle class="ring-progress" cx="15" cy="15" r="12" stroke-width="3" style="stroke:#B8791A" stroke-dasharray="75" stroke-dashoffset="34"/></svg><div class="ring-core" style="width:20px;height:20px;"><span class="ring-score" style="font-size:8px;">55</span></div></div></div>
+      </div>
+
+      <div class="s-card" style="background:#fff; border:1px solid var(--emerald); box-shadow:0 0 0 1px var(--emerald), var(--shadow-sm);">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;background:var(--emerald);">SB</div><div><h3>Skybase</h3><p class="sub">Series A · Devtools</p></div></div>
+        </div>
+        <span class="badge b-offer"><span class="d"></span>Offer</span>
+        <div class="s-card-meta"><span class="tag">Remote</span><span class="tag">Platform</span></div>
+        <div class="s-card-foot"><span>Offer received</span><div class="ring-wrap" style="width:30px;height:30px;"><svg width="30" height="30" viewBox="0 0 30 30"><circle class="ring-track" cx="15" cy="15" r="12" stroke-width="3"/><circle class="ring-progress" cx="15" cy="15" r="12" stroke-width="3" style="stroke:#18A058" stroke-dasharray="75" stroke-dashoffset="4"/></svg><div class="ring-core" style="width:20px;height:20px;"><span class="ring-score" style="font-size:8px;">95</span></div></div></div>
+      </div>
+
+      <div class="s-card" style="background:#F3F2EF; border:1px solid var(--line-strong); opacity:.72;">
+        <div class="bookmark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+        <div class="s-card-top">
+          <div style="display:flex;gap:10px;"><div class="logo-chip" style="width:34px;height:34px;font-size:12px;background:var(--muted-2);">DR</div><div><h3>Driftly</h3><p class="sub">Seed · Logistics</p></div></div>
+        </div>
+        <span class="badge b-rejected"><span class="d"></span>Rejected</span>
+        <div class="s-card-meta"><span class="tag">Remote</span><span class="tag">Full-stack</span></div>
+        <div class="s-card-foot"><span>Closed 2w ago</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="section" style="padding-top:0;">
+  <div class="wrap">
+    <div class="t-head">
+      <div class="left">
+        <p class="kicker">From the people using it</p>
+        <h2 class="head" style="margin-bottom:0;">Five different job searches,<br>one workspace</h2>
+      </div>
+      <div class="t-arrows">
+        <div class="t-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="t-arrow filled"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+    <div class="t-grid">
+      <div class="t-card" style="background:linear-gradient(160deg,#2C3B52,#1F2937);">
+        <span class="quote-mark">&rdquo;</span><div class="init">JM</div>
+        <p class="t-quote">"I stopped re-Googling the same 40 companies every week. Everything I'd already looked into was just there."</p>
+        <div class="t-person"><b>Jordan M.</b><span>Software Engineer</span></div>
+      </div>
+      <div class="t-card" style="background:linear-gradient(160deg,#0F6E56,#0B4738);">
+        <span class="quote-mark">&rdquo;</span><div class="init">PS</div>
+        <p class="t-quote">"The gap callouts are what sold me — it tells me what's missing instead of pretending my portfolio is a perfect fit."</p>
+        <div class="t-person"><b>Priya S.</b><span>Product Designer</span></div>
+      </div>
+      <div class="t-card" style="background:linear-gradient(160deg,#B8791A,#8A5A11);">
+        <span class="quote-mark">&rdquo;</span><div class="init">AK</div>
+        <p class="t-quote">"As a student applying to 60+ internships, the batch save-then-generate flow saved me a full week."</p>
+        <div class="t-person"><b>Aiden K.</b><span>CS Student</span></div>
+      </div>
+      <div class="t-card" style="background:linear-gradient(160deg,#3E5C8A,#2A3F60);">
+        <span class="quote-mark">&rdquo;</span><div class="init">RD</div>
+        <p class="t-quote">"I finally have one pipeline instead of five browser tabs and a stale spreadsheet."</p>
+        <div class="t-person"><b>Renee D.</b><span>AI Researcher</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="faq-layout">
+      <div class="faq-left">
+        <span class="faq-pill">⌘ FAQ</span>
+        <h2 class="head">Common questions</h2>
+        <p class="lede">The honest version of what Scout does and doesn't do. Can't find what you need? Reach out to the team.</p>
+        <div class="contact-card">
+          <h5>Still have questions?</h5>
+          <p>Can't find the answer you're looking for? We're happy to walk through the data-sourcing and privacy details in person.</p>
+          <a class="btn btn-secondary" href="#" style="font-size:13px; padding:9px 16px;">Get in touch</a>
+        </div>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>Does Scout apply to jobs for me?<span class="plus">+</span></summary>
+          <p class="a">No. Scout prepares your resume, cover letter, and outreach — you review and submit every application yourself, outside Scout. There's no auto-submit.</p>
+        </details>
+        <details>
+          <summary>Will generated content invent experience I don't have?<span class="plus">+</span></summary>
+          <p class="a">No. Every generation call is grounded in your base CV; the prompt is explicitly instructed not to add claims, titles, or metrics that aren't already there.</p>
+        </details>
+        <details>
+          <summary>Is my CV used to train other models?<span class="plus">+</span></summary>
+          <p class="a">No. Your CV and portfolio data is encrypted at rest and never used to train external models. You can delete it at any time.</p>
+        </details>
+        <details>
+          <summary>Which sources can I save from today?<span class="plus">+</span></summary>
+          <p class="a">YC company pages and generic careers pages at launch, via the browser extension. Wellfound, Techstars, and Product Hunt are on the roadmap as scheduled sync sources.</p>
+        </details>
+        <details>
+          <summary>What happens to my base resume when Scout generates a tailored version?<span class="plus">+</span></summary>
+          <p class="a">Nothing — it's untouched. Every generated version is a separate, versioned copy with a diff view against your base resume.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA + FOOTER ============ -->
+<div class="cta-outer">
+  <div class="dark-section cta-final">
+    <h2>Your next opportunity<br>is already tracked.</h2>
+    <p>Free to start. No credit card. The extension takes about a minute to install.</p>
+    <div class="btn-row">
+      <a class="btn btn-accent" href="#">Start for free</a>
+      <a class="btn btn-secondary" style="background:transparent;color:#fff;border-color:#2A3441;" href="#">Get the extension</a>
+    </div>
+  </div>
+
+  <div class="footer-card">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="#">
+          <svg width="24" height="24" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg>
+          <span>Scout</span>
+        </a>
+        <p>The system of record and system of action for a startup job search — not a job board, and not a YC directory extension.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Product</h5>
+        <ul><li><a href="#">Startup Workspace</a></li><li><a href="#">Matches</a></li><li><a href="#">Resume Studio</a></li><li><a href="#">CRM</a></li><li><a href="#">Browser extension</a></li></ul>
+      </div>
+      <div class="foot-col">
+        <h5>Resources</h5>
+        <ul><li><a href="#">How it works</a></li><li><a href="#">FAQ</a></li><li><a href="#">Changelog</a></li><li><a href="#">Support</a></li></ul>
+      </div>
+      <div class="foot-col">
+        <h5>Company</h5>
+        <ul><li><a href="#">About</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li></ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Scout. Prepares your applications — you always send them.</span>
+      <span>emerald #18A058 · charcoal #1F2937</span>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+<script>
+(function(){
+  var scrollWrap = document.querySelector('.tour-scroll');
+  var layout = document.querySelector('.tour-scroll .tour-layout');
+  if(!scrollWrap || !layout) return;
+
+  var STEPS = 9;
+  var radios = [];
+  for (var n = 1; n <= STEPS; n++){
+    var r = document.getElementById('ts' + n);
+    if (!r) return;
+    radios.push(r);
+  }
+
+  var ticking = false;
+
+  function isPinned(){
+    return getComputedStyle(layout).position === 'sticky';
+  }
+
+  function update(){
+    ticking = false;
+    if (!isPinned()) return; // mobile: fall back to plain click/tap tabs
+
+    var stickyTop = parseFloat(getComputedStyle(layout).top) || 0;
+    var rect = scrollWrap.getBoundingClientRect();
+    var total = scrollWrap.offsetHeight - layout.offsetHeight;
+    if (total <= 0) return;
+
+    var scrolled = stickyTop - rect.top;
+    var progress = scrolled / total;
+    progress = Math.max(0, Math.min(1, progress));
+
+    var idx = Math.floor(progress * STEPS);
+    if (idx >= STEPS) idx = STEPS - 1;
+    if (idx < 0) idx = 0;
+
+    if (!radios[idx].checked) radios[idx].checked = true;
+  }
+
+  function onScroll(){
+    if (!ticking){
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  update();
+
+  // Clicking / tapping a step scrolls the page to that step's position,
+  // so the scroll-driven state and manual selection always agree.
+  var tabs = document.querySelectorAll('.tour-scroll .step-tab');
+  tabs.forEach(function(label, i){
+    label.addEventListener('click', function(e){
+      if (!isPinned()) return; // let native radio behavior handle mobile taps
+      e.preventDefault();
+      var stickyTop = parseFloat(getComputedStyle(layout).top) || 0;
+      var rect = scrollWrap.getBoundingClientRect();
+      var total = scrollWrap.offsetHeight - layout.offsetHeight;
+      var targetProgress = (i + 0.5) / STEPS;
+      var wrapTopAbs = window.scrollY + rect.top;
+      var targetY = wrapTopAbs - stickyTop + targetProgress * total;
+      window.scrollTo({top: targetY, behavior:'smooth'});
+      radios[i].checked = true;
+    });
+  });
+})();
+</script>
+</body>
+</html>

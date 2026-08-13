@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scout — Brand Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --emerald:#18A058;
+  --emerald-dark:#0F6E56;
+  --charcoal:#1F2937;
+  --near-black:#0B0F14;
+  --paper:#FAFAF8;
+  --line:#E5E3DC;
+  --muted:#6B7280;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  font-family:'Inter',Arial,sans-serif;
+  color:var(--charcoal);
+}
+.page{
+  max-width:1000px;
+  margin:0 auto;
+  padding:80px 64px 120px;
+}
+.cover{
+  padding:120px 64px;
+  background:var(--charcoal);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:28px;
+}
+.cover .eyebrow{
+  font-size:13px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:#9CA9B8;
+  font-weight:500;
+}
+.cover .cover-title{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:26px;
+  color:#D8DCE2;
+}
+section{ margin-bottom:88px; }
+h1.section-title{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--emerald-dark);
+  margin:0 0 8px;
+}
+h2.section-head{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:32px;
+  margin:0 0 40px;
+  color:var(--charcoal);
+}
+p.lede{
+  font-size:16px;
+  line-height:1.7;
+  color:var(--muted);
+  max-width:640px;
+  margin:0 0 40px;
+}
+
+/* Logo section */
+.logo-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+  margin-bottom:24px;
+}
+.logo-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:56px 40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.logo-card.dark{ background:var(--charcoal); border-color:var(--charcoal); }
+.logo-card svg{ max-width:100%; height:auto; }
+.icon-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:24px;
+}
+.icon-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  aspect-ratio:1;
+}
+.icon-card.dark{ background:var(--charcoal); }
+.icon-card.emerald{ background:var(--emerald); }
+.icon-card svg{ width:64px; height:64px; }
+.caption{
+  font-size:13px;
+  color:var(--muted);
+  text-align:center;
+  margin-top:10px;
+}
+
+/* Color palette */
+.swatch-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+}
+.swatch{
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid var(--line);
+}
+.swatch-color{ height:120px; }
+.swatch-info{ padding:18px 20px; background:#fff; }
+.swatch-name{ font-weight:600; font-size:15px; margin:0 0 4px; }
+.swatch-hex{ font-family:'SF Mono',Consolas,monospace; font-size:13px; color:var(--muted); margin:0; }
+
+/* Typography */
+.type-sample{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:40px;
+  margin-bottom:20px;
+}
+.type-sample .label{
+  font-size:12px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 16px;
+  font-weight:500;
+}
+.type-sample .display-serif{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:44px;
+  margin:0 0 8px;
+  color:var(--charcoal);
+}
+.type-sample .ui-sans{
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  color:var(--charcoal);
+}
+.type-sample .ui-body{
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  color:var(--muted);
+  margin:12px 0 0;
+  max-width:520px;
+}
+
+/* clearspace */
+.clearspace-demo{
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.clearspace-box{
+  border:1.5px dashed #B7C4BC;
+  padding:44px;
+  display:inline-flex;
+}
+
+/* do dont */
+.dd-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+.dd-card{
+  border-radius:16px;
+  padding:36px;
+  border:1px solid var(--line);
+}
+.dd-card.do{ background:#EAF3DE; border-color:#C0DD97; }
+.dd-card.dont{ background:#FCEBEB; border-color:#F7C1C1; }
+.dd-label{
+  font-weight:600;
+  font-size:14px;
+  margin:0 0 20px;
+}
+.dd-card.do .dd-label{ color:#27500A; }
+.dd-card.dont .dd-label{ color:#791F1F; }
+.dd-example{
+  background:#fff;
+  border-radius:10px;
+  padding:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:14px;
+}
+.dd-note{ font-size:13px; line-height:1.6; }
+.dd-card.do .dd-note{ color:#3B6D11; }
+.dd-card.dont .dd-note{ color:#A32D2D; }
+
+footer{
+  text-align:center;
+  padding:48px 0 0;
+  font-size:13px;
+  color:var(--muted);
+  border-top:1px solid var(--line);
+}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <span class="eyebrow">Brand guide — v1</span>
+  <svg width="280" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg">
+    <path d="M609 -21Q519 -21 460.5 5.5Q402 32 369.5 58.5Q337 85 325 85Q317 85 300.0 68.5Q283 52 263.0 30.0Q243 8 225.0 -9.0Q207 -26 197 -26Q191 -26 184.0 -20.5Q177 -15 175 -7L102 440Q101 447 101.5 450.5Q102 454 105 455Q107 457 111.0 455.0Q115 453 117 449Q208 269 288.0 171.5Q368 74 441.0 37.0Q514 0 584 0Q689 0 751.5 56.5Q814 113 814 225Q814 296 785.5 353.5Q757 411 690.0 459.5Q623 508 507 548Q347 604 251.0 672.5Q155 741 112.0 824.5Q69 908 69 1012Q69 1133 131.0 1225.0Q193 1317 302.0 1368.5Q411 1420 552 1420Q633 1420 686.0 1401.0Q739 1382 771.0 1362.5Q803 1343 818 1343Q833 1343 862.0 1363.5Q891 1384 919.5 1404.5Q948 1425 960 1425Q965 1425 969.5 1421.5Q974 1418 976 1411L1083 970Q1085 964 1084.0 960.5Q1083 957 1081 955Q1078 954 1074.5 956.0Q1071 958 1068 962Q970 1136 887.0 1231.0Q804 1326 727.0 1363.0Q650 1400 572 1400Q474 1400 410.5 1335.0Q347 1270 347 1157Q347 1084 373.5 1024.5Q400 965 464.0 916.5Q528 868 638 827Q805 768 901.5 700.5Q998 633 1039.0 553.5Q1080 474 1080 377Q1080 266 1024.0 176.0Q968 86 863.0 32.5Q758 -21 609 -21Z" transform="translate(200.00,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+    <path d="M828 660Q828 602 795.0 566.5Q762 531 703 531Q643 531 609.0 567.5Q575 604 575 673V753Q575 815 545.0 849.5Q515 884 464 884Q410 884 370.5 843.5Q331 803 309.5 728.5Q288 654 288 550Q288 420 325.0 330.0Q362 240 426.0 194.0Q490 148 572 148Q662 148 726.0 186.5Q790 225 811 308Q812 312 814.0 313.5Q816 315 818 314Q821 314 822.5 311.5Q824 309 823 305Q804 202 751.5 129.5Q699 57 618.5 19.0Q538 -19 435 -19Q320 -19 228.5 30.5Q137 80 84.5 178.5Q32 277 32 421Q32 559 89.5 667.5Q147 776 249.0 839.5Q351 903 484 903Q596 903 672.5 871.0Q749 839 788.5 784.0Q828 729 828 660Z" transform="translate(257.30,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+    <g transform="translate(347.60,114) rotate(-8)">
+      <circle r="36" fill="none" stroke="#18A058" stroke-width="16"/>
+      <circle r="24" fill="#1F2937"/>
+      <ellipse cx="-9" cy="-10" rx="6.5" ry="3.2" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+    </g>
+    <path d="M680 27V163V169V780Q680 786 676.5 789.5Q673 793 665 793H607Q602 793 599.5 795.5Q597 798 597 801Q597 805 599.5 806.5Q602 808 606 809L916 895Q925 898 929.0 898.5Q933 899 938 899Q944 899 946.5 895.5Q949 892 949 887V57Q949 44 955.0 35.5Q961 27 973 24L1024 15Q1030 14 1032.5 12.0Q1035 10 1035 7Q1035 4 1032.5 2.0Q1030 0 1026 0H705Q693 0 686.5 7.0Q680 14 680 27ZM111 230V780Q111 786 107.5 789.5Q104 793 96 793H38Q32 793 30.0 795.5Q28 798 28 801Q28 805 30.5 806.5Q33 808 37 809L347 895Q357 898 361.0 898.5Q365 899 369 899Q375 899 378.0 895.5Q381 892 381 887V258Q381 176 416.5 138.5Q452 101 514 101Q553 101 593.0 117.5Q633 134 671 168L707 200L718 188L681 155Q575 62 489.5 22.0Q404 -18 332 -18Q235 -18 173.0 41.5Q111 101 111 230Z" transform="translate(395.10,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+    <path d="M99 848 16 867Q10 868 7.5 870.0Q5 872 5 875Q5 878 7.5 880.0Q10 882 12 882H98Q104 882 108.0 884.0Q112 886 117 891L334 1085Q340 1090 346.5 1093.0Q353 1096 358 1096Q365 1096 368.5 1092.0Q372 1088 372 1080V246Q372 163 403.0 122.5Q434 82 487 82Q506 82 523.0 87.5Q540 93 555.0 106.0Q570 119 581.0 140.0Q592 161 600 192Q602 198 607.0 198.0Q612 198 610 191Q594 120 564.5 73.5Q535 27 487.0 4.5Q439 -18 369 -18Q245 -18 178.5 40.0Q112 98 112 219V830Q112 839 109.5 843.0Q107 847 99 848ZM291 860 299 882H604Q609 882 611.0 880.5Q613 879 613 875Q613 869 606.5 864.5Q600 860 587 860Z" transform="translate(448.10,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+  </svg>
+  <span class="cover-title">Discover. Enrich. Apply.</span>
+</div>
+
+<div class="page">
+
+  <section>
+    <h1 class="section-title">01 — Logo</h1>
+    <h2 class="section-head">Wordmark &amp; icon</h2>
+    <p class="lede">The wordmark pairs Fraunces, an editorial serif, with the monocular mark in place of the O — an emerald ring with a dark lens, tilted slightly upward to suggest looking outward. The standalone icon carries the mark on its own for favicons, app tiles, and social profiles.</p>
+
+    <div class="logo-row">
+      <div class="logo-card">
+        <svg width="320" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg">
+          <path d="M609 -21Q519 -21 460.5 5.5Q402 32 369.5 58.5Q337 85 325 85Q317 85 300.0 68.5Q283 52 263.0 30.0Q243 8 225.0 -9.0Q207 -26 197 -26Q191 -26 184.0 -20.5Q177 -15 175 -7L102 440Q101 447 101.5 450.5Q102 454 105 455Q107 457 111.0 455.0Q115 453 117 449Q208 269 288.0 171.5Q368 74 441.0 37.0Q514 0 584 0Q689 0 751.5 56.5Q814 113 814 225Q814 296 785.5 353.5Q757 411 690.0 459.5Q623 508 507 548Q347 604 251.0 672.5Q155 741 112.0 824.5Q69 908 69 1012Q69 1133 131.0 1225.0Q193 1317 302.0 1368.5Q411 1420 552 1420Q633 1420 686.0 1401.0Q739 1382 771.0 1362.5Q803 1343 818 1343Q833 1343 862.0 1363.5Q891 1384 919.5 1404.5Q948 1425 960 1425Q965 1425 969.5 1421.5Q974 1418 976 1411L1083 970Q1085 964 1084.0 960.5Q1083 957 1081 955Q1078 954 1074.5 956.0Q1071 958 1068 962Q970 1136 887.0 1231.0Q804 1326 727.0 1363.0Q650 1400 572 1400Q474 1400 410.5 1335.0Q347 1270 347 1157Q347 1084 373.5 1024.5Q400 965 464.0 916.5Q528 868 638 827Q805 768 901.5 700.5Q998 633 1039.0 553.5Q1080 474 1080 377Q1080 266 1024.0 176.0Q968 86 863.0 32.5Q758 -21 609 -21Z" transform="translate(200.00,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <path d="M828 660Q828 602 795.0 566.5Q762 531 703 531Q643 531 609.0 567.5Q575 604 575 673V753Q575 815 545.0 849.5Q515 884 464 884Q410 884 370.5 843.5Q331 803 309.5 728.5Q288 654 288 550Q288 420 325.0 330.0Q362 240 426.0 194.0Q490 148 572 148Q662 148 726.0 186.5Q790 225 811 308Q812 312 814.0 313.5Q816 315 818 314Q821 314 822.5 311.5Q824 309 823 305Q804 202 751.5 129.5Q699 57 618.5 19.0Q538 -19 435 -19Q320 -19 228.5 30.5Q137 80 84.5 178.5Q32 277 32 421Q32 559 89.5 667.5Q147 776 249.0 839.5Q351 903 484 903Q596 903 672.5 871.0Q749 839 788.5 784.0Q828 729 828 660Z" transform="translate(257.30,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <g transform="translate(347.60,114) rotate(-8)">
+            <circle r="36" fill="none" stroke="#18A058" stroke-width="16"/>
+            <circle r="24" fill="#0B0F14"/>
+            <ellipse cx="-9" cy="-10" rx="6.5" ry="3.2" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+          </g>
+          <path d="M680 27V163V169V780Q680 786 676.5 789.5Q673 793 665 793H607Q602 793 599.5 795.5Q597 798 597 801Q597 805 599.5 806.5Q602 808 606 809L916 895Q925 898 929.0 898.5Q933 899 938 899Q944 899 946.5 895.5Q949 892 949 887V57Q949 44 955.0 35.5Q961 27 973 24L1024 15Q1030 14 1032.5 12.0Q1035 10 1035 7Q1035 4 1032.5 2.0Q1030 0 1026 0H705Q693 0 686.5 7.0Q680 14 680 27ZM111 230V780Q111 786 107.5 789.5Q104 793 96 793H38Q32 793 30.0 795.5Q28 798 28 801Q28 805 30.5 806.5Q33 808 37 809L347 895Q357 898 361.0 898.5Q365 899 369 899Q375 899 378.0 895.5Q381 892 381 887V258Q381 176 416.5 138.5Q452 101 514 101Q553 101 593.0 117.5Q633 134 671 168L707 200L718 188L681 155Q575 62 489.5 22.0Q404 -18 332 -18Q235 -18 173.0 41.5Q111 101 111 230Z" transform="translate(395.10,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <path d="M99 848 16 867Q10 868 7.5 870.0Q5 872 5 875Q5 878 7.5 880.0Q10 882 12 882H98Q104 882 108.0 884.0Q112 886 117 891L334 1085Q340 1090 346.5 1093.0Q353 1096 358 1096Q365 1096 368.5 1092.0Q372 1088 372 1080V246Q372 163 403.0 122.5Q434 82 487 82Q506 82 523.0 87.5Q540 93 555.0 106.0Q570 119 581.0 140.0Q592 161 600 192Q602 198 607.0 198.0Q612 198 610 191Q594 120 564.5 73.5Q535 27 487.0 4.5Q439 -18 369 -18Q245 -18 178.5 40.0Q112 98 112 219V830Q112 839 109.5 843.0Q107 847 99 848ZM291 860 299 882H604Q609 882 611.0 880.5Q613 879 613 875Q613 869 606.5 864.5Q600 860 587 860Z" transform="translate(448.10,150) scale(0.05,-0.05)" fill="#1F2937"/>
+        </svg>
+      </div>
+      <div class="logo-card dark">
+        <svg width="320" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg">
+          <path d="M609 -21Q519 -21 460.5 5.5Q402 32 369.5 58.5Q337 85 325 85Q317 85 300.0 68.5Q283 52 263.0 30.0Q243 8 225.0 -9.0Q207 -26 197 -26Q191 -26 184.0 -20.5Q177 -15 175 -7L102 440Q101 447 101.5 450.5Q102 454 105 455Q107 457 111.0 455.0Q115 453 117 449Q208 269 288.0 171.5Q368 74 441.0 37.0Q514 0 584 0Q689 0 751.5 56.5Q814 113 814 225Q814 296 785.5 353.5Q757 411 690.0 459.5Q623 508 507 548Q347 604 251.0 672.5Q155 741 112.0 824.5Q69 908 69 1012Q69 1133 131.0 1225.0Q193 1317 302.0 1368.5Q411 1420 552 1420Q633 1420 686.0 1401.0Q739 1382 771.0 1362.5Q803 1343 818 1343Q833 1343 862.0 1363.5Q891 1384 919.5 1404.5Q948 1425 960 1425Q965 1425 969.5 1421.5Q974 1418 976 1411L1083 970Q1085 964 1084.0 960.5Q1083 957 1081 955Q1078 954 1074.5 956.0Q1071 958 1068 962Q970 1136 887.0 1231.0Q804 1326 727.0 1363.0Q650 1400 572 1400Q474 1400 410.5 1335.0Q347 1270 347 1157Q347 1084 373.5 1024.5Q400 965 464.0 916.5Q528 868 638 827Q805 768 901.5 700.5Q998 633 1039.0 553.5Q1080 474 1080 377Q1080 266 1024.0 176.0Q968 86 863.0 32.5Q758 -21 609 -21Z" transform="translate(200.00,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+          <path d="M828 660Q828 602 795.0 566.5Q762 531 703 531Q643 531 609.0 567.5Q575 604 575 673V753Q575 815 545.0 849.5Q515 884 464 884Q410 884 370.5 843.5Q331 803 309.5 728.5Q288 654 288 550Q288 420 325.0 330.0Q362 240 426.0 194.0Q490 148 572 148Q662 148 726.0 186.5Q790 225 811 308Q812 312 814.0 313.5Q816 315 818 314Q821 314 822.5 311.5Q824 309 823 305Q804 202 751.5 129.5Q699 57 618.5 19.0Q538 -19 435 -19Q320 -19 228.5 30.5Q137 80 84.5 178.5Q32 277 32 421Q32 559 89.5 667.5Q147 776 249.0 839.5Q351 903 484 903Q596 903 672.5 871.0Q749 839 788.5 784.0Q828 729 828 660Z" transform="translate(257.30,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+          <g transform="translate(347.60,114) rotate(-8)">
+            <circle r="36" fill="none" stroke="#18A058" stroke-width="16"/>
+            <circle r="24" fill="#1F2937"/>
+            <ellipse cx="-9" cy="-10" rx="6.5" ry="3.2" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+          </g>
+          <path d="M680 27V163V169V780Q680 786 676.5 789.5Q673 793 665 793H607Q602 793 599.5 795.5Q597 798 597 801Q597 805 599.5 806.5Q602 808 606 809L916 895Q925 898 929.0 898.5Q933 899 938 899Q944 899 946.5 895.5Q949 892 949 887V57Q949 44 955.0 35.5Q961 27 973 24L1024 15Q1030 14 1032.5 12.0Q1035 10 1035 7Q1035 4 1032.5 2.0Q1030 0 1026 0H705Q693 0 686.5 7.0Q680 14 680 27ZM111 230V780Q111 786 107.5 789.5Q104 793 96 793H38Q32 793 30.0 795.5Q28 798 28 801Q28 805 30.5 806.5Q33 808 37 809L347 895Q357 898 361.0 898.5Q365 899 369 899Q375 899 378.0 895.5Q381 892 381 887V258Q381 176 416.5 138.5Q452 101 514 101Q553 101 593.0 117.5Q633 134 671 168L707 200L718 188L681 155Q575 62 489.5 22.0Q404 -18 332 -18Q235 -18 173.0 41.5Q111 101 111 230Z" transform="translate(395.10,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+          <path d="M99 848 16 867Q10 868 7.5 870.0Q5 872 5 875Q5 878 7.5 880.0Q10 882 12 882H98Q104 882 108.0 884.0Q112 886 117 891L334 1085Q340 1090 346.5 1093.0Q353 1096 358 1096Q365 1096 368.5 1092.0Q372 1088 372 1080V246Q372 163 403.0 122.5Q434 82 487 82Q506 82 523.0 87.5Q540 93 555.0 106.0Q570 119 581.0 140.0Q592 161 600 192Q602 198 607.0 198.0Q612 198 610 191Q594 120 564.5 73.5Q535 27 487.0 4.5Q439 -18 369 -18Q245 -18 178.5 40.0Q112 98 112 219V830Q112 839 109.5 843.0Q107 847 99 848ZM291 860 299 882H604Q609 882 611.0 880.5Q613 879 613 875Q613 869 606.5 864.5Q600 860 587 860Z" transform="translate(448.10,150) scale(0.05,-0.05)" fill="#FFFFFF"/>
+        </svg>
+      </div>
+    </div>
+    <div class="logo-row" style="margin-top:8px;">
+      <p class="caption">Primary — on white</p>
+      <p class="caption">Reversed — on charcoal</p>
+    </div>
+
+    <div class="icon-row" style="margin-top:32px;">
+      <div class="icon-card dark">
+        <svg viewBox="0 0 200 200"><rect x="10" y="10" width="180" height="180" rx="40" fill="#1F2937"/><g transform="translate(100,100) rotate(-8)"><circle r="40" fill="none" stroke="#18A058" stroke-width="9"/><circle r="28" fill="#0B0F14"/><ellipse cx="-10" cy="-11" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+      </div>
+      <div class="icon-card emerald">
+        <svg viewBox="0 0 200 200"><rect x="10" y="10" width="180" height="180" rx="40" fill="#18A058"/><g transform="translate(100,100) rotate(-8)"><circle r="40" fill="none" stroke="#1F2937" stroke-width="9"/><circle r="28" fill="#0B0F14"/><ellipse cx="-10" cy="-11" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+      </div>
+      <div class="icon-card" style="background:#fff;">
+        <svg viewBox="0 0 200 200"><rect x="10" y="10" width="180" height="180" rx="40" fill="#fff" stroke="#E5E3DC"/><g transform="translate(100,100) rotate(-8)"><circle r="40" fill="none" stroke="#18A058" stroke-width="9"/><circle r="28" fill="#0B0F14"/><ellipse cx="-10" cy="-11" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+      </div>
+      <div class="icon-card" style="background:#fff;">
+        <svg viewBox="0 0 200 200"><g transform="translate(100,100) rotate(-8)"><circle r="60" fill="none" stroke="#18A058" stroke-width="12"/><circle r="42" fill="#0B0F14"/><ellipse cx="-15" cy="-16" rx="10" ry="5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+      </div>
+    </div>
+    <p class="caption">Icon variants — charcoal, emerald, outlined, mark-only (favicon)</p>
+  </section>
+
+  <section>
+    <h1 class="section-title">02 — Color</h1>
+    <h2 class="section-head">Palette</h2>
+    <p class="lede">Emerald is the accent — used sparingly, for the mark and key actions. Charcoal carries text and structure. White does the rest of the work.</p>
+    <div class="swatch-row">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#18A058;"></div>
+        <div class="swatch-info">
+          <p class="swatch-name">Emerald</p>
+          <p class="swatch-hex">#18A058 · RGB 24,160,88</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1F2937;"></div>
+        <div class="swatch-info">
+          <p class="swatch-name">Charcoal</p>
+          <p class="swatch-hex">#1F2937 · RGB 31,41,55</p>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FFFFFF; border-bottom:1px solid #E5E3DC;"></div>
+        <div class="swatch-info">
+          <p class="swatch-name">White</p>
+          <p class="swatch-hex">#FFFFFF · RGB 255,255,255</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h1 class="section-title">03 — Typography</h1>
+    <h2 class="section-head">Type system</h2>
+    <p class="lede">Fraunces is reserved for the logotype and large editorial moments. Inter runs the product — UI, body copy, data.</p>
+
+    <div class="type-sample">
+      <p class="label">Display — Fraunces, used only in the logotype and hero headlines</p>
+      <p class="display-serif">Discover your next role</p>
+    </div>
+    <div class="type-sample">
+      <p class="label">UI &amp; body — Inter</p>
+      <p class="ui-sans">Every saved startup becomes structured knowledge.</p>
+      <p class="ui-body">Inter runs everything else: navigation, buttons, form labels, tables, and body copy across the dashboard and extension. It's neutral and highly legible at small sizes, which is what a data-dense workspace needs.</p>
+    </div>
+  </section>
+
+  <section>
+    <h1 class="section-title">04 — Clearspace</h1>
+    <h2 class="section-head">Minimum space &amp; size</h2>
+    <p class="lede">Keep clearspace equal to the height of the monocular ring on all sides. Don't let UI chrome, text, or other logos enter this zone.</p>
+    <div class="clearspace-demo">
+      <div class="clearspace-box">
+        <svg width="220" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg">
+          <path d="M609 -21Q519 -21 460.5 5.5Q402 32 369.5 58.5Q337 85 325 85Q317 85 300.0 68.5Q283 52 263.0 30.0Q243 8 225.0 -9.0Q207 -26 197 -26Q191 -26 184.0 -20.5Q177 -15 175 -7L102 440Q101 447 101.5 450.5Q102 454 105 455Q107 457 111.0 455.0Q115 453 117 449Q208 269 288.0 171.5Q368 74 441.0 37.0Q514 0 584 0Q689 0 751.5 56.5Q814 113 814 225Q814 296 785.5 353.5Q757 411 690.0 459.5Q623 508 507 548Q347 604 251.0 672.5Q155 741 112.0 824.5Q69 908 69 1012Q69 1133 131.0 1225.0Q193 1317 302.0 1368.5Q411 1420 552 1420Q633 1420 686.0 1401.0Q739 1382 771.0 1362.5Q803 1343 818 1343Q833 1343 862.0 1363.5Q891 1384 919.5 1404.5Q948 1425 960 1425Q965 1425 969.5 1421.5Q974 1418 976 1411L1083 970Q1085 964 1084.0 960.5Q1083 957 1081 955Q1078 954 1074.5 956.0Q1071 958 1068 962Q970 1136 887.0 1231.0Q804 1326 727.0 1363.0Q650 1400 572 1400Q474 1400 410.5 1335.0Q347 1270 347 1157Q347 1084 373.5 1024.5Q400 965 464.0 916.5Q528 868 638 827Q805 768 901.5 700.5Q998 633 1039.0 553.5Q1080 474 1080 377Q1080 266 1024.0 176.0Q968 86 863.0 32.5Q758 -21 609 -21Z" transform="translate(200.00,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <path d="M828 660Q828 602 795.0 566.5Q762 531 703 531Q643 531 609.0 567.5Q575 604 575 673V753Q575 815 545.0 849.5Q515 884 464 884Q410 884 370.5 843.5Q331 803 309.5 728.5Q288 654 288 550Q288 420 325.0 330.0Q362 240 426.0 194.0Q490 148 572 148Q662 148 726.0 186.5Q790 225 811 308Q812 312 814.0 313.5Q816 315 818 314Q821 314 822.5 311.5Q824 309 823 305Q804 202 751.5 129.5Q699 57 618.5 19.0Q538 -19 435 -19Q320 -19 228.5 30.5Q137 80 84.5 178.5Q32 277 32 421Q32 559 89.5 667.5Q147 776 249.0 839.5Q351 903 484 903Q596 903 672.5 871.0Q749 839 788.5 784.0Q828 729 828 660Z" transform="translate(257.30,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <g transform="translate(347.60,114) rotate(-8)">
+            <circle r="36" fill="none" stroke="#18A058" stroke-width="16"/>
+            <circle r="24" fill="#0B0F14"/>
+            <ellipse cx="-9" cy="-10" rx="6.5" ry="3.2" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+          </g>
+          <path d="M680 27V163V169V780Q680 786 676.5 789.5Q673 793 665 793H607Q602 793 599.5 795.5Q597 798 597 801Q597 805 599.5 806.5Q602 808 606 809L916 895Q925 898 929.0 898.5Q933 899 938 899Q944 899 946.5 895.5Q949 892 949 887V57Q949 44 955.0 35.5Q961 27 973 24L1024 15Q1030 14 1032.5 12.0Q1035 10 1035 7Q1035 4 1032.5 2.0Q1030 0 1026 0H705Q693 0 686.5 7.0Q680 14 680 27ZM111 230V780Q111 786 107.5 789.5Q104 793 96 793H38Q32 793 30.0 795.5Q28 798 28 801Q28 805 30.5 806.5Q33 808 37 809L347 895Q357 898 361.0 898.5Q365 899 369 899Q375 899 378.0 895.5Q381 892 381 887V258Q381 176 416.5 138.5Q452 101 514 101Q553 101 593.0 117.5Q633 134 671 168L707 200L718 188L681 155Q575 62 489.5 22.0Q404 -18 332 -18Q235 -18 173.0 41.5Q111 101 111 230Z" transform="translate(395.10,150) scale(0.05,-0.05)" fill="#1F2937"/>
+          <path d="M99 848 16 867Q10 868 7.5 870.0Q5 872 5 875Q5 878 7.5 880.0Q10 882 12 882H98Q104 882 108.0 884.0Q112 886 117 891L334 1085Q340 1090 346.5 1093.0Q353 1096 358 1096Q365 1096 368.5 1092.0Q372 1088 372 1080V246Q372 163 403.0 122.5Q434 82 487 82Q506 82 523.0 87.5Q540 93 555.0 106.0Q570 119 581.0 140.0Q592 161 600 192Q602 198 607.0 198.0Q612 198 610 191Q594 120 564.5 73.5Q535 27 487.0 4.5Q439 -18 369 -18Q245 -18 178.5 40.0Q112 98 112 219V830Q112 839 109.5 843.0Q107 847 99 848ZM291 860 299 882H604Q609 882 611.0 880.5Q613 879 613 875Q613 869 606.5 864.5Q600 860 587 860Z" transform="translate(448.10,150) scale(0.05,-0.05)" fill="#1F2937"/>
+        </svg>
+      </div>
+    </div>
+    <p class="caption">Minimum digital width: 96px. Minimum print width: 25mm.</p>
+  </section>
+
+  <section style="margin-bottom:0;">
+    <h1 class="section-title">05 — Usage</h1>
+    <h2 class="section-head">Do &amp; don't</h2>
+    <div class="dd-row">
+      <div class="dd-card do">
+        <p class="dd-label">DO</p>
+        <div class="dd-example">
+          <svg width="140" viewBox="0 0 200 200"><rect x="10" y="10" width="180" height="180" rx="40" fill="#1F2937"/><g transform="translate(100,100) rotate(-8)"><circle r="40" fill="none" stroke="#18A058" stroke-width="9"/><circle r="28" fill="#0B0F14"/><ellipse cx="-10" cy="-11" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+        </div>
+        <p class="dd-note">Use the icon at full contrast, on approved backgrounds, at consistent proportions.</p>
+      </div>
+      <div class="dd-card dont">
+        <p class="dd-label">DON'T</p>
+        <div class="dd-example">
+          <svg width="140" viewBox="0 0 200 200"><rect x="10" y="10" width="180" height="180" rx="40" fill="#F0997B"/><g transform="translate(100,100) rotate(-8) scale(1,0.7)"><circle r="40" fill="none" stroke="#D4537E" stroke-width="9"/><circle r="28" fill="#0B0F14"/><ellipse cx="-10" cy="-11" rx="7" ry="3.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/></g></svg>
+        </div>
+        <p class="dd-note">Don't recolor, stretch, skew, or place the mark on clashing backgrounds.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Scout brand guide · v1 · emerald #18A058 · charcoal #1F2937</footer>
+
+</div>
+</body>
+</html>

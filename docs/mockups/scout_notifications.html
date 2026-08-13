@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout — Notifications</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --emerald:#18A058; --emerald-dark:#0F6E56; --charcoal:#1F2937; --near-black:#0B0F14;
+  --paper:#FAFAF8; --white:#FFFFFF; --line:#E5E3DC; --muted:#6B7280;
+  --line-strong:#D6D3C9; --muted-2:#9CA3AF;
+  --emerald-tint:#E4F3EA; --emerald-tint-strong:#CFEBDA;
+  --amber:#B8791A; --amber-tint:#FBF1DF; --slate:#3E5C8A; --slate-tint:#E8EEF6;
+  --brick:#A23B2A; --brick-tint:#F6E4DF; --cream:#F3EEE3;
+  --shadow-sm:0 1px 2px rgba(11,15,20,.05); --shadow-md:0 6px 20px rgba(11,15,20,.07); --shadow-lg:0 20px 48px rgba(11,15,20,.18);
+  --r-sm:8px; --r-md:14px; --r-lg:18px; --r-pill:999px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);font-family:'Inter',Arial,sans-serif;color:var(--charcoal);-webkit-font-smoothing:antialiased;}
+img,svg{display:block;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ---------- app shell (dimmed backdrop) ---------- */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;filter:none;}
+@media(max-width:900px){.app{grid-template-columns:76px 1fr;}}
+.sidebar{background:var(--near-black);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.nav-logo{display:flex;align-items:center;gap:9px;padding:8px 10px 24px;}
+.nav-logo span{font-family:'Fraunces',serif;font-weight:600;color:#fff;font-size:16px;}
+@media(max-width:900px){.nav-logo span{display:none;}}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:13.5px;color:#9AA6B2;font-weight:500;margin-bottom:2px;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;}
+.nav-item span{white-space:nowrap;}
+@media(max-width:900px){.nav-item span{display:none;}}
+.nav-item.active{background:rgba(24,160,88,.16);color:#fff;}
+.nav-item.active svg{stroke:var(--emerald);}
+.nav-section-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#4F5A68;padding:14px 12px 6px;}
+.sidebar-foot{margin-top:auto;padding:12px;}
+.ext-card{background:#141A22;border:1px solid #232B36;border-radius:12px;padding:14px;}
+@media(max-width:900px){.ext-card{display:none;}}
+.ext-card b{color:#fff;font-size:12.5px;display:block;margin-bottom:4px;}
+.ext-card p{color:#8B96A4;font-size:11px;margin:0 0 10px;line-height:1.5;}
+.ext-card a{display:block;text-align:center;background:var(--emerald);color:#fff;font-size:12px;font-weight:600;padding:8px;border-radius:8px;}
+
+.main{display:flex;flex-direction:column;min-width:0;}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 32px;border-bottom:1px solid var(--line);background:rgba(250,250,248,.9);position:relative;z-index:1;}
+.search-box{flex:1;max-width:420px;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:9px 16px;}
+.search-box svg{width:15px;height:15px;stroke:var(--muted-2);flex-shrink:0;}
+.search-box input{border:none;outline:none;font-size:13.5px;flex:1;background:transparent;color:var(--charcoal);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:14px;position:relative;}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.icon-btn svg{width:16px;height:16px;stroke:var(--charcoal);}
+.icon-btn.bell-open{background:var(--charcoal);border-color:var(--charcoal);}
+.icon-btn.bell-open svg{stroke:#fff;}
+.icon-btn .ping{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--emerald);border:1.5px solid #fff;}
+.user-chip{display:flex;align-items:center;gap:9px;padding:5px 6px 5px 5px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:#fff;}
+.avatar-dot{width:28px;height:28px;border-radius:50%;background:var(--charcoal);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.user-chip .name{font-size:12.5px;font-weight:600;}
+@media(max-width:700px){.user-chip .name{display:none;}}
+.content{padding:32px;max-width:1180px;width:100%;margin:0 auto;filter:blur(2px); opacity:.5; pointer-events:none;}
+.dash-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:30px;margin:0 0 6px;}
+.dash-head p{font-size:13.5px;color:var(--muted);margin:0 0 24px;}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.stat-card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;height:76px;}
+
+/* ---------- backdrop overlay ---------- */
+.dim-overlay{position:fixed;inset:0;background:rgba(11,15,20,.06);z-index:20;}
+
+/* ---------- notification popover ---------- */
+.notif-pop{position:fixed;top:70px;right:32px;width:400px;max-height:78vh;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:30;display:flex;flex-direction:column;overflow:hidden;}
+@media(max-width:480px){.notif-pop{right:12px;left:12px;width:auto;}}
+
+.notif-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);flex-shrink:0;}
+.notif-head h2{font-size:15px;font-weight:600;margin:0;}
+.notif-count{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--emerald-tint);color:var(--emerald-dark);
+  padding:2px 8px;border-radius:var(--r-pill);}
+.notif-head .mark{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--muted);}
+.notif-head .mark:hover{color:var(--charcoal);}
+
+.notif-tabs{display:flex;gap:4px;padding:10px 18px 0;flex-shrink:0;}
+.notif-tab{font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--r-pill);color:var(--muted);}
+.notif-tab.active{background:var(--charcoal);color:#fff;}
+
+.notif-scroll{overflow-y:auto;flex:1;}
+.notif-day-lbl{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted-2);
+  padding:14px 18px 6px;}
+
+.n-item{display:flex;gap:11px;padding:12px 18px;border-bottom:1px solid var(--line);position:relative;}
+.n-item:last-child{border-bottom:none;}
+.n-item.unread{background:linear-gradient(90deg,var(--emerald-tint) 0%,rgba(228,243,234,0) 6%);}
+.n-item.unread::before{content:'';position:absolute;left:6px;top:19px;width:6px;height:6px;border-radius:50%;background:var(--emerald);}
+.n-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.n-icon svg{width:16px;height:16px;}
+.n-icon.ic-emerald{background:var(--emerald-tint);}
+.n-icon.ic-emerald svg{stroke:var(--emerald-dark);}
+.n-icon.ic-amber{background:var(--amber-tint);}
+.n-icon.ic-amber svg{stroke:var(--amber);}
+.n-icon.ic-slate{background:var(--slate-tint);}
+.n-icon.ic-slate svg{stroke:var(--slate);}
+.n-icon.ic-brick{background:var(--brick-tint);}
+.n-icon.ic-brick svg{stroke:var(--brick);}
+
+.n-body{flex:1;min-width:0;}
+.n-body p{margin:0;font-size:12.5px;line-height:1.5;color:var(--charcoal);}
+.n-body p b{font-weight:600;}
+.n-time{font-size:11px;color:var(--muted-2);margin-top:3px;display:block;}
+.n-actions{display:flex;gap:6px;margin-top:8px;}
+.n-actions button{font-size:11px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:#fff;color:var(--charcoal);}
+.n-actions button.primary{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+
+.notif-empty-note{padding:16px 18px;text-align:center;font-size:11.5px;color:var(--muted-2);}
+.notif-foot{padding:12px 18px;border-top:1px solid var(--line);text-align:center;flex-shrink:0;}
+.notif-foot a{font-size:12px;font-weight:600;color:var(--emerald-dark);}
+</style>
+</head>
+<body>
+
+<!-- ============ BACKDROP APP (dimmed, non-interactive) ============ -->
+<div class="app">
+  <aside class="sidebar">
+    <div class="nav-logo">
+      <svg width="24" height="24" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#0B0F14"/><ellipse cx="18" cy="17" rx="2.6" ry="1.3" fill="#fff" opacity="0.85" transform="rotate(-30 18 17)"/></svg>
+      <span>Scout</span>
+    </div>
+    <a class="nav-item active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21V9l9-6 9 6v12"/></svg><span>Startups</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Matches</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg><span>Resume Studio</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg><span>CRM</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg><span>Analytics</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11a8 8 0 1 1-3.5-6.6M21 4v6h-6"/></svg><span>Assistant</span></a>
+    <div class="nav-section-lbl">Account</div>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg><span>Settings</span></a>
+    <div class="sidebar-foot">
+      <div class="ext-card"><b>Extension connected</b><p>Saving startups directly to this account.</p></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" placeholder="Search startups, jobs, notes…"></div>
+      <div class="topbar-right">
+        <div class="icon-btn bell-open"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        <div class="user-chip"><div class="avatar-dot">JD</div><span class="name">Jane Doe</span></div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="dash-head"><h1>Good morning, Jane</h1><p>Wednesday, August 5 · 3 things need your attention today</p></div>
+      <div class="stat-strip"><div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div><div class="stat-card"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DIM OVERLAY ============ -->
+<div class="dim-overlay"></div>
+
+<!-- ============ NOTIFICATION POPOVER ============ -->
+<div class="notif-pop">
+  <div class="notif-head">
+    <h2>Notifications</h2>
+    <span class="notif-count">4 new</span>
+    <a class="mark" href="#">Mark all read</a>
+  </div>
+  <div class="notif-tabs">
+    <span class="notif-tab active">All</span>
+    <span class="notif-tab">Unread</span>
+  </div>
+
+  <div class="notif-scroll">
+
+    <p class="notif-day-lbl">Today</p>
+
+    <div class="n-item unread">
+      <div class="n-icon ic-emerald"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div class="n-body">
+        <p><b>New match: 95</b> — Founding Engineer at Skybase just scored against your CV.</p>
+        <span class="n-time">18 minutes ago</span>
+        <div class="n-actions"><button class="primary">View match</button></div>
+      </div>
+    </div>
+
+    <div class="n-item unread">
+      <div class="n-icon ic-slate"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg></div>
+      <div class="n-body">
+        <p><b>Resume v3 generated</b> for Acme Robotics — needs your review before it can be downloaded.</p>
+        <span class="n-time">1 hour ago</span>
+        <div class="n-actions"><button class="primary">Review now</button></div>
+      </div>
+    </div>
+
+    <div class="n-item unread">
+      <div class="n-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <div class="n-body">
+        <p><b>Interview in 2 days</b> — Ferro Labs, Platform Engineer. First-round call on Aug 8.</p>
+        <span class="n-time">3 hours ago</span>
+        <div class="n-actions"><button>View application</button></div>
+      </div>
+    </div>
+
+    <p class="notif-day-lbl">This week</p>
+
+    <div class="n-item unread">
+      <div class="n-icon ic-brick"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+      <div class="n-body">
+        <p><b>Follow-up suggested</b> — it's been 7 days since you applied to Northwind Labs with no response.</p>
+        <span class="n-time">Yesterday</span>
+        <div class="n-actions"><button class="primary">Draft follow-up</button><button>Snooze</button></div>
+      </div>
+    </div>
+
+    <div class="n-item">
+      <div class="n-icon ic-emerald"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg></div>
+      <div class="n-body">
+        <p><b>Enrichment complete</b> for Ferro Labs — tech stack, funding, and hiring signal updated.</p>
+        <span class="n-time">2 days ago</span>
+      </div>
+    </div>
+
+    <div class="n-item">
+      <div class="n-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+      <div class="n-body">
+        <p>Your browser extension session expired — sign back in to keep saving.</p>
+        <span class="n-time">3 days ago</span>
+        <div class="n-actions"><button>Reconnect</button></div>
+      </div>
+    </div>
+
+    <div class="n-item">
+      <div class="n-icon ic-emerald"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/></svg></div>
+      <div class="n-body">
+        <p><b>Enrichment complete</b> for Quiet Table — company summary and tech stack ready.</p>
+        <span class="n-time">4 days ago</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notif-foot"><a href="#">View all notifications</a></div>
+</div>
+
+</body>
+</html>

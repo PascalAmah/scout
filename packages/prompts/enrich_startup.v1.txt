@@ -1,0 +1,21 @@
+SYSTEM:
+You extract structured company information from the provided source text.
+Only use information present in the source text. If a field cannot be
+determined, return null — do not guess or infer beyond what's stated.
+
+TASK:
+Extract:
+- company_summary: 2-3 sentence company summary, grounded in the text.
+- tech_stack: list of technologies mentioned (programming languages, frameworks, products).
+- stage: one of idea | pre-seed | seed | series_a | series_b_plus | unknown.
+- hiring_signal: one of hiring | not_hiring | unknown.
+- tags: up to 6 short topical tags (e.g. "fintech", "ai", "b2b-saas").
+
+OUTPUT (JSON only, no prose):
+{
+  "company_summary": "string | null",
+  "tech_stack": ["string"],
+  "stage": "enum | null",
+  "hiring_signal": "enum",
+  "tags": ["string"]
+}

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout — Matches</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --emerald:#18A058; --emerald-dark:#0F6E56; --charcoal:#1F2937; --near-black:#0B0F14;
+  --paper:#FAFAF8; --white:#FFFFFF; --line:#E5E3DC; --muted:#6B7280;
+  --line-strong:#D6D3C9; --muted-2:#9CA3AF;
+  --emerald-tint:#E4F3EA; --emerald-tint-strong:#CFEBDA;
+  --amber:#B8791A; --amber-tint:#FBF1DF; --slate:#3E5C8A; --slate-tint:#E8EEF6;
+  --brick:#A23B2A; --brick-tint:#F6E4DF; --cream:#F3EEE3;
+  --shadow-sm:0 1px 2px rgba(11,15,20,.05); --shadow-md:0 6px 20px rgba(11,15,20,.07);
+  --r-sm:8px; --r-md:14px; --r-lg:18px; --r-pill:999px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);font-family:'Inter',Arial,sans-serif;color:var(--charcoal);-webkit-font-smoothing:antialiased;}
+img,svg{display:block;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ---------- app shell (shared) ---------- */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+@media(max-width:900px){.app{grid-template-columns:76px 1fr;}}
+.sidebar{background:var(--near-black);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.nav-logo{display:flex;align-items:center;gap:9px;padding:8px 10px 24px;}
+.nav-logo span{font-family:'Fraunces',serif;font-weight:600;color:#fff;font-size:16px;}
+@media(max-width:900px){.nav-logo span{display:none;}}
+.nav-section-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#4F5A68;padding:14px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:13.5px;color:#9AA6B2;font-weight:500;margin-bottom:2px;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;}
+.nav-item span{white-space:nowrap;}
+@media(max-width:900px){.nav-item span{display:none;}}
+.nav-item.active{background:rgba(24,160,88,.16);color:#fff;}
+.nav-item.active svg{stroke:var(--emerald);}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.05);color:#fff;}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--emerald);color:#fff;padding:1px 6px;border-radius:var(--r-pill);}
+@media(max-width:900px){.nav-badge{display:none;}}
+.sidebar-foot{margin-top:auto;padding:12px;}
+.ext-card{background:#141A22;border:1px solid #232B36;border-radius:12px;padding:14px;}
+@media(max-width:900px){.ext-card{display:none;}}
+.ext-card b{color:#fff;font-size:12.5px;display:block;margin-bottom:4px;}
+.ext-card p{color:#8B96A4;font-size:11px;margin:0 0 10px;line-height:1.5;}
+.ext-card a{display:block;text-align:center;background:var(--emerald);color:#fff;font-size:12px;font-weight:600;padding:8px;border-radius:8px;}
+
+.main{display:flex;flex-direction:column;min-width:0;}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 32px;border-bottom:1px solid var(--line);background:rgba(250,250,248,.9);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10;}
+.search-box{flex:1;max-width:420px;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:9px 16px;}
+.search-box svg{width:15px;height:15px;stroke:var(--muted-2);flex-shrink:0;}
+.search-box input{border:none;outline:none;font-size:13.5px;flex:1;background:transparent;color:var(--charcoal);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.icon-btn svg{width:16px;height:16px;stroke:var(--charcoal);}
+.icon-btn .ping{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--emerald);border:1.5px solid #fff;}
+.user-chip{display:flex;align-items:center;gap:9px;padding:5px 6px 5px 5px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:#fff;}
+.avatar-dot{width:28px;height:28px;border-radius:50%;background:var(--charcoal);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.user-chip .name{font-size:12.5px;font-weight:600;}
+@media(max-width:700px){.user-chip .name{display:none;}}
+.content{padding:32px;max-width:1120px;width:100%;margin:0 auto;}
+
+.btn{font-weight:600;font-size:13.5px;border-radius:var(--r-pill);padding:10px 18px;border:1px solid transparent;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.btn svg{width:14px;height:14px;}
+.btn-accent{background:var(--emerald);color:#fff;}
+.btn-accent:hover{background:var(--emerald-dark);}
+.btn-secondary{background:#fff;color:var(--charcoal);border-color:var(--line-strong);}
+.btn-sm{padding:7px 13px;font-size:12.5px;}
+
+/* ---------- page head ---------- */
+.page-head{margin-bottom:6px;}
+.page-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:28px;margin:0;letter-spacing:-.4px;}
+.page-sub{font-size:13px;color:var(--muted);margin:0 0 22px;}
+
+/* ---------- filter + sort bar ---------- */
+.filter-bar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:18px;}
+.filter-pill{font-size:13px;font-weight:500;padding:8px 14px;border-radius:var(--r-pill);border:1px solid var(--line-strong);
+  background:#fff;color:var(--charcoal);display:inline-flex;align-items:center;gap:6px;}
+.filter-pill.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+.filter-clear{font-size:12.5px;color:var(--muted);}
+.sort-right{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);}
+.sort-right select{font-family:'Inter';font-size:12.5px;font-weight:600;color:var(--charcoal);border:1px solid var(--line-strong);
+  border-radius:8px;padding:6px 10px;background:#fff;}
+
+/* ---------- bulk bar ---------- */
+.bulk-bar{display:none;align-items:center;gap:14px;background:var(--charcoal);color:#fff;border-radius:var(--r-md);
+  padding:12px 18px;margin-bottom:16px;position:sticky;top:80px;z-index:5;box-shadow:var(--shadow-md);}
+.bulk-bar.show{display:flex;}
+.bulk-bar .count{font-size:13px;font-weight:600;}
+.bulk-bar .sep{width:1px;height:16px;background:#3A4452;}
+.bulk-bar button{font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:var(--r-pill);border:1px solid transparent;}
+.bulk-bar .primary{background:var(--emerald);color:#fff;}
+.bulk-bar .ghost{background:transparent;color:#9AA6B2;}
+.bulk-bar .ghost:hover{color:#fff;}
+
+/* ---------- match list ---------- */
+.match-list{display:flex;flex-direction:column;gap:12px;}
+.match-row{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);
+  padding:18px 20px;transition:box-shadow .15s ease;}
+.match-row:hover{box-shadow:var(--shadow-md);}
+.mr-top{display:flex;align-items:flex-start;gap:14px;}
+.mr-check{margin-top:5px;width:16px;height:16px;accent-color:var(--emerald);flex-shrink:0;}
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-track{fill:none;stroke:var(--line);}
+.ring-progress{fill:none;stroke-linecap:round;}
+.ring-core{position:absolute;border-radius:50%;background:var(--charcoal);display:flex;align-items:center;justify-content:center;}
+.ring-score{font-family:'JetBrains Mono',monospace;font-weight:600;color:#fff;}
+.mr-body{flex:1;min-width:0;}
+.mr-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.mr-title b{font-size:15px;display:block;}
+.mr-title span{font-size:12.5px;color:var(--muted);}
+.mr-meta{display:flex;gap:10px;font-size:11.5px;color:var(--muted-2);margin-top:3px;}
+.mr-actions{display:flex;gap:8px;flex-shrink:0;}
+.mr-explain{font-size:13px;color:var(--charcoal);line-height:1.6;margin:10px 0 10px;}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.chip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:6px;}
+.chip-match{background:var(--emerald-tint);color:var(--emerald-dark);}
+.chip-gap{background:#fff;color:var(--muted);border:1px solid var(--line-strong);}
+
+.mr-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+.feedback{display:flex;align-items:center;gap:6px;}
+.fb-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;}
+.fb-btn svg{width:13px;height:13px;stroke:var(--muted);}
+.fb-btn.voted-down{background:var(--brick-tint);border-color:#EBC7BC;}
+.fb-btn.voted-down svg{stroke:var(--brick);}
+.fb-note{font-size:11px;color:var(--muted-2);}
+
+/* why-this-score details */
+.why{margin-top:0;}
+.why summary{list-style:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--emerald-dark);display:inline-flex;align-items:center;gap:5px;}
+.why summary::-webkit-details-marker{display:none;}
+.why summary svg{width:12px;height:12px;stroke:var(--emerald-dark);transition:transform .15s ease;}
+.why[open] summary svg{transform:rotate(180deg);}
+.why-body{margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;}
+.why-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;}
+.why-row .k{color:var(--muted);}
+.why-row .v{font-family:'JetBrains Mono',monospace;font-weight:600;}
+.why-note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-strong);}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="nav-logo">
+      <svg width="24" height="24" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#0B0F14"/><ellipse cx="18" cy="17" rx="2.6" ry="1.3" fill="#fff" opacity="0.85" transform="rotate(-30 18 17)"/></svg>
+      <span>Scout</span>
+    </div>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21V9l9-6 9 6v12"/></svg><span>Startups</span></a>
+    <a class="nav-item active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span>Matches</span><span class="nav-badge">3</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg><span>Resume Studio</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg><span>CRM</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg><span>Analytics</span></a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11a8 8 0 1 1-3.5-6.6M21 4v6h-6"/></svg><span>Assistant</span></a>
+    <div class="nav-section-lbl">Account</div>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></a>
+    <div class="sidebar-foot">
+      <div class="ext-card">
+        <b>Extension not installed</b>
+        <p>Save startups from any page in one click.</p>
+        <a href="#">Get the extension</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Search startups, jobs, notes…">
+      </div>
+      <div class="topbar-right">
+        <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="ping"></span></div>
+        <div class="user-chip"><div class="avatar-dot">JD</div><span class="name">Jane Doe</span></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="page-head"><h1>Matches</h1></div>
+      <p class="page-sub">Every open role scored against your CV — sorted by fit, not by how recently it was posted.</p>
+
+      <div class="filter-bar">
+        <span class="filter-pill active">Sorted by score</span>
+        <span class="filter-pill">Stage ▾</span>
+        <span class="filter-pill">Location ▾</span>
+        <span class="filter-pill">Remote only</span>
+        <span class="filter-clear">Clear filters</span>
+        <div class="sort-right">
+          <span>6 open roles scored</span>
+        </div>
+      </div>
+
+      <div class="bulk-bar" id="bulkBar">
+        <span class="count" id="bulkCount">0 selected</span>
+        <div class="sep"></div>
+        <button class="primary">Generate resumes for selected</button>
+        <button class="ghost" id="bulkClear">Clear selection</button>
+      </div>
+
+      <div class="match-list">
+
+        <div class="match-row">
+          <div class="mr-top">
+            <input class="mr-check" type="checkbox" checked>
+            <div class="ring-wrap" style="width:48px;height:48px;">
+              <svg width="48" height="48" viewBox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4.5"/><circle class="ring-progress" cx="24" cy="24" r="20" stroke-width="4.5" style="stroke:#18A058" stroke-dasharray="126" stroke-dashoffset="16"/></svg>
+              <div class="ring-core" style="width:32px;height:32px;"><span class="ring-score" style="font-size:11px;">87</span></div>
+            </div>
+            <div class="mr-body">
+              <div class="mr-head">
+                <div class="mr-title"><b>Backend Engineer</b><span>Acme Robotics</span><div class="mr-meta"><span>Remote</span><span>·</span><span>Series A</span><span>·</span><span>$140k–$180k</span></div></div>
+                <div class="mr-actions"><button class="btn btn-secondary btn-sm">View match</button><button class="btn btn-accent btn-sm">Generate resume</button></div>
+              </div>
+              <p class="mr-explain">Strong overlap with your recent backend and API work — 3 years of Python matches their stated requirement directly.</p>
+              <div class="chip-row"><span class="chip chip-match">PYTHON</span><span class="chip chip-match">FASTAPI</span><span class="chip chip-match">POSTGRES</span><span class="chip chip-gap">KUBERNETES — GAP</span></div>
+              <div class="mr-foot">
+                <details class="why">
+                  <summary>Why this score? <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary>
+                  <div class="why-body">
+                    <div class="why-row"><span class="k">Matched skills</span><span class="v">6 / 8</span></div>
+                    <div class="why-row"><span class="k">Explicit requirement gaps</span><span class="v">1</span></div>
+                    <div class="why-row"><span class="k">Confidence</span><span class="v" style="color:var(--emerald-dark);">STRONG</span></div>
+                    <div class="why-note">Score weighs explicit requirement matches (years of experience, required skills) more heavily than loose thematic similarity — a high embedding score alone wouldn't be enough to reach 87.</div>
+                  </div>
+                </details>
+                <div class="feedback"><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 10v11M15 5.88 14 10h6.29a2 2 0 0 1 1.93 2.5l-2.36 9a2 2 0 0 1-1.93 1.5H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 .5-1.32L13 3l1.5 1.5A2 2 0 0 1 15 5.88z"/></svg></button><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 14V3M9 18.12 10 14H3.71a2 2 0 0 1-1.93-2.5l2.36-9A2 2 0 0 1 6.07 1H15a2 2 0 0 1 2 2v9a2 2 0 0 1-.5 1.32L11 21l-1.5-1.5A2 2 0 0 1 9 18.12z"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-row">
+          <div class="mr-top">
+            <input class="mr-check" type="checkbox" checked>
+            <div class="ring-wrap" style="width:48px;height:48px;">
+              <svg width="48" height="48" viewBox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4.5"/><circle class="ring-progress" cx="24" cy="24" r="20" stroke-width="4.5" style="stroke:#18A058" stroke-dasharray="126" stroke-dashoffset="6"/></svg>
+              <div class="ring-core" style="width:32px;height:32px;"><span class="ring-score" style="font-size:11px;">95</span></div>
+            </div>
+            <div class="mr-body">
+              <div class="mr-head">
+                <div class="mr-title"><b>Founding Engineer</b><span>Skybase</span><div class="mr-meta"><span>Remote</span><span>·</span><span>Series A</span><span>·</span><span>$160k–$200k</span></div></div>
+                <div class="mr-actions"><button class="btn btn-secondary btn-sm">View match</button><button class="btn btn-accent btn-sm">Generate resume</button></div>
+              </div>
+              <p class="mr-explain">Near-exact match on platform and devtools experience, including the exact CI/CD stack listed in the posting.</p>
+              <div class="chip-row"><span class="chip chip-match">TYPESCRIPT</span><span class="chip chip-match">POSTGRES</span><span class="chip chip-match">CI/CD</span></div>
+              <div class="mr-foot">
+                <span style="font-size:11.5px;color:var(--muted-2);">No gaps flagged — treat with the same scrutiny as any other score</span>
+                <div class="feedback"><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 10v11M15 5.88 14 10h6.29a2 2 0 0 1 1.93 2.5l-2.36 9a2 2 0 0 1-1.93 1.5H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 .5-1.32L13 3l1.5 1.5A2 2 0 0 1 15 5.88z"/></svg></button><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 14V3M9 18.12 10 14H3.71a2 2 0 0 1-1.93-2.5l2.36-9A2 2 0 0 1 6.07 1H15a2 2 0 0 1 2 2v9a2 2 0 0 1-.5 1.32L11 21l-1.5-1.5A2 2 0 0 1 9 18.12z"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-row">
+          <div class="mr-top">
+            <input class="mr-check" type="checkbox">
+            <div class="ring-wrap" style="width:48px;height:48px;">
+              <svg width="48" height="48" viewBox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4.5"/><circle class="ring-progress" cx="24" cy="24" r="20" stroke-width="4.5" style="stroke:#B8791A" stroke-dasharray="126" stroke-dashoffset="60"/></svg>
+              <div class="ring-core" style="width:32px;height:32px;"><span class="ring-score" style="font-size:11px;">52</span></div>
+            </div>
+            <div class="mr-body">
+              <div class="mr-head">
+                <div class="mr-title"><b>Senior UX Designer</b><span>Northwind Labs</span><div class="mr-meta"><span>Hybrid · London</span><span>·</span><span>Seed</span><span>·</span><span>$140k–$180k</span></div></div>
+                <div class="mr-actions"><button class="btn btn-secondary btn-sm">View match</button><button class="btn btn-accent btn-sm">Generate resume</button></div>
+              </div>
+              <p class="mr-explain">Design systems overlap is strong, but the role explicitly requires B2B SaaS experience you haven't listed.</p>
+              <div class="chip-row"><span class="chip chip-match">FIGMA</span><span class="chip chip-match">DESIGN SYSTEMS</span><span class="chip chip-gap">B2B SAAS — GAP</span><span class="chip chip-gap">3+ YRS SAAS — GAP</span></div>
+              <div class="mr-foot">
+                <details class="why">
+                  <summary>Why this score? <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary>
+                  <div class="why-body">
+                    <div class="why-row"><span class="k">Matched skills</span><span class="v">4 / 8</span></div>
+                    <div class="why-row"><span class="k">Explicit requirement gaps</span><span class="v">2</span></div>
+                    <div class="why-row"><span class="k">Confidence</span><span class="v" style="color:var(--amber);">MODERATE</span></div>
+                    <div class="why-note">Two explicit requirements (B2B SaaS domain, 3+ years in it) are unmet — the score reflects that even though thematic overlap on design systems is strong.</div>
+                  </div>
+                </details>
+                <div class="feedback"><button class="fb-btn voted-down"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 10v11M15 5.88 14 10h6.29a2 2 0 0 1 1.93 2.5l-2.36 9a2 2 0 0 1-1.93 1.5H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 .5-1.32L13 3l1.5 1.5A2 2 0 0 1 15 5.88z"/></svg></button><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 14V3M9 18.12 10 14H3.71a2 2 0 0 1-1.93-2.5l2.36-9A2 2 0 0 1 6.07 1H15a2 2 0 0 1 2 2v9a2 2 0 0 1-.5 1.32L11 21l-1.5-1.5A2 2 0 0 1 9 18.12z"/></svg></button><span class="fb-note">Feedback recorded</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-row">
+          <div class="mr-top">
+            <input class="mr-check" type="checkbox">
+            <div class="ring-wrap" style="width:48px;height:48px;">
+              <svg width="48" height="48" viewBox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4.5"/><circle class="ring-progress" cx="24" cy="24" r="20" stroke-width="4.5" style="stroke:#18A058" stroke-dasharray="126" stroke-dashoffset="35"/></svg>
+              <div class="ring-core" style="width:32px;height:32px;"><span class="ring-score" style="font-size:11px;">72</span></div>
+            </div>
+            <div class="mr-body">
+              <div class="mr-head">
+                <div class="mr-title"><b>Platform Engineer</b><span>Ferro Labs</span><div class="mr-meta"><span>Hybrid · NYC</span><span>·</span><span>Series B</span><span>·</span><span>$150k–$190k</span></div></div>
+                <div class="mr-actions"><button class="btn btn-secondary btn-sm">View match</button><button class="btn btn-accent btn-sm">Generate resume</button></div>
+              </div>
+              <p class="mr-explain">Solid infra overlap, though the role leans more heavily on Kubernetes at scale than your listed experience.</p>
+              <div class="chip-row"><span class="chip chip-match">GO</span><span class="chip chip-match">TERRAFORM</span><span class="chip chip-gap">K8S AT SCALE — GAP</span></div>
+              <div class="mr-foot">
+                <details class="why">
+                  <summary>Why this score? <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary>
+                  <div class="why-body">
+                    <div class="why-row"><span class="k">Matched skills</span><span class="v">5 / 8</span></div>
+                    <div class="why-row"><span class="k">Explicit requirement gaps</span><span class="v">1</span></div>
+                    <div class="why-row"><span class="k">Confidence</span><span class="v" style="color:var(--emerald-dark);">STRONG</span></div>
+                    <div class="why-note">Solid overlap on Go and infra tooling; the one gap is scale of Kubernetes operation, not the tool itself.</div>
+                  </div>
+                </details>
+                <div class="feedback"><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 10v11M15 5.88 14 10h6.29a2 2 0 0 1 1.93 2.5l-2.36 9a2 2 0 0 1-1.93 1.5H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 .5-1.32L13 3l1.5 1.5A2 2 0 0 1 15 5.88z"/></svg></button><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 14V3M9 18.12 10 14H3.71a2 2 0 0 1-1.93-2.5l2.36-9A2 2 0 0 1 6.07 1H15a2 2 0 0 1 2 2v9a2 2 0 0 1-.5 1.32L11 21l-1.5-1.5A2 2 0 0 1 9 18.12z"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-row">
+          <div class="mr-top">
+            <input class="mr-check" type="checkbox">
+            <div class="ring-wrap" style="width:48px;height:48px;">
+              <svg width="48" height="48" viewBox="0 0 48 48"><circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4.5"/><circle class="ring-progress" cx="24" cy="24" r="20" stroke-width="4.5" style="stroke:#A23B2A" stroke-dasharray="126" stroke-dashoffset="88"/></svg>
+              <div class="ring-core" style="width:32px;height:32px;"><span class="ring-score" style="font-size:11px;">30</span></div>
+            </div>
+            <div class="mr-body">
+              <div class="mr-head">
+                <div class="mr-title"><b>Full-stack Engineer</b><span>Driftly</span><div class="mr-meta"><span>Remote</span><span>·</span><span>Seed</span><span>·</span><span>$110k–$140k</span></div></div>
+                <div class="mr-actions"><button class="btn btn-secondary btn-sm">View match</button><button class="btn btn-accent btn-sm">Generate resume</button></div>
+              </div>
+              <p class="mr-explain">Weak fit — the role centers on logistics-domain data pipelines, which isn't represented anywhere in your CV.</p>
+              <div class="chip-row"><span class="chip chip-match">REACT</span><span class="chip chip-gap">LOGISTICS DOMAIN — GAP</span><span class="chip chip-gap">DATA PIPELINES — GAP</span></div>
+              <div class="mr-foot">
+                <details class="why">
+                  <summary>Why this score? <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary>
+                  <div class="why-body">
+                    <div class="why-row"><span class="k">Matched skills</span><span class="v">2 / 9</span></div>
+                    <div class="why-row"><span class="k">Explicit requirement gaps</span><span class="v">3</span></div>
+                    <div class="why-row"><span class="k">Confidence</span><span class="v" style="color:var(--brick);">WEAK</span></div>
+                    <div class="why-note">Domain mismatch drives this score down more than the technical stack does — React overlaps, but the core job function doesn't.</div>
+                  </div>
+                </details>
+                <div class="feedback"><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 10v11M15 5.88 14 10h6.29a2 2 0 0 1 1.93 2.5l-2.36 9a2 2 0 0 1-1.93 1.5H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 .5-1.32L13 3l1.5 1.5A2 2 0 0 1 15 5.88z"/></svg></button><button class="fb-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 14V3M9 18.12 10 14H3.71a2 2 0 0 1-1.93-2.5l2.36-9A2 2 0 0 1 6.07 1H15a2 2 0 0 1 2 2v9a2 2 0 0 1-.5 1.32L11 21l-1.5-1.5A2 2 0 0 1 9 18.12z"/></svg></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var checks = Array.prototype.slice.call(document.querySelectorAll('.mr-check'));
+  var bar = document.getElementById('bulkBar');
+  var count = document.getElementById('bulkCount');
+  function update(){
+    var n = checks.filter(function(c){ return c.checked; }).length;
+    count.textContent = n + ' selected';
+    bar.classList.toggle('show', n > 0);
+  }
+  checks.forEach(function(c){ c.addEventListener('change', update); });
+  document.getElementById('bulkClear').addEventListener('click', function(){
+    checks.forEach(function(c){ c.checked = false; });
+    update();
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

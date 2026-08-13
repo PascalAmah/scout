@@ -1,0 +1,24 @@
+<svg width="680" height="190" viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Scout wordmark logo, reverse-contrast custom lettering</title>
+<desc>The word Scout in a custom hand-built reverse-contrast style, where horizontal strokes are thick and vertical strokes are thin, rounded corners for an organic feel, charcoal colored, with the letter O replaced by a minimalist monocular symbol in emerald green with a dark lens and a small white reflection.</desc>
+<g transform="translate(132,45)" fill="#1F2937">
+<rect x="0" y="0" width="66" height="28" rx="10"/>
+<rect x="0" y="0" width="12" height="50" rx="6"/>
+<rect x="0" y="36" width="66" height="28" rx="10"/>
+<rect x="54" y="50" width="12" height="50" rx="6"/>
+<rect x="0" y="72" width="66" height="28" rx="10"/>
+<rect x="86" y="28" width="54" height="22" rx="8"/>
+<rect x="86" y="28" width="10" height="72" rx="5"/>
+<rect x="86" y="78" width="54" height="22" rx="8"/>
+<rect x="280" y="28" width="10" height="72" rx="5"/>
+<rect x="280" y="78" width="54" height="22" rx="8"/>
+<rect x="324" y="28" width="10" height="72" rx="5"/>
+<rect x="379" y="15" width="10" height="85" rx="5"/>
+<rect x="354" y="38" width="62" height="22" rx="8"/>
+</g>
+<g transform="translate(342,109) rotate(-8)">
+<circle r="44" fill="none" stroke="#18A058" stroke-width="20"/>
+<circle r="30" fill="#0B0F14"/>
+<ellipse cx="-11" cy="-12" rx="8" ry="4" fill="#FFFFFF" opacity="0.85" transform="rotate(-30)"/>
+</g>
+</svg>

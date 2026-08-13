@@ -1,0 +1,23 @@
+Web App — 16 UI interfaces
+#	Screen
+1	Landing Page (new)
+2	Login
+3	Register
+4	Password Reset
+5	Dashboard
+6	Startup Workspace (list)
+7	Startup Detail (tabs)
+8	Matches
+9	Resume Studio
+10	CRM / Pipeline
+11	Application Detail
+12	Analytics
+13	AI Assistant
+14	Settings → Profile / CV
+15	Settings → Account
+16	Settings → Integrations
+Browser Extension — 4 core popup states
+
+17–20, same as before (Unsupported / Detected / Saving / Saved), +2 edge cases if you want those too.
+
+Total: 20 UI interfaces (22 with extension edge cases)

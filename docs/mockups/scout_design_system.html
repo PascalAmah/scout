@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout — Design System v1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  /* ---- Brand primitives (from brand guide) ---- */
+  --emerald:#18A058;
+  --emerald-dark:#0F6E56;
+  --charcoal:#1F2937;
+  --near-black:#0B0F14;
+  --paper:#FAFAF8;
+  --white:#FFFFFF;
+  --line:#E5E3DC;
+  --muted:#6B7280;
+
+  /* ---- Derived / extended tokens ---- */
+  --line-strong:#D6D3C9;
+  --muted-2:#9CA3AF;
+  --emerald-tint:#E4F3EA;
+  --emerald-tint-strong:#CFEBDA;
+
+  --amber:#B8791A;
+  --amber-tint:#FBF1DF;
+  --slate:#3E5C8A;
+  --slate-tint:#E8EEF6;
+  --brick:#A23B2A;
+  --brick-tint:#F6E4DF;
+
+  --shadow-sm: 0 1px 2px rgba(11,15,20,0.05);
+  --shadow-md: 0 4px 16px rgba(11,15,20,0.06);
+  --shadow-lg: 0 12px 32px rgba(11,15,20,0.10);
+
+  --radius-sm:8px;
+  --radius-md:12px;
+  --radius-lg:16px;
+  --radius-pill:999px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--paper);
+  font-family:'Inter',Arial,sans-serif;
+  color:var(--charcoal);
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--emerald-tint-strong); }
+
+/* ===== Shell / cover ===== */
+.cover{
+  padding:120px 64px 100px;
+  background:var(--near-black);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:22px;
+}
+.cover .eyebrow{
+  font-size:12px; letter-spacing:2.5px; text-transform:uppercase;
+  color:#8B9AAB; font-weight:600;
+}
+.cover h1{
+  font-family:'Fraunces',serif; font-weight:600; font-size:56px;
+  margin:0; letter-spacing:-0.5px; color:#fff;
+}
+.cover p{ font-size:16px; color:#B7C0CC; max-width:560px; margin:0; line-height:1.6; }
+.cover .ring-hero{ margin-top:12px; }
+
+.page{ max-width:1120px; margin:0 auto; padding:96px 56px 64px; }
+.toc{
+  display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+  padding:28px 56px; background:var(--near-black);
+}
+.toc a{
+  color:#C7D0DA; text-decoration:none; font-size:13px; font-weight:500;
+  padding:7px 14px; border:1px solid #2A3441; border-radius:var(--radius-pill);
+}
+.toc a:hover{ border-color:var(--emerald); color:#fff; }
+
+section{ margin-bottom:104px; scroll-margin-top:24px; }
+.kicker{
+  font-size:12px; letter-spacing:2.5px; text-transform:uppercase;
+  color:var(--emerald-dark); font-weight:600; margin:0 0 10px;
+}
+h2.head{
+  font-family:'Fraunces',serif; font-weight:600; font-size:32px;
+  margin:0 0 14px; color:var(--charcoal); letter-spacing:-0.3px;
+}
+p.lede{
+  font-size:15.5px; line-height:1.7; color:var(--muted);
+  max-width:640px; margin:0 0 44px;
+}
+.grid{ display:grid; gap:20px; }
+.g2{ grid-template-columns:1fr 1fr; }
+.g3{ grid-template-columns:repeat(3,1fr); }
+.g4{ grid-template-columns:repeat(4,1fr); }
+
+/* ===== Reusable panel ===== */
+.panel{
+  border:1px solid var(--line); border-radius:var(--radius-lg);
+  background:var(--white); padding:28px;
+}
+.panel-label{
+  font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--muted-2); font-weight:600; margin:0 0 16px;
+}
+
+/* ===== Color swatches ===== */
+.swatch{ border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--line); background:#fff; }
+.swatch-color{ height:88px; }
+.swatch-info{ padding:14px 16px; }
+.swatch-name{ font-weight:600; font-size:14px; margin:0 0 3px; }
+.swatch-hex{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); margin:0; }
+.swatch-use{ font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.5; }
+
+.status-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+
+/* ===== Type ===== */
+.type-row{ border:1px solid var(--line); border-radius:var(--radius-lg); padding:28px 32px; margin-bottom:14px; background:#fff; display:flex; align-items:baseline; justify-content:space-between; gap:24px; }
+.type-meta{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); white-space:nowrap; text-align:right; line-height:1.6;}
+.t-display{ font-family:'Fraunces',serif; font-weight:600; font-size:48px; letter-spacing:-0.5px; margin:0;}
+.t-h1{ font-family:'Inter',sans-serif; font-weight:700; font-size:28px; margin:0;}
+.t-h2{ font-family:'Inter',sans-serif; font-weight:600; font-size:20px; margin:0;}
+.t-h3{ font-family:'Inter',sans-serif; font-weight:600; font-size:16px; margin:0;}
+.t-body{ font-family:'Inter',sans-serif; font-weight:400; font-size:15px; margin:0; color:var(--charcoal);}
+.t-small{ font-family:'Inter',sans-serif; font-weight:400; font-size:13px; margin:0; color:var(--muted);}
+.t-label{ font-family:'Inter',sans-serif; font-weight:600; font-size:11.5px; letter-spacing:1.5px; text-transform:uppercase; margin:0; color:var(--muted);}
+.t-mono{ font-family:'JetBrains Mono',monospace; font-weight:500; font-size:15px; margin:0;}
+
+/* ===== Spacing scale ===== */
+.space-row{ display:flex; align-items:center; gap:18px; margin-bottom:14px; }
+.space-box{ background:var(--emerald-tint); border:1px solid var(--emerald-tint-strong); border-radius:4px; height:20px; }
+.space-label{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); width:90px; flex-shrink:0;}
+
+/* ===== Radius scale ===== */
+.radius-demo{ width:72px; height:72px; background:var(--charcoal); }
+
+/* ===== Buttons ===== */
+.btn{
+  font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+  border-radius:var(--radius-pill); padding:11px 22px; border:1px solid transparent;
+  cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary{ background:var(--charcoal); color:#fff; }
+.btn-primary:hover{ background:var(--near-black); }
+.btn-accent{ background:var(--emerald); color:#fff; }
+.btn-accent:hover{ background:var(--emerald-dark); }
+.btn-secondary{ background:#fff; color:var(--charcoal); border-color:var(--line-strong); }
+.btn-secondary:hover{ border-color:var(--charcoal); }
+.btn-ghost{ background:transparent; color:var(--charcoal); padding-left:8px; padding-right:8px; }
+.btn-ghost:hover{ background:var(--paper); }
+.btn-destructive{ background:#fff; color:var(--brick); border-color:var(--brick-tint); }
+.btn[disabled]{ opacity:0.4; cursor:not-allowed; }
+.btn-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+/* ===== Inputs ===== */
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; letter-spacing:0.2px;}
+.field input, .field select{
+  width:100%; font-family:'Inter'; font-size:14px; padding:11px 14px;
+  border:1px solid var(--line-strong); border-radius:var(--radius-sm); background:#fff; color:var(--charcoal);
+}
+.field input:focus{ outline:2px solid var(--emerald); outline-offset:1px; border-color:var(--emerald);}
+.filter-pill{
+  font-size:13px; font-weight:500; padding:8px 14px; border-radius:var(--radius-pill);
+  border:1px solid var(--line-strong); background:#fff; color:var(--charcoal); display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+}
+.filter-pill.active{ background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+.filter-pill svg{ width:13px; height:13px; }
+
+/* ===== Badges / Status ===== */
+.badge{
+  display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+  padding:5px 11px; border-radius:var(--radius-pill); white-space:nowrap;
+}
+.badge .dot{ width:6px; height:6px; border-radius:50%; }
+.b-saved{ background:#F0EFEA; color:#5B5F66; } .b-saved .dot{ background:#9CA3AF; }
+.b-interested{ background:var(--amber-tint); color:var(--amber); } .b-interested .dot{ background:var(--amber); }
+.b-applied{ background:var(--slate-tint); color:var(--slate); } .b-applied .dot{ background:var(--slate); }
+.b-interview{ background:var(--emerald-tint); color:var(--emerald-dark); } .b-interview .dot{ background:var(--emerald-dark); }
+.b-offer{ background:var(--emerald); color:#fff; } .b-offer .dot{ background:#fff; }
+.b-rejected{ background:var(--brick-tint); color:var(--brick); } .b-rejected .dot{ background:var(--brick); }
+.b-archived{ background:#F0EFEC; color:var(--muted-2); } .b-archived .dot{ background:var(--muted-2); }
+
+.conf{ font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:6px; letter-spacing:0.3px; }
+.c-high{ background:var(--emerald-tint); color:var(--emerald-dark); }
+.c-medium{ background:var(--amber-tint); color:var(--amber); }
+.c-low{ background:#fff; color:var(--muted); border:1px solid var(--line-strong); }
+.c-manual{ background:#fff; color:var(--charcoal); border:1px dashed var(--line-strong); }
+
+.job-dot{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:500; color:var(--muted); }
+.job-dot .dot{ width:7px; height:7px; border-radius:50%; }
+.dot-queued{ background:var(--muted-2); }
+.dot-running{ background:var(--amber); animation:pulse 1.6s ease-in-out infinite; }
+.dot-succeeded{ background:var(--emerald); }
+.dot-failed{ background:var(--brick); }
+@keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+
+/* ===== Match Ring (signature component) ===== */
+.ring-wrap{ position:relative; display:inline-flex; align-items:center; justify-content:center; }
+.ring-wrap svg{ transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--line); }
+.ring-progress{ fill:none; stroke-linecap:round; transition:stroke-dashoffset 0.6s ease; }
+.ring-core{ position:absolute; border-radius:50%; background:var(--charcoal); display:flex; align-items:center; justify-content:center; flex-direction:column; }
+.ring-glare{ position:absolute; }
+.ring-score{ font-family:'JetBrains Mono',monospace; font-weight:600; color:#fff; }
+.ring-band{ font-family:'Inter'; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ===== Cards ===== */
+.card{
+  border:1px solid var(--line); border-radius:var(--radius-lg); background:#fff;
+  padding:22px; box-shadow:var(--shadow-sm); transition:box-shadow 0.15s ease, transform 0.15s ease;
+}
+.card:hover{ box-shadow:var(--shadow-md); transform:translateY(-1px); }
+.startup-card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.logo-chip{
+  width:40px; height:40px; border-radius:10px; background:var(--charcoal); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;
+}
+.card h3{ font-size:15.5px; font-weight:600; margin:0 0 2px; }
+.card .sub{ font-size:12.5px; color:var(--muted); margin:0; }
+.card-meta-row{ display:flex; gap:14px; margin-top:14px; flex-wrap:wrap; }
+.meta-item{ font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+.meta-item svg{ width:13px; height:13px; stroke:var(--muted-2); }
+
+.stat-card{ border-radius:var(--radius-lg); padding:24px; }
+.stat-card .num{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:32px; }
+.stat-card .lbl{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+
+/* ===== Nav mock ===== */
+.nav-mock{ display:flex; border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); }
+.nav-side{ width:220px; background:var(--near-black); padding:20px 14px; flex-shrink:0; }
+.nav-logo{ display:flex; align-items:center; gap:9px; padding:6px 8px 22px; }
+.nav-logo-mark{ width:22px; height:22px; }
+.nav-logo span{ font-family:'Fraunces',serif; font-weight:600; color:#fff; font-size:16px; }
+.nav-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:13.5px; color:#9AA6B2; font-weight:500; margin-bottom:2px; }
+.nav-item svg{ width:16px; height:16px; }
+.nav-item.active{ background:rgba(24,160,88,0.16); color:#fff; }
+.nav-item.active svg{ stroke:var(--emerald); }
+.nav-content{ flex:1; background:var(--paper); padding:24px; min-height:220px; }
+
+/* ===== Tabs ===== */
+.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+.tab{ padding:10px 4px; margin-right:22px; font-size:13.5px; font-weight:600; color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; }
+.tab.active{ color:var(--charcoal); border-color:var(--emerald); }
+
+/* ===== Empty state ===== */
+.empty{ text-align:center; padding:48px 24px; border:1px dashed var(--line-strong); border-radius:var(--radius-lg); }
+.empty svg{ width:32px; height:32px; stroke:var(--muted-2); margin-bottom:14px; }
+.empty h4{ font-size:15px; margin:0 0 6px; }
+.empty p{ font-size:13px; color:var(--muted); margin:0 0 18px; }
+
+/* ===== Motion note cards ===== */
+.motion-card{ display:flex; gap:16px; align-items:flex-start; }
+.motion-card .idx{ font-family:'JetBrains Mono',monospace; color:var(--emerald-dark); font-weight:600; font-size:13px; flex-shrink:0; padding-top:2px; }
+
+footer{
+  text-align:center; padding:56px 0 40px; font-size:12.5px; color:var(--muted);
+  border-top:1px solid var(--line); margin-top:40px;
+}
+code.inline{ font-family:'JetBrains Mono',monospace; background:var(--paper); border:1px solid var(--line); padding:2px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<div class="cover">
+  <span class="eyebrow">Design System · v1</span>
+  <h1>Scout</h1>
+  <p>The visual language for the AI workspace that turns saved startups into structured knowledge, tailored materials, and a tracked pipeline.</p>
+  <div class="ring-hero">
+    <div class="ring-wrap" style="width:96px;height:96px;">
+      <svg width="96" height="96" viewBox="0 0 96 96">
+        <circle class="ring-track" cx="48" cy="48" r="42" stroke-width="7" style="stroke:#2A3441"/>
+        <circle class="ring-progress" cx="48" cy="48" r="42" stroke-width="7" style="stroke:#18A058" stroke-dasharray="264" stroke-dashoffset="55"/>
+      </svg>
+      <div class="ring-core" style="width:62px;height:62px;">
+        <span class="ring-score" style="font-size:19px;">87</span>
+      </div>
+      <ellipse class="ring-glare" cx="39" cy="38" rx="5" ry="2.4" fill="#fff" opacity="0.85" transform="rotate(-30 39 38)"/>
+    </div>
+  </div>
+</div>
+
+<div class="toc">
+  <a href="#colors">Color</a>
+  <a href="#type">Typography</a>
+  <a href="#grid">Spacing &amp; Grid</a>
+  <a href="#elevation">Elevation</a>
+  <a href="#buttons">Buttons</a>
+  <a href="#inputs">Inputs &amp; Filters</a>
+  <a href="#status">Status &amp; Badges</a>
+  <a href="#ring">Match Ring</a>
+  <a href="#cards">Cards</a>
+  <a href="#nav">Navigation Shell</a>
+  <a href="#patterns">Patterns</a>
+  <a href="#motion">Motion</a>
+  <a href="#voice">Voice</a>
+</div>
+
+<div class="page">
+
+  <!-- ================= COLOR ================= -->
+  <section id="colors">
+    <p class="kicker">01 — Color</p>
+    <h2 class="head">Palette</h2>
+    <p class="lede">Emerald is earned, not everywhere — it marks the brand mark, primary actions, and a positive match/outcome. Charcoal and near-black carry structure and text. Paper is the only background. Three muted status hues (amber, slate, brick) exist purely to keep the CRM legible — they're desaturated enough to defer to emerald, never compete with it.</p>
+
+    <p class="panel-label" style="margin-top:0;">Core — from brand guide</p>
+    <div class="grid g4">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#18A058;"></div>
+        <div class="swatch-info"><p class="swatch-name">Emerald</p><p class="swatch-hex">#18A058</p><p class="swatch-use">Primary actions, brand mark, positive/offer state, active nav</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0F6E56;"></div>
+        <div class="swatch-info"><p class="swatch-name">Emerald Dark</p><p class="swatch-hex">#0F6E56</p><p class="swatch-use">Hover/pressed states on emerald, interview-stage text</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1F2937;"></div>
+        <div class="swatch-info"><p class="swatch-name">Charcoal</p><p class="swatch-hex">#1F2937</p><p class="swatch-use">Primary text, dark UI chrome, primary buttons</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0B0F14;"></div>
+        <div class="swatch-info"><p class="swatch-name">Near Black</p><p class="swatch-hex">#0B0F14</p><p class="swatch-use">Sidebar, reversed logo, deepest surfaces</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FAFAF8; border-bottom:1px solid var(--line);"></div>
+        <div class="swatch-info"><p class="swatch-name">Paper</p><p class="swatch-hex">#FAFAF8</p><p class="swatch-use">App background — the only background color</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#FFFFFF; border-bottom:1px solid var(--line);"></div>
+        <div class="swatch-info"><p class="swatch-name">White</p><p class="swatch-hex">#FFFFFF</p><p class="swatch-use">Card and panel surfaces, sit on paper</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E5E3DC;"></div>
+        <div class="swatch-info"><p class="swatch-name">Line</p><p class="swatch-hex">#E5E3DC</p><p class="swatch-use">Default borders, dividers, tracks</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#6B7280;"></div>
+        <div class="swatch-info"><p class="swatch-name">Muted</p><p class="swatch-hex">#6B7280</p><p class="swatch-use">Secondary text, captions, meta</p></div>
+      </div>
+    </div>
+
+    <p class="panel-label" style="margin-top:32px;">Status — extended, functional only</p>
+    <div class="grid g4">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#B8791A;"></div>
+        <div class="swatch-info"><p class="swatch-name">Amber</p><p class="swatch-hex">#B8791A</p><p class="swatch-use">Interested status, running jobs, medium confidence</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#3E5C8A;"></div>
+        <div class="swatch-info"><p class="swatch-name">Slate</p><p class="swatch-hex">#3E5C8A</p><p class="swatch-use">Applied status — active, awaiting response</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#A23B2A;"></div>
+        <div class="swatch-info"><p class="swatch-name">Brick</p><p class="swatch-hex">#A23B2A</p><p class="swatch-use">Rejected status, failed jobs — used sparingly</p></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:var(--emerald-tint); border-bottom:1px solid var(--line);"></div>
+        <div class="swatch-info"><p class="swatch-name">Emerald Tint</p><p class="swatch-hex">#E4F3EA</p><p class="swatch-use">Badge fills, selected filter, high-confidence chip</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TYPE ================= -->
+  <section id="type">
+    <p class="kicker">02 — Typography</p>
+    <h2 class="head">Type system</h2>
+    <p class="lede">Fraunces stays reserved for the logotype and genuinely large editorial moments — a hero stat, an empty-state headline. Inter runs the entire product. JetBrains Mono is the one addition beyond the brand guide: Scout is a data-dense workspace, and scores, salaries, dates, and match percentages read as data, not prose — a tabular mono face makes that distinction legible at a glance.</p>
+
+    <div class="type-row"><p class="t-display">Backend Engineer</p><span class="type-meta">Fraunces / 600 / 48px<br>Hero stat, empty-state headline — sparing</span></div>
+    <div class="type-row"><p class="t-h1">Startup Workspace</p><span class="type-meta">Inter / 700 / 28px<br>Page title</span></div>
+    <div class="type-row"><p class="t-h2">Recently enriched</p><span class="type-meta">Inter / 600 / 20px<br>Section header</span></div>
+    <div class="type-row"><p class="t-h3">Acme Robotics</p><span class="type-meta">Inter / 600 / 16px<br>Card title</span></div>
+    <div class="type-row"><p class="t-body">Strong overlap with your recent backend and API work — 3 years of Python matches their stated requirement directly.</p><span class="type-meta">Inter / 400 / 15px<br>Body</span></div>
+    <div class="type-row"><p class="t-small">Enriched 34 days ago · via extension</p><span class="type-meta">Inter / 400 / 13px<br>Meta / caption</span></div>
+    <div class="type-row"><p class="t-label">Match Score</p><span class="type-meta">Inter / 600 / 11.5px<br>Eyebrow / field label</span></div>
+    <div class="type-row"><p class="t-mono">$140k–$180k · 87 / 100</p><span class="type-meta">JetBrains Mono / 500 / 15px<br>Scores, salary, timestamps, IDs</span></div>
+  </section>
+
+  <!-- ================= SPACING / GRID ================= -->
+  <section id="grid">
+    <p class="kicker">03 — Spacing &amp; Grid</p>
+    <h2 class="head">Layout foundations</h2>
+    <p class="lede">An 8px base unit keeps density consistent across a UI that ranges from dashboard cards to dense CRM tables. Radius scales with a component's weight — small controls stay tight, cards and panels get the full 16px used throughout the brand guide's own cards.</p>
+
+    <div class="grid g2">
+      <div class="panel">
+        <p class="panel-label">Spacing scale</p>
+        <div class="space-row"><span class="space-label">4 · xs</span><div class="space-box" style="width:4px;"></div></div>
+        <div class="space-row"><span class="space-label">8 · sm</span><div class="space-box" style="width:8px;"></div></div>
+        <div class="space-row"><span class="space-label">12 · md</span><div class="space-box" style="width:12px;"></div></div>
+        <div class="space-row"><span class="space-label">16 · base</span><div class="space-box" style="width:16px;"></div></div>
+        <div class="space-row"><span class="space-label">24 · lg</span><div class="space-box" style="width:24px;"></div></div>
+        <div class="space-row"><span class="space-label">32 · xl</span><div class="space-box" style="width:32px;"></div></div>
+        <div class="space-row"><span class="space-label">48 · 2xl</span><div class="space-box" style="width:48px;"></div></div>
+        <div class="space-row"><span class="space-label">64 · 3xl</span><div class="space-box" style="width:64px;"></div></div>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Radius scale</p>
+        <div style="display:flex; gap:24px; align-items:flex-end; flex-wrap:wrap;">
+          <div><div class="radius-demo" style="border-radius:8px;"></div><p class="t-small" style="margin-top:8px;">8 — inputs, chips</p></div>
+          <div><div class="radius-demo" style="border-radius:12px;"></div><p class="t-small" style="margin-top:8px;">12 — buttons, small cards</p></div>
+          <div><div class="radius-demo" style="border-radius:16px;"></div><p class="t-small" style="margin-top:8px;">16 — cards, panels, modals</p></div>
+          <div><div class="radius-demo" style="border-radius:999px; width:40px;"></div><p class="t-small" style="margin-top:8px;">Pill — badges, filter chips</p></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="panel-label" style="margin-top:28px;">App shell — ASCII reference</p>
+    <div class="panel" style="font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; color:var(--muted); overflow-x:auto;">
+<pre style="margin:0;">┌─────────────┬──────────────────────────────────────────┐
+│  Sidebar     │  Topbar  (search · notifications · user)  │
+│  240px fixed ├──────────────────────────────────────────┤
+│  near-black  │                                            │
+│              │  Content — max-width 1120px, 32px gutter  │
+│  · Dashboard │  Cards on paper, grid 12-col / 8px gap     │
+│  · Startups  │                                            │
+│  · Matches   │                                            │
+│  · Studio    │                                            │
+│  · CRM       │                                            │
+│  · Analytics │                                            │
+│  · Assistant │                                            │
+│  · Settings  │                                            │
+└─────────────┴──────────────────────────────────────────┘</pre>
+    </div>
+  </section>
+
+  <!-- ================= ELEVATION ================= -->
+  <section id="elevation">
+    <p class="kicker">04 — Elevation</p>
+    <h2 class="head">Borders &amp; shadow</h2>
+    <p class="lede">Structure comes from a 1px line first, shadow second — matching the brand guide's flat, border-led card style rather than a heavy floating-card look. Shadow only appears to signal interactivity (hover) or true overlay (modals, dropdowns).</p>
+    <div class="grid g3">
+      <div class="panel" style="box-shadow:none;"><p class="panel-label">Resting</p><p class="t-small">1px solid var(--line). No shadow. This is the default state for every card, panel, and input.</p></div>
+      <div class="panel" style="box-shadow:var(--shadow-md);"><p class="panel-label">Hover / interactive</p><p class="t-small">Border unchanged, shadow-md added, 1px lift. Used on clickable cards and rows only.</p></div>
+      <div class="panel" style="box-shadow:var(--shadow-lg);"><p class="panel-label">Overlay</p><p class="t-small">shadow-lg, reserved for modals, dropdowns, and the extension popup — anything floating above the page.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= BUTTONS ================= -->
+  <section id="buttons">
+    <p class="kicker">05 — Buttons</p>
+    <h2 class="head">Actions</h2>
+    <p class="lede">Charcoal is the default primary — it's what most actions use. Emerald primary is reserved for the single most important action on a screen (Generate, Save, Apply-adjacent), so it keeps its signal value instead of becoming wallpaper.</p>
+    <div class="panel">
+      <div class="btn-row">
+        <button class="btn btn-primary">Save changes</button>
+        <button class="btn btn-accent">Generate resume</button>
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-ghost">Skip for now</button>
+        <button class="btn btn-destructive">Delete application</button>
+        <button class="btn btn-primary" disabled>Reviewing…</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INPUTS ================= -->
+  <section id="inputs">
+    <p class="kicker">06 — Inputs &amp; Filters</p>
+    <h2 class="head">Form controls</h2>
+    <p class="lede">Filter pills borrow directly from the reference pattern — compact, pill-shaped, dark when active — since Scout's Workspace and Matches screens lean on the same filter-bar interaction.</p>
+    <div class="grid g2">
+      <div class="panel">
+        <div class="field"><label>Company name</label><input type="text" placeholder="e.g. Acme Robotics"></div>
+        <div class="field" style="margin-bottom:0;"><label>Stage</label><select><option>Series A</option></select></div>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Filter bar</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <span class="filter-pill active">Stage ▾</span>
+          <span class="filter-pill">Hiring status ▾</span>
+          <span class="filter-pill">Tags ▾</span>
+          <span class="filter-pill">Remote only</span>
+          <span class="filter-pill" style="color:var(--muted);">Clear filters</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STATUS ================= -->
+  <section id="status">
+    <p class="kicker">07 — Status &amp; Badges</p>
+    <h2 class="head">System states</h2>
+    <p class="lede">Every async or pipeline state in Scout is color <em>and</em> label — never color alone, per the accessibility bar set in <code class="inline">UI_UX.md</code>. Seven CRM statuses form a visible progression from neutral (saved) through committed (emerald family) to closed (brick / muted).</p>
+
+    <p class="panel-label" style="margin-top:0;">CRM pipeline (7 statuses)</p>
+    <div class="status-row">
+      <span class="badge b-saved"><span class="dot"></span>Saved</span>
+      <span class="badge b-interested"><span class="dot"></span>Interested</span>
+      <span class="badge b-applied"><span class="dot"></span>Applied</span>
+      <span class="badge b-interview"><span class="dot"></span>Interview</span>
+      <span class="badge b-offer"><span class="dot"></span>Offer</span>
+      <span class="badge b-rejected"><span class="dot"></span>Rejected</span>
+      <span class="badge b-archived"><span class="dot"></span>Archived</span>
+    </div>
+
+    <p class="panel-label" style="margin-top:28px;">Enrichment confidence</p>
+    <div class="status-row">
+      <span class="conf c-high">HIGH</span>
+      <span class="conf c-medium">MEDIUM</span>
+      <span class="conf c-low">LOW</span>
+      <span class="conf c-manual">MANUAL</span>
+    </div>
+
+    <p class="panel-label" style="margin-top:28px;">Async job status</p>
+    <div class="status-row">
+      <span class="job-dot"><span class="dot dot-queued"></span>Queued</span>
+      <span class="job-dot"><span class="dot dot-running"></span>Running</span>
+      <span class="job-dot"><span class="dot dot-succeeded"></span>Succeeded</span>
+      <span class="job-dot"><span class="dot dot-failed"></span>Failed</span>
+    </div>
+  </section>
+
+  <!-- ================= MATCH RING ================= -->
+  <section id="ring">
+    <p class="kicker">08 — Match Ring <span style="color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0;">— signature component</span></p>
+    <h2 class="head">The lens, reused</h2>
+    <p class="lede">Scout's logo is a lens: an emerald ring around a charcoal center with a small glare. Instead of a generic donut chart for match scores, the score indicator <em>is</em> the logo mark — the ring's fill is the score, the core holds the number. It appears at three sizes and recolors by confidence band, so the brand mark and the product's core mechanic are literally the same shape.</p>
+
+    <div class="panel">
+      <div style="display:flex; gap:56px; align-items:center; flex-wrap:wrap;">
+
+        <div style="text-align:center;">
+          <div class="ring-wrap" style="width:120px;height:120px;">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="ring-track" cx="60" cy="60" r="52" stroke-width="9"/>
+              <circle class="ring-progress" cx="60" cy="60" r="52" stroke-width="9" style="stroke:var(--emerald)" stroke-dasharray="327" stroke-dashoffset="60"/>
+            </svg>
+            <div class="ring-core" style="width:78px;height:78px;">
+              <span class="ring-score" style="font-size:24px;">87</span>
+              <span class="ring-band" style="font-size:9px; color:var(--emerald);">STRONG</span>
+            </div>
+            <ellipse class="ring-glare" cx="49" cy="47" rx="6" ry="3" fill="#fff" opacity="0.85" transform="rotate(-30 49 47)"/>
+          </div>
+          <p class="t-small" style="margin-top:12px;">Large — Match detail page</p>
+        </div>
+
+        <div style="text-align:center;">
+          <div class="ring-wrap" style="width:76px;height:76px;">
+            <svg width="76" height="76" viewBox="0 0 76 76">
+              <circle class="ring-track" cx="38" cy="38" r="32" stroke-width="6"/>
+              <circle class="ring-progress" cx="38" cy="38" r="32" stroke-width="6" style="stroke:var(--amber)" stroke-dasharray="201" stroke-dashoffset="100"/>
+            </svg>
+            <div class="ring-core" style="width:50px;height:50px;">
+              <span class="ring-score" style="font-size:15px;">62</span>
+            </div>
+            <ellipse class="ring-glare" cx="31" cy="30" rx="4" ry="2" fill="#fff" opacity="0.85" transform="rotate(-30 31 30)"/>
+          </div>
+          <p class="t-small" style="margin-top:12px;">Medium — Card / list row</p>
+        </div>
+
+        <div style="text-align:center;">
+          <div class="ring-wrap" style="width:44px;height:44px;">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle class="ring-track" cx="22" cy="22" r="18" stroke-width="4"/>
+              <circle class="ring-progress" cx="22" cy="22" r="18" stroke-width="4" style="stroke:var(--brick)" stroke-dasharray="113" stroke-dashoffset="80"/>
+            </svg>
+            <div class="ring-core" style="width:28px;height:28px;">
+              <span class="ring-score" style="font-size:9px;">31</span>
+            </div>
+          </div>
+          <p class="t-small" style="margin-top:12px;">Small — Dense table row</p>
+        </div>
+
+      </div>
+      <p class="t-small" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--line);">Ring color follows confidence band: <b style="color:var(--emerald-dark);">emerald 70–100 strong</b>, <b style="color:var(--amber);">amber 40–69 moderate</b>, <b style="color:var(--brick);">brick 0–39 weak</b> — matching <code class="inline">confidence_band</code> in the API spec. The glare highlight only renders at large/medium sizes; it drops out below ~48px to stay legible.</p>
+    </div>
+  </section>
+
+  <!-- ================= CARDS ================= -->
+  <section id="cards">
+    <p class="kicker">09 — Cards</p>
+    <h2 class="head">Content containers</h2>
+    <div class="grid g3">
+
+      <div class="card">
+        <div class="startup-card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="logo-chip">AR</div>
+            <div><h3>Acme Robotics</h3><p class="sub">Series A · Hardware</p></div>
+          </div>
+          <div class="ring-wrap" style="width:44px;height:44px;">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle class="ring-track" cx="22" cy="22" r="18" stroke-width="4"/>
+              <circle class="ring-progress" cx="22" cy="22" r="18" stroke-width="4" style="stroke:var(--emerald)" stroke-dasharray="113" stroke-dashoffset="25"/>
+            </svg>
+            <div class="ring-core" style="width:28px;height:28px;"><span class="ring-score" style="font-size:9px;">91</span></div>
+          </div>
+        </div>
+        <span class="badge b-interview"><span class="dot"></span>Interview</span>
+        <div class="card-meta-row">
+          <span class="meta-item">Enriched 3d ago</span>
+          <span class="meta-item">4 open roles</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Backend Engineer</h3>
+        <p class="sub">Acme Robotics · Remote</p>
+        <p class="t-mono" style="font-size:13px; margin:12px 0;">$140k – $180k</p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+          <span class="conf c-high" style="font-size:10.5px;">PYTHON</span>
+          <span class="conf c-high" style="font-size:10.5px;">FASTAPI</span>
+          <span class="conf c-low" style="font-size:10.5px;">K8S — GAP</span>
+        </div>
+        <button class="btn btn-secondary" style="width:100%; justify-content:center;">View match</button>
+      </div>
+
+      <div class="stat-card panel" style="background:var(--charcoal); border-color:var(--charcoal);">
+        <p class="t-label" style="color:#9AA6B2;">This week</p>
+        <p class="num" style="color:#fff;">12</p>
+        <p class="lbl" style="color:#9AA6B2;">applications sent</p>
+        <div style="height:1px; background:#2A3441; margin:16px 0;"></div>
+        <div style="display:flex; justify-content:space-between;">
+          <span class="t-small" style="color:#9AA6B2;">Response rate</span>
+          <span class="t-mono" style="color:var(--emerald); font-size:13px;">34%</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= NAV ================= -->
+  <section id="nav">
+    <p class="kicker">10 — Navigation Shell</p>
+    <h2 class="head">App frame</h2>
+    <p class="lede">Near-black sidebar (matching the brand guide's reversed-logo surface) keeps the workspace visually calm so enriched data and match colors do the talking. Active state uses a translucent emerald fill — quiet enough not to compete with status badges in the content pane.</p>
+    <div class="nav-mock">
+      <div class="nav-side">
+        <div class="nav-logo">
+          <svg class="nav-logo-mark" viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#0B0F14"/></svg>
+          <span>Scout</span>
+        </div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21V9l9-6 9 6v12"/></svg>Startups</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Matches</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>Resume Studio</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>CRM</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>Analytics</div>
+        <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11a8 8 0 1 1-3.5-6.6M21 4v6h-6"/></svg>Assistant</div>
+      </div>
+      <div class="nav-content">
+        <p class="panel-label">Content pane</p>
+        <p class="t-small">Max-width 1120px inside the content pane, 32px outer gutter, 12-column grid with an 8px gap for dashboard card layouts.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PATTERNS ================= -->
+  <section id="patterns">
+    <p class="kicker">11 — Patterns</p>
+    <h2 class="head">Tabs &amp; empty states</h2>
+    <div class="grid g2">
+      <div class="panel">
+        <p class="panel-label">Tabs — e.g. Startup Detail</p>
+        <div class="tabs">
+          <span class="tab active">Overview</span>
+          <span class="tab">Founders</span>
+          <span class="tab">Jobs</span>
+          <span class="tab">Notes</span>
+        </div>
+        <p class="t-small">Underline uses emerald — the only place an underline appears in the system, reserved for active navigation context.</p>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Empty state</p>
+        <div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V9l9-6 9 6v12"/></svg>
+          <h4>No startups saved yet</h4>
+          <p>Install the extension and save your first company from a careers page or YC listing.</p>
+          <button class="btn btn-accent">Get the extension</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOTION ================= -->
+  <section id="motion">
+    <p class="kicker">12 — Motion</p>
+    <h2 class="head">Principles</h2>
+    <p class="lede">Motion in Scout explains state changes in an async product — it never performs. Every AI action is an honest queued → running → done sequence, so motion should confirm progress, not simulate it.</p>
+    <div class="grid g2" style="row-gap:22px;">
+      <div class="motion-card"><span class="idx">→</span><div><p class="t-body" style="font-weight:600;">Ring fill animates on data arrival</p><p class="t-small">The match ring sweeps from 0 to its score once, when a real score loads — never as ambient decoration or looping.</p></div></div>
+      <div class="motion-card"><span class="idx">→</span><div><p class="t-body" style="font-weight:600;">Running state pulses gently</p><p class="t-small">The amber "running" dot has the only looping animation in the system — a slow 1.6s opacity pulse, signalling active background work.</p></div></div>
+      <div class="motion-card"><span class="idx">→</span><div><p class="t-body" style="font-weight:600;">Cards lift 1px on hover</p><p class="t-small">A minimal, fast (150ms) elevation change signals interactivity without a bounce or scale effect.</p></div></div>
+      <div class="motion-card"><span class="idx">→</span><div><p class="t-body" style="font-weight:600;">Reduced motion respected</p><p class="t-small">All transitions collapse to instant state changes under <code class="inline">prefers-reduced-motion</code> — the ring still fills, just without the sweep.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ================= VOICE ================= -->
+  <section id="voice" style="margin-bottom:20px;">
+    <p class="kicker">13 — Voice</p>
+    <h2 class="head">Content notes</h2>
+    <p class="lede">Scout narrates AI work honestly and names actions by what the user controls, never by system internals.</p>
+    <div class="grid g2">
+      <div class="panel">
+        <p class="panel-label">Do</p>
+        <p class="t-small">"Enriching… usually takes ~2 min" · "Saved to Scout" · "Re-enrich" · "Generate resume" → toast reads "Resume generated"</p>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Avoid</p>
+        <p class="t-small">"Processing webhook…" · "Submit" (says nothing about what happens) · Silent gaps with no state label · Apologetic error copy</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>Scout Design System · v1 · built on the Scout brand guide · emerald #18A058 · charcoal #1F2937</footer>
+
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scout — Browser Extension</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --emerald:#18A058; --emerald-dark:#0F6E56; --charcoal:#1F2937; --near-black:#0B0F14;
+  --paper:#FAFAF8; --white:#FFFFFF; --line:#E5E3DC; --muted:#6B7280;
+  --line-strong:#D6D3C9; --muted-2:#9CA3AF;
+  --emerald-tint:#E4F3EA; --emerald-tint-strong:#CFEBDA;
+  --amber:#B8791A; --amber-tint:#FBF1DF; --slate:#3E5C8A; --slate-tint:#E8EEF6;
+  --brick:#A23B2A; --brick-tint:#F6E4DF; --cream:#F3EEE3;
+  --shadow-sm:0 1px 2px rgba(11,15,20,.05); --shadow-md:0 6px 20px rgba(11,15,20,.07); --shadow-lg:0 16px 40px rgba(11,15,20,.16);
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:#EBE8E1;font-family:'Inter',Arial,sans-serif;color:var(--charcoal);-webkit-font-smoothing:antialiased;}
+img,svg{display:block;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+
+.page{max-width:1280px;margin:0 auto;padding:56px 40px 80px;}
+.page-head{text-align:center;margin-bottom:44px;}
+.kicker{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--emerald-dark);font-weight:600;margin:0 0 10px;}
+.page-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;margin:0 0 12px;letter-spacing:-.4px;}
+.page-head p{font-size:14px;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.6;}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px 24px;}
+@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:640px){.grid{grid-template-columns:1fr;}}
+
+.state-block{display:flex;flex-direction:column;align-items:center;}
+.state-tag{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.state-num{width:20px;height:20px;border-radius:50%;background:var(--charcoal);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.state-tag b{font-size:13px;}
+.state-tag.edge .state-num{background:var(--amber);}
+
+/* ---------- fake browser chrome ---------- */
+.browser-frame{width:100%;max-width:360px;background:#fff;border-radius:10px 10px 0 0;border:1px solid var(--line-strong);
+  border-bottom:none;overflow:hidden;box-shadow:var(--shadow-sm);}
+.browser-toolbar{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#F1EFE9;border-bottom:1px solid var(--line-strong);}
+.tb-dots{display:flex;gap:4px;}
+.tb-dots span{width:7px;height:7px;border-radius:50%;background:#D4D1C7;}
+.tb-address{flex:1;background:#fff;border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-size:10px;
+  color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-ext{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.tb-ext svg{width:15px;height:15px;}
+.tb-ext .badge-dot{position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--emerald);border:1.5px solid #F1EFE9;}
+
+/* ---------- popup shell ---------- */
+.popup{width:100%;max-width:360px;background:#fff;border:1px solid var(--line-strong);border-radius:0 0 14px 14px;
+  box-shadow:var(--shadow-lg);overflow:hidden;}
+.popup-head{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line);}
+.popup-head span.title{font-family:'Fraunces',serif;font-weight:600;font-size:14px;}
+.popup-head .x{margin-left:auto;width:20px;height:20px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;}
+.popup-head .x svg{width:12px;height:12px;stroke:currentColor;}
+.popup-body{padding:18px 16px;}
+
+.btn{font-weight:600;font-size:12.5px;border-radius:var(--r-pill);padding:9px 16px;border:1px solid transparent;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;}
+.btn svg{width:13px;height:13px;}
+.btn-accent{background:var(--emerald);color:#fff;}
+.btn-secondary{background:#fff;color:var(--charcoal);border-color:var(--line-strong);}
+.btn-ghost{background:transparent;color:var(--muted);}
+
+/* ---------- state 1: unsupported ---------- */
+.centered-msg{text-align:center;padding:14px 6px 4px;}
+.centered-msg .ic{width:44px;height:44px;border-radius:13px;background:var(--paper);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.centered-msg .ic svg{width:20px;height:20px;stroke:var(--muted-2);}
+.centered-msg b{font-size:13.5px;display:block;margin-bottom:6px;}
+.centered-msg p{font-size:11.5px;color:var(--muted);line-height:1.55;margin:0 0 16px;}
+.support-list{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;}
+.support-list span{font-size:10px;font-weight:600;background:var(--paper);border:1px solid var(--line);padding:3px 8px;border-radius:6px;}
+
+/* ---------- state 2: detected ---------- */
+.detect-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--emerald-dark);
+  background:var(--emerald-tint);padding:4px 10px;border-radius:var(--r-pill);margin-bottom:12px;}
+.detect-pill .d{width:6px;height:6px;border-radius:50%;background:var(--emerald-dark);}
+.pf-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;margin-bottom:12px;}
+.pf-top{display:flex;gap:9px;margin-bottom:9px;}
+.pf-logo{width:30px;height:30px;border-radius:9px;background:var(--charcoal);color:#fff;font-size:10.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pf-top b{font-size:13px;display:block;}
+.pf-top span{font-size:11px;color:var(--muted);}
+.pf-fields{display:flex;flex-direction:column;gap:6px;}
+.pf-row{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-top:1px solid var(--line);}
+.pf-row .k{color:var(--muted);}
+.pf-row .v{font-weight:600;}
+.check-row{display:flex;align-items:center;gap:7px;margin-bottom:12px;}
+.check-row input{width:13px;height:13px;accent-color:var(--emerald);}
+.check-row span{font-size:11.5px;color:var(--muted);}
+
+/* ---------- state 3: saving ---------- */
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--emerald-tint);border-top-color:var(--emerald);
+  margin:6px auto 14px;animation:spin 0.9s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.nonblock-note{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted-2);margin-top:14px;justify-content:center;text-align:center;}
+.nonblock-note svg{width:12px;height:12px;stroke:var(--muted-2);flex-shrink:0;}
+
+/* ---------- state 4: saved ---------- */
+.check-circle{width:44px;height:44px;border-radius:50%;background:var(--emerald);display:flex;align-items:center;justify-content:center;margin:2px auto 12px;}
+.check-circle svg{width:20px;height:20px;stroke:#fff;}
+.open-link{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--emerald-dark);margin-bottom:16px;}
+.open-link svg{width:12px;height:12px;}
+.tag-input-row{display:flex;gap:6px;margin-bottom:14px;}
+.tag-input-row input{flex:1;font-size:11.5px;padding:7px 10px;border:1px solid var(--line-strong);border-radius:7px;}
+
+/* ---------- edge: auth expired ---------- */
+.lock-ic{width:44px;height:44px;border-radius:13px;background:var(--amber-tint);display:flex;align-items:center;justify-content:center;margin:2px auto 14px;}
+.lock-ic svg{width:20px;height:20px;stroke:var(--amber);}
+
+/* ---------- edge: scrape failed ---------- */
+.warn-banner{display:flex;align-items:flex-start;gap:8px;background:var(--amber-tint);border:1px solid #F0DDB8;border-radius:var(--r-sm);
+  padding:9px 11px;margin-bottom:14px;}
+.warn-banner svg{width:14px;height:14px;stroke:var(--amber);flex-shrink:0;margin-top:1px;}
+.warn-banner span{font-size:11px;color:var(--amber);line-height:1.5;}
+.manual-field{margin-bottom:10px;}
+.manual-field label{display:block;font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+.manual-field input,.manual-field select{width:100%;font-size:11.5px;padding:7px 10px;border:1px solid var(--line-strong);border-radius:7px;}
+.manual-field input[readonly]{background:var(--paper);color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <p class="kicker">Browser Extension</p>
+    <h1>Capture only — six states</h1>
+    <p>The popup never edits, generates, or dashboards — it detects, pre-fills, and saves. Everything else happens in the web app.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- ========== STATE 1: UNSUPPORTED ========== -->
+    <div class="state-block">
+      <div class="state-tag"><span class="state-num">1</span><b>Unsupported page</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">en.wikipedia.org/wiki/Robotics</div>
+          <div class="tb-ext"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#B7C0B9" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#8A9089"/></svg></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <div class="centered-msg">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></svg></div>
+            <b>Nothing to save here</b>
+            <p>Scout works on supported pages — nothing detected on this one.</p>
+            <div class="support-list">
+              <span>YC</span><span>Wellfound</span><span>Techstars</span><span>Product Hunt</span><span>Careers pages</span><span>LinkedIn</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary">Save manually instead</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== STATE 2: DETECTED ========== -->
+    <div class="state-block">
+      <div class="state-tag"><span class="state-num">2</span><b>Detected page</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">ycombinator.com/companies/acme/jobs/backend</div>
+          <div class="tb-ext" style="background:var(--emerald-tint);"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg><span class="badge-dot"></span></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <span class="detect-pill"><span class="d"></span>Detected: Job posting</span>
+          <div class="pf-card">
+            <div class="pf-top"><div class="pf-logo">AR</div><div><b>Backend Engineer</b><span>Acme Robotics</span></div></div>
+            <div class="pf-fields">
+              <div class="pf-row"><span class="k">Location</span><span class="v">Remote</span></div>
+              <div class="pf-row"><span class="k">Salary</span><span class="v">$140k–$180k</span></div>
+              <div class="pf-row"><span class="k">Source</span><span class="v">YC directory</span></div>
+            </div>
+          </div>
+          <div class="check-row"><input type="checkbox" checked><span>Also save Acme Robotics as a company</span></div>
+          <button class="btn btn-accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Save job</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== STATE 3: SAVING ========== -->
+    <div class="state-block">
+      <div class="state-tag"><span class="state-num">3</span><b>Saving</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">ycombinator.com/companies/acme/jobs/backend</div>
+          <div class="tb-ext" style="background:var(--emerald-tint);"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg><span class="badge-dot"></span></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <div class="centered-msg">
+            <div class="spinner"></div>
+            <b>Saving to Scout…</b>
+            <p>Backend Engineer at Acme Robotics</p>
+          </div>
+          <div class="nonblock-note"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Safe to close this popup — saving continues in the background.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== STATE 4: SAVED ========== -->
+    <div class="state-block">
+      <div class="state-tag"><span class="state-num">4</span><b>Saved</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">ycombinator.com/companies/acme/jobs/backend</div>
+          <div class="tb-ext" style="background:var(--emerald-tint);"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#18A058" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg><span class="badge-dot"></span></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <div class="centered-msg">
+            <div class="check-circle"><svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <b>Saved to Scout</b>
+            <p>Backend Engineer at Acme Robotics</p>
+          </div>
+          <a class="open-link" href="#">Open in Scout <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></a>
+          <div class="tag-input-row"><input type="text" placeholder="Add a quick tag or note…"></div>
+          <button class="btn btn-secondary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EDGE 1: AUTH EXPIRED ========== -->
+    <div class="state-block">
+      <div class="state-tag edge"><span class="state-num">5</span><b>Edge — Session expired</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">wellfound.com/company/skybase</div>
+          <div class="tb-ext" style="background:var(--amber-tint);"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#B8791A" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <div class="centered-msg">
+            <div class="lock-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+            <b>Your session expired</b>
+            <p>Sign back in to keep saving — everything you've already saved is untouched.</p>
+          </div>
+          <button class="btn btn-accent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Sign in</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EDGE 2: SCRAPE FAILED ========== -->
+    <div class="state-block">
+      <div class="state-tag edge"><span class="state-num">6</span><b>Edge — Couldn't read page</b></div>
+      <div class="browser-frame">
+        <div class="browser-toolbar">
+          <div class="tb-dots"><span></span><span></span><span></span></div>
+          <div class="tb-address">jobs.lever.co/quiettable/a1b2c3</div>
+          <div class="tb-ext" style="background:var(--amber-tint);"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="#B8791A" stroke-width="6"/><circle cx="22" cy="22" r="10" fill="#1F2937"/></svg></div>
+        </div>
+      </div>
+      <div class="popup">
+        <div class="popup-head"><span class="title">Scout</span><div class="x"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>
+        <div class="popup-body">
+          <div class="warn-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <span>Couldn't parse this page automatically. We kept what we could find — fill in the rest.</span>
+          </div>
+          <div class="manual-field"><label>Page URL</label><input type="text" value="jobs.lever.co/quiettable/a1b2c3" readonly></div>
+          <div class="manual-field"><label>Page title</label><input type="text" value="Quiet Table is hiring — Lever" readonly></div>
+          <div class="manual-field"><label>Save as</label><select><option>Startup</option><option>Job</option><option>Founder</option></select></div>
+          <div class="manual-field"><label>Company name</label><input type="text" placeholder="e.g. Quiet Table"></div>
+          <button class="btn btn-accent" style="margin-top:4px;">Save manually</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
