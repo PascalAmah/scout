@@ -3,21 +3,25 @@ import uuid
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.session import get_db
 from app.deps import get_current_user
-from app.models import User
+from app.models import EnrichmentJob, User
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationDetail,
     ApplicationOut,
     ApplicationPatch,
+    FollowUpAccepted,
+    FollowUpOut,
     LastOutreachRef,
     ResumeVersionRef,
     TimelineEvent,
 )
 from app.schemas.common import Page
 from app.schemas.outreach import OutreachOut
-from app.services import application_service
+from app.services import application_service, follow_up_service
+from app.services.job_queue import enqueue_generate_follow_up
 
 router = APIRouter(prefix="/applications", tags=["crm"])
 
@@ -70,6 +74,56 @@ def pipeline(
 ) -> dict:
     grouped = application_service.pipeline(db, user)
     return {"data": {k: [_to_out(app, db) for app in v] for k, v in grouped.items()}}
+
+
+@router.get("/needs-follow-up", response_model=list[FollowUpOut])
+def needs_follow_up(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[FollowUpOut]:
+    """Active applications past the follow-up threshold — powers the Dashboard
+    'needs follow-up' section (Phase 4 retention loop)."""
+    rows = follow_up_service.due_applications(db, user.id, settings.follow_up_days)
+    return [
+        FollowUpOut(
+            application_id=row.id,
+            startup_name=row.startup.name if row.startup else None,
+            job_title=row.job.title if row.job else None,
+            applied_at=row.applied_at,
+            days_since=follow_up_service.days_since(row.applied_at),
+            last_outreach_status=application_service.last_outreach_ref(db, row.id).get("status")
+            if application_service.last_outreach_ref(db, row.id)
+            else None,
+        )
+        for row in rows
+    ]
+
+
+@router.post("/{application_id}/follow-up", response_model=FollowUpAccepted, status_code=status.HTTP_202_ACCEPTED)
+def generate_follow_up(
+    application_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> FollowUpAccepted:
+    """Generate a suggested follow-up message (async). Stored as a draft outreach
+    so the review gate applies — never auto-sent."""
+    application_service.get_application(db, user, application_id)
+    job_row = EnrichmentJob(
+        user_id=user.id,
+        entity_type="application",
+        entity_id=application_id,
+        job_type="generate_follow_up",
+        status="queued",
+    )
+    db.add(job_row)
+    db.commit()
+    db.refresh(job_row)
+    enqueue_generate_follow_up(
+        application_id=str(application_id),
+        user_id=str(user.id),
+        job_row_id=str(job_row.id),
+    )
+    return FollowUpAccepted(job_id=job_row.id, status="queued")
 
 
 @router.get("/{application_id}", response_model=ApplicationDetail)

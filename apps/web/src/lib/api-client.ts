@@ -11,6 +11,7 @@ export interface User {
   email: string
   full_name: string | null
   role: string
+  email_reminders_enabled: boolean
   created_at: string
 }
 

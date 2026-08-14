@@ -20,7 +20,12 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str | None
     role: str
+    email_reminders_enabled: bool = False
     created_at: datetime
+
+
+class UserPatch(BaseModel):
+    email_reminders_enabled: bool | None = None
 
 
 class TokenResponse(BaseModel):

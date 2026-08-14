@@ -89,6 +89,20 @@ def enqueue_generate_cover_letter(
     )
 
 
+def enqueue_generate_follow_up(
+    *, application_id: str, user_id: str, job_row_id: str
+) -> None:
+    _send(
+        "generate_follow_up",
+        {
+            "application_id": application_id,
+            "user_id": user_id,
+            "job_row_id": job_row_id,
+        },
+        queue=QUEUE_GENERATION,
+    )
+
+
 def _send(name: str, kwargs: dict[str, Any], queue: str) -> None:
     if not _celery_available:
         return

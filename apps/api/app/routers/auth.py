@@ -12,6 +12,7 @@ from app.schemas.auth import (
     ResetRequestRequest,
     TokenResponse,
     UserOut,
+    UserPatch,
 )
 from app.services import auth_service
 
@@ -40,6 +41,20 @@ def logout(body: RefreshRequest) -> None:
 
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)) -> UserOut:
+    return auth_service.user_out(user)
+
+
+@router.patch("/me", response_model=UserOut)
+def patch_me(
+    body: UserPatch,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    if body.email_reminders_enabled is not None:
+        user.email_reminders_enabled = body.email_reminders_enabled
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return auth_service.user_out(user)
 
 

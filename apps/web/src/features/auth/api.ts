@@ -40,6 +40,17 @@ export function logoutRequest(refreshToken: string): Promise<void> {
   })
 }
 
+export interface UserPatchBody {
+  email_reminders_enabled?: boolean
+}
+
+export function patchUser(body: UserPatchBody): Promise<User> {
+  return api<User>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
 export function resetPasswordRequest(email: string): Promise<void> {
   return api<void>('/auth/password/reset-request', {
     method: 'POST',

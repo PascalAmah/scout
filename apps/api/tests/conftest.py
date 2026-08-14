@@ -1,4 +1,6 @@
 import os
+import tempfile
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("RATE_LIMIT_DISABLED", "1")
+os.environ.setdefault("FILE_STORE_DIR", str(Path(tempfile.gettempdir()) / "scout_test_files"))
 
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402

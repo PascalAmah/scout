@@ -73,3 +73,17 @@ class ApplicationDetail(ApplicationOut):
     outreach: list[OutreachOut] = Field(default_factory=list)
     resume_version: ResumeVersionRef | None = None
     resume_version_content: dict[str, Any] | None = None
+
+
+class FollowUpOut(BaseModel):
+    application_id: uuid.UUID
+    startup_name: str | None = None
+    job_title: str | None = None
+    applied_at: datetime | None = None
+    days_since: int = 0
+    last_outreach_status: str | None = None
+
+
+class FollowUpAccepted(BaseModel):
+    job_id: uuid.UUID
+    status: str

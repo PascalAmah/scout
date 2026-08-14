@@ -17,6 +17,10 @@ class Settings(BaseSettings):
 
     rate_limit_disabled: bool = False
 
+    file_store_dir: str = "data/files"
+
+    follow_up_days: int = 5
+
     resend_api_key: str = ""
     email_from: str = "Scout <hello@yourdomain.com>"
     web_app_url: str = "http://localhost:5173"

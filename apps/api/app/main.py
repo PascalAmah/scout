@@ -10,6 +10,7 @@ from app.routers import (
     auth,
     cv,
     extension,
+    files,
     founders,
     jobs,
     jobs_status,
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
     api.include_router(assistant.router)
     api.include_router(jobs_status.router)
     api.include_router(notifications.router)
+    api.include_router(files.router)
     app.include_router(api)
 
     @app.get("/healthz", tags=["health"])

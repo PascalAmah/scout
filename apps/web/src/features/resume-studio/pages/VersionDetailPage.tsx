@@ -2,8 +2,9 @@ import { useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { Button } from '../../../components/ui/Button'
-import { ApiRequestError, api } from '../../../lib/api-client'
+import { ApiRequestError } from '../../../lib/api-client'
 import type { ResumeContent } from '../api'
+import { downloadVersionPdf } from '../api'
 import { useResumes, useReviewVersion, useVersion } from '../hooks'
 
 function SkillsDiff({ base, version }: { base: ResumeContent; version: ResumeContent }) {
@@ -71,15 +72,13 @@ export function VersionDetailPage() {
   async function download() {
     setDownloadError(null)
     try {
-      await api(`/resume-versions/${downloadVersionId}/download`)
+      await downloadVersionPdf(downloadVersionId)
     } catch (err) {
       if (err instanceof ApiRequestError) {
         setDownloadError(
           err.code === 'NOT_REVIEWED'
             ? 'Review this version before downloading.'
-            : err.code === 'RESUME_NOT_RENDERED'
-              ? 'PDF rendering arrives with Phase 4 — not available yet.'
-              : err.message,
+            : err.message,
         )
       } else {
         setDownloadError('Download failed.')

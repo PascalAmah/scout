@@ -1,19 +1,39 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { Button } from '../../../components/ui/Button'
-import { APPLICATION_STATUSES } from '../api'
-import type { ApplicationDetail } from '../api'
+import { APPLICATION_STATUSES, OUTREACH_CHANNELS } from '../api'
+import type { ApplicationDetail, OutreachChannel } from '../api'
 import { ApplicationStatusBadge } from '../components/ApplicationCard'
-import { useApplication, useArchiveApplication, useUpdateApplicationStatus } from '../hooks'
+import {
+  useApplication,
+  useArchiveApplication,
+  useGenerateOutreach,
+  useOutreachJobStatus,
+  useReviewOutreach,
+  useUpdateApplicationStatus,
+  useUpdateOutreach,
+} from '../hooks'
 
 export function ApplicationDetailPage() {
   const { applicationId } = useParams({ from: '/_app/crm/applications/$applicationId' })
   const navigate = useNavigate()
   const updateStatus = useUpdateApplicationStatus()
   const archive = useArchiveApplication()
+  const [channel, setChannel] = useState<OutreachChannel>('cover_letter')
+  const [jobId, setJobId] = useState<string | null>(null)
 
   const appQuery = useApplication(applicationId)
   const app = appQuery.data
+  const generate = useGenerateOutreach(applicationId)
+  const jobStatus = useOutreachJobStatus(jobId)
+  const review = useReviewOutreach(applicationId)
+  const updateOutreach = useUpdateOutreach(applicationId)
+
+  const generating =
+    generate.isPending ||
+    jobStatus.data?.status === 'running' ||
+    jobStatus.data?.status === 'queued'
 
   if (!app) {
     return <p className="py-12 text-center text-sm text-[#6B7280]">{appQuery.isLoading ? 'Loading…' : 'Not found'}</p>
@@ -79,9 +99,82 @@ export function ApplicationDetailPage() {
 
       <TimelineSection events={app.timeline ?? []} />
 
-      {(app.resume_version || (app.outreach ?? []).length > 0) ? (
-        <div className="mt-6 rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <h2 className="text-sm font-semibold text-[#1F2937]">Attached materials</h2>
+      <div className="mt-6 rounded-xl border border-[#E5E3DC] bg-white p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[#1F2937]">Outreach</h2>
+            <div className="flex items-center gap-2">
+              <select
+                value={channel}
+                onChange={(e) => setChannel(e.target.value as OutreachChannel)}
+                className="rounded-lg border border-[#D6D3C9] px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#18A058]"
+              >
+                {OUTREACH_CHANNELS.map((c) => (
+                  <option key={c} value={c}>
+                    {c.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+              <Button
+                className="px-3 py-1.5 text-xs"
+                disabled={generating}
+                loading={generating}
+                onClick={() => {
+                  setJobId(null)
+                  generate.mutate(channel, {
+                    onSuccess: (res) => setJobId(res.job_id),
+                  })
+                }}
+              >
+                Generate copy
+              </Button>
+            </div>
+          </div>
+          {generating ? (
+            <p className="mt-3 text-sm text-[#6B7280]">Generating… this usually takes a few seconds.</p>
+          ) : null}
+
+          {app.outreach.map((item) => (
+            <div key={item.id} className="mt-3 rounded-lg border border-[#F0EEE7] p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium capitalize text-[#1F2937]">
+                  {item.channel.replace('_', ' ')}
+                </p>
+                <span className="rounded-full bg-[#F6F5F0] px-2.5 py-0.5 text-[11px] text-[#6B7280]">
+                  {item.status}
+                </span>
+              </div>
+              {item.content ? (
+                <p className="mt-2 whitespace-pre-line text-sm text-[#4B5563]">{item.content}</p>
+              ) : null}
+              <div className="mt-3 flex items-center gap-2">
+                {!item.reviewed_at && item.status === 'draft' ? (
+                  <Button
+                    className="px-3 py-1 text-xs"
+                    disabled={review.isPending}
+                    loading={review.isPending}
+                    onClick={() => review.mutate(item.id)}
+                  >
+                    Mark reviewed
+                  </Button>
+                ) : null}
+                {item.status === 'draft' ? (
+                  <Button
+                    variant="ghost"
+                    className="px-3 py-1 text-xs"
+                    disabled={updateOutreach.isPending}
+                    onClick={() => updateOutreach.mutate({ outreachId: item.id, status: 'sent' })}
+                  >
+                    Mark sent
+                  </Button>
+                ) : null}
+                {item.sent_at ? (
+                  <span className="text-xs text-[#9AA1AB]">
+                    Sent {new Date(item.sent_at).toLocaleString()}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ))}
 
           {app.resume_version ? (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-[#F0EEE7] p-3">
@@ -102,31 +195,7 @@ export function ApplicationDetailPage() {
               </span>
             </div>
           ) : null}
-
-          {app.outreach.map((item) => (
-            <div key={item.id} className="mt-3 rounded-lg border border-[#F0EEE7] p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium capitalize text-[#1F2937]">
-                  {item.channel.replace('_', ' ')}
-                </p>
-                <span className="rounded-full bg-[#F6F5F0] px-2.5 py-0.5 text-[11px] text-[#6B7280]">
-                  {item.status}
-                </span>
-              </div>
-              {item.content ? (
-                <p className="mt-2 text-sm text-[#4B5563]">
-                  {item.content.length > 300 ? `${item.content.slice(0, 300)}…` : item.content}
-                </p>
-              ) : null}
-              {item.sent_at ? (
-                <p className="mt-1 text-xs text-[#9AA1AB]">
-                  Sent {new Date(item.sent_at).toLocaleString()}
-                </p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
+      </div>
     </div>
   )
 }

@@ -56,6 +56,17 @@ def _heuristic_copy(application, job, startup, match, user_name: str | None) -> 
     )
 
 
+def _heuristic_dm(application, job, startup, match, user_name: str | None) -> str:
+    company = startup.name if startup else "your team"
+    job_title = job.title if job else "role"
+    matched = ", ".join((match.explanation or {}).get("matched_skills") or []) or "my background"
+    name = user_name or "I"
+    return (
+        f"Hi {company}, I saw you're hiring for a {job_title}. {name} have the {matched} "
+        f"experience the role needs — happy to share more if you're open to a quick chat."
+    )
+
+
 def _copy_candidate_base(application, structured: dict, user_name: str | None) -> str:
     """Last-resort copy from CV structured data alone — never fabricates detail."""
     skills = ", ".join(str(s) for s in (structured or {}).get("skills") or []) or "relevant experience"
@@ -119,11 +130,13 @@ def generate_cover_letter(
             )
 
         grounding = _grounding(application, job, startup, match, profile, user)
+        is_dm = channel == "linkedin_dm"
 
         content: str | None = None
         model = "heuristic"
         try:
-            generated = text_call(load_prompt("generate_outreach.v1"), grounding, GEN_MODEL)
+            prompt = load_prompt("generate_linkedin_dm.v1" if is_dm else "generate_outreach.v1")
+            generated = text_call(prompt, grounding, GEN_MODEL)
             if generated:
                 content = generated
                 model = GEN_MODEL
@@ -133,6 +146,8 @@ def generate_cover_letter(
         if content is None:
             if profile and profile.structured_data:
                 content = _copy_candidate_base(application, profile.structured_data, user.full_name if user else None)
+            elif is_dm:
+                content = _heuristic_dm(application, job, startup, match, user.full_name if user else None)
             else:
                 content = _heuristic_copy(application, job, startup, match, user.full_name if user else None)
 

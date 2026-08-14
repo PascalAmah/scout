@@ -1,4 +1,5 @@
-import { api } from '../../lib/api-client'
+import { ApiRequestError, api } from '../../lib/api-client'
+import { tokens } from '../../lib/auth'
 import type { Page } from '../startups/api'
 
 export interface ResumeContent {
@@ -84,6 +85,23 @@ export function reviewVersionRequest(versionId: string): Promise<ResumeVersionOu
 
 export function jobStatusRequest(jobId: string): Promise<JobStatus> {
   return api(`/jobs-status/${jobId}`)
+}
+
+export async function downloadVersionPdf(versionId: string): Promise<void> {
+  const { url } = await api<{ url: string }>(`/resume-versions/${versionId}/download`)
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${tokens.access}` },
+  })
+  if (!res.ok) {
+    throw new ApiRequestError(res.status, 'DOWNLOAD_FAILED', 'Download failed.')
+  }
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = `resume-${versionId}.pdf`
+  anchor.click()
+  URL.revokeObjectURL(objectUrl)
 }
 
 export interface ApplicationOption {

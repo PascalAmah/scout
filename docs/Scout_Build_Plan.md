@@ -179,7 +179,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 1 — Core Loop (Save → Enrich → View) | ✅ **DONE** (2026-08-12) | Workspace list + filters, Startup detail (Overview/Founders/Jobs/Notes tabs), CRM pipeline + application detail, Notifications feed (bell + unread badge), Extension save flow (detect → prefilled → saved) |
 | Phase 2 — Personalization (CV + Matching v1) | ✅ **DONE** (2026-08-14) | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
 | Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
-| Phase 4 — Retention Loop | pending | Dashboard "needs follow-up" section |
+| Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
 | Phase 5 — Insight Layer | pending | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
 | Phase 6 — Expansion | pending | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
 
@@ -199,6 +199,14 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - Bug fixed during verification: bare "N years." (no "of experience") wasn't parsed for `years_of_experience` — added a trailing fallback pattern to `YEAR_PATTERNS`.
 - **Frontend fidelity note:** Settings Profile/CV follows `scout_settings.html` closely; Matches is a simplified card grid (ring + meta + description) — mockup's checkbox/bulk bar/filter pills/action buttons/skill chips/why-this-score/feedback are deferred to Phase 3.1 (they need `explanation` + `confidence_band`, which Phase 2 returns as `null`). Account/Integrations are read-only stubs pending their owning phases.
 
+### Verified (2026-08-15) — Phase 4
+- API: 27 pytest pass (follow-up scan/notice dedupe + follow-up generation accept + email reminder task); ruff clean.
+- Worker: 14 pytest pass (AI config + extraction + embeddings fallbacks); ruff clean.
+- Web: typecheck + oxlint clean (Dashboard "needs follow-up" section, Settings → Account digest toggle, Application detail outreach UI).
+- Follow-up loop verified headlessly: `GET /applications/needs-follow-up` lists only due applications (time-since-`applied_at` ≥ threshold), the notice is raised exactly once (deduped by `follow_up_due` notification), `POST /applications/{id}/follow-up` queues `generate_follow_up` and returns `202` (heuristic fallback stored as `draft` outreach — never auto-sent).
+- Digest email verified headlessly: PATCH `/auth/me` toggles `email_reminders_enabled` (persisted, reflected in `/auth/me`); `send_reminder_emails` emails opted-in users one digest of unread notifications and marks them read; un-opted users are skipped. Send itself is a no-op log without `RESEND_API_KEY` (dev-safe).
+- Migration `0004_email_reminders` added (`users.email_reminders_enabled`, default `false`). Not yet applied to live DB.
+
 ## Frontend Implementation Map
 
 Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that builds it, its mockup in `docs/mockups/`, and current status. Route files are the target locations from the tree; screen-level details come from the referenced mockup + `UI_UX.md`.
@@ -209,13 +217,13 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_auth.login`, `_auth.register` | 0 | `scout_auth.html` | done |
 | `password-reset.index`, `password-reset.confirm` | 0 | `scout_auth.html` ("Reset your password" / "Check your email") | done |
 | `_app` shell — sidebar, topbar, notification bell/badge | 1 | `scout_dashboard.html` (topbar) | done |
-| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4/P5 additions pending) |
+| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4 follow-up section added; P5 stats pending) |
 | `_app.startups.index` — Workspace list + filters | 1 | `scout_workspace.html` | done |
 | `_app.startups.$startupId` (+ `index`, `founders`, `jobs`, `notes` tabs) | 1 | `scout_startup_detail.html` | done |
 | `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | done (P2 score-only card grid; P3 adds why/feedback/actions) |
-| `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | pending |
+| `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | done |
 | `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop) | `scout_crm.html` | done (P6 upgrade pending) |
-| `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (basic; P3 upgrade pending) |
+| `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (timeline + attached materials + outreach UI) |
 | `_app.analytics` | 5 | `scout_analytics.html` | pending |
 | `_app.assistant` | 6 | `scout_assistant.html` | pending |
 | `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | done (Profile/CV full; Account/Integrations read-only stubs) |

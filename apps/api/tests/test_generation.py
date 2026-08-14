@@ -117,10 +117,22 @@ def test_review_gate_blocks_download_until_reviewed(
     assert r.status_code == 200, r.text
     assert r.json()["reviewed_at"] is not None
 
-    # Reviewed but no rendered PDF yet (Phase 4) → not NOT_REVIEWED anymore.
+    # Reviewed → download renders the PDF on demand and returns its URL.
     r = client.get(f"/v1/resume-versions/{version.id}/download", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    url = r.json()["url"]
+    assert url.startswith("/v1/files/resume-versions/")
+
+    # The rendered file is served to the owner as a PDF.
+    r = client.get(url, headers=_auth(token))
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"] == "application/pdf"
+    assert r.content[:5] == b"%PDF-"
+
+    # Ownership: a different user cannot fetch the file.
+    other = _register(client, email="other@example.com")
+    r = client.get(url, headers=_auth(other))
     assert r.status_code == 404
-    assert r.json()["error"]["code"] == "RESUME_NOT_RENDERED"
 
 
 def test_outreach_sent_gate(client: TestClient, db_session: Session) -> None:

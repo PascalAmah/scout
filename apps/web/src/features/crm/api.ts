@@ -60,6 +60,16 @@ export interface ResumeVersionRef {
   reviewed_at: string | null
 }
 
+export interface JobStatus {
+  job_id: string
+  job_type: string
+  status: string
+  error: string | null
+}
+
+export const OUTREACH_CHANNELS = ['cover_letter', 'email', 'linkedin_dm'] as const
+export type OutreachChannel = (typeof OUTREACH_CHANNELS)[number]
+
 export interface ApplicationDetail extends ApplicationOut {
   timeline: TimelineEvent[]
   outreach: OutreachOut[]
@@ -104,4 +114,29 @@ export function updateApplicationRequest(
 
 export function archiveApplicationRequest(applicationId: string): Promise<void> {
   return api(`/applications/${applicationId}`, { method: 'DELETE' })
+}
+
+export function generateOutreachRequest(
+  applicationId: string,
+  channel: OutreachChannel,
+): Promise<{ job_id: string; status: string }> {
+  return api('/outreach/generate', {
+    method: 'POST',
+    body: JSON.stringify({ application_id: applicationId, channel }),
+  })
+}
+
+export function reviewOutreachRequest(outreachId: string): Promise<OutreachOut> {
+  return api(`/outreach/${outreachId}/review`, { method: 'POST' })
+}
+
+export function updateOutreachRequest(
+  outreachId: string,
+  body: { status: string },
+): Promise<OutreachOut> {
+  return api(`/outreach/${outreachId}`, { method: 'PATCH', body: JSON.stringify(body) })
+}
+
+export function jobStatusRequest(jobId: string): Promise<JobStatus> {
+  return api(`/jobs-status/${jobId}`)
 }

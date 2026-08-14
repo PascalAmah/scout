@@ -66,3 +66,23 @@ def reset_password_html(reset_url: str) -> str:
         <p style="margin:0;color:#6B7280;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
         """,
     )
+
+
+def digest_email_html(items: list[tuple[str, str]]) -> str:
+    """Daily reminder digest rendered from ``notifications`` rows.
+
+    ``items`` is a list of ``(title, body)`` pairs; opt-in only via the worker.
+    """
+    if not items:
+        body = "<p>You're all caught up — nothing needs your attention today.</p>"
+    else:
+        bullets = "".join(
+            f'<li style="margin:10px 0;"><strong>{title}</strong><br>'
+            f'<span style="color:#6B7280;font-size:14px;">{body}</span></li>'
+            for title, body in items
+        )
+        body = (
+            "<p>Here's what's happening in your Scout workspace:</p>"
+            f'<ul style="list-style:none;padding:0;margin:0;">{bullets}</ul>'
+        )
+    return _shell("Your Scout digest", body)

@@ -26,6 +26,7 @@ def user_out(user: User) -> UserOut:
         email=user.email,
         full_name=user.full_name,
         role=user.role,
+        email_reminders_enabled=user.email_reminders_enabled,
         created_at=user.created_at,
     )
 

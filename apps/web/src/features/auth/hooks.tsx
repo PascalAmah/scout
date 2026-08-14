@@ -6,10 +6,12 @@ import { type TokenResponse, type User } from '../../lib/api-client'
 import {
   loginRequest,
   logoutRequest,
+  patchUser,
   registerRequest,
   sessionQueryOptions,
   type LoginBody,
   type RegisterBody,
+  type UserPatchBody,
 } from './api'
 
 interface AuthContextValue {
@@ -97,4 +99,14 @@ export function useLogin() {
 
 export function useRegister() {
   return useAuth().register
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UserPatchBody) => patchUser(body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['me'], updated)
+    },
+  })
 }

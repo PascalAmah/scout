@@ -20,6 +20,9 @@ __pycache__/
 # python
 .cache/
 
+# local file storage (dev FILE_STORE_DIR default)
+data/
+
 # tooling
 .plasmo/
 chrome-extension/*

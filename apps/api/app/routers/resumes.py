@@ -103,11 +103,12 @@ def download_version(
     version = resume_service.get_version(db, user, version_id)
     review_gate.require_reviewed(version)
     if version.file_key is None:
-        from app.core.errors import ScoutError
+        from app.services import file_store, resume_renderer
 
-        raise ScoutError(
-            "RESUME_NOT_RENDERED",
-            "PDF rendering ships with Phase 4 — this version has no rendered file yet.",
-            status_code=404,
-        )
-    return {"url": f"/files/{version.file_key}"}
+        pdf = resume_renderer.render_pdf(version.content)
+        key = f"resume-versions/{version.id}.pdf"
+        file_store.write_bytes(key, pdf)
+        version.file_key = key
+        db.add(version)
+        db.commit()
+    return {"url": f"/v1/files/{version.file_key}"}
