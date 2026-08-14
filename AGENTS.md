@@ -45,11 +45,12 @@ scout/
 │   │   │   │   ├── _app.settings.profile.tsx
 │   │   │   │   ├── _app.settings.account.tsx
 │   │   │   │   └── _app.settings.integrations.tsx
-│   │   │   ├── features/                                # colocated query hooks + components
+│   │   │   ├── features/                                # colocated query hooks + components + pages
 │   │   │   │   ├── startups/
 │   │   │   │   │   ├── api.ts                            # queryOptions, mutations
 │   │   │   │   │   ├── hooks.ts                          # useStartups, useStartup, useSaveStartup
-│   │   │   │   │   └── components/ (StartupCard.tsx, StatusBadge.tsx, FilterBar.tsx)
+│   │   │   │   │   ├── components/ (StartupCard.tsx, StatusBadge.tsx, FilterBar.tsx)
+│   │   │   │   │   └── pages/ (WorkspacePage.tsx, StartupDetailLayout.tsx, StartupOverviewTab.tsx, FoundersTab.tsx, JobsTab.tsx, NotesTab.tsx)
 │   │   │   │   ├── matches/
 │   │   │   │   │   ├── api.ts
 │   │   │   │   │   ├── hooks.ts                          # useMatches, useMatchFeedback
@@ -194,7 +195,8 @@ scout/
 ## Conventions
 
 ### apps/web
-- **Routing:** TanStack Router file-based under `src/routes/`. One file per route; pathless layouts (`_auth`, `_app`) for shells, `$param` for dynamic segments, `.route.tsx` suffix for layout-only routes.
+- **Routing:** TanStack Router file-based under `src/routes/`. One file per route; pathless layouts (`_auth`, `_app`) for shells, `$param` for dynamic segments, `.route.tsx` suffix for layout-only routes. **Route files are declarations only** — `createFileRoute(...)` + the `component:` import. No page JSX, `useQuery`, `api()`, or `useQueryClient` calls in `routes/`.
+- **Pages:** each feature owns `features/<feature>/pages/<PageName>.tsx` (page and layout components, imported by the route file). Pages read params/search via `useParams({ from: '/_app/...' })` / `useSearch({ from: '...' })` with the route's full path, so they stay decoupled from the `Route` object.
 - **Data:** TanStack Query. Every feature owns `features/<feature>/api.ts` (queryOptions + mutations) and `features/<feature>/hooks.ts` (hook wrappers). Components colocated in `features/<feature>/components/`.
 - **Shared UI:** primitives only in `components/ui/`. No feature logic there.
 - **Networking:** `lib/api-client.ts` is the single fetch wrapper, typed against `packages/types` (generated from OpenAPI).

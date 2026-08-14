@@ -52,6 +52,10 @@ export function pipelineRequest(): Promise<{ data: PipelineData }> {
   return api(`/applications/pipeline`)
 }
 
+export function applicationRequest(applicationId: string): Promise<ApplicationOut> {
+  return api(`/applications/${applicationId}`)
+}
+
 export function createApplicationRequest(body: {
   startup_id: string
   job_id?: string | null

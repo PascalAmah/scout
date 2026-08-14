@@ -19,5 +19,10 @@ class Settings(BaseSettings):
     email_from: str = "Scout <hello@yourdomain.com>"
     web_app_url: str = "http://localhost:5173"
 
+    # --- Phase 2: embeddings (consumed by the worker, not the API runtime) ---
+    openai_api_key: str = ""
+    embedding_model: str = "text-embedding-3-large"
+    embedding_dim: int = 1536
+
 
 settings = Settings()

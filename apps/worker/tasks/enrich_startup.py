@@ -39,11 +39,49 @@ def _notify(db, user_id: uuid.UUID, startup, summary) -> None:
     )
 
 
+def _embed_startup(db, startup) -> None:
+    """Phase 2 embedding step: summary → startup_embeddings, jobs → job_embeddings.
+
+    Extraction has already succeeded at this point, so a failure here is retried
+    alone via ``refresh_embeddings`` (AI_DESIGN.md partial-failure handling)
+    rather than re-running the whole enrichment pipeline."""
+    from app.models import Job
+
+    from tasks.embedding import embed_text
+    from tasks.refresh_embeddings import (
+        refresh_embeddings,
+        upsert_job_embedding,
+        upsert_startup_embedding,
+    )
+
+    try:
+        if startup.summary:
+            vector, model = embed_text(startup.summary)
+            upsert_startup_embedding(db, startup, vector, model)
+        jobs = db.scalars(
+            select(Job).where(Job.startup_id == startup.id, Job.deleted_at.is_(None))
+        ).all()
+        for job in jobs:
+            if job.description or job.title:
+                vector, model = embed_text(f"{job.title or ''}\n{job.description or ''}")
+                upsert_job_embedding(db, job, vector, model)
+    except Exception as exc:
+        logger.exception("embedding step failed for %s; queueing refresh_embeddings", startup.id)
+        try:
+            refresh_embeddings.delay(entity="startup", entity_id=str(startup.id))
+            jobs = db.scalars(select(Job).where(Job.startup_id == startup.id)).all()
+            for job in jobs:
+                refresh_embeddings.delay(entity="job", entity_id=str(job.id))
+        except Exception as inner:
+            logger.exception("failed to enqueue refresh_embeddings for %s", startup.id)
+            raise inner from exc
+
+
 @shared_task(name="enrich_startup", bind=True, max_retries=3, default_retry_delay=60)
 def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
     from adapters import get_adapter
-
     from app.models import EnrichmentJob, Startup
+
     from tasks.enrich_cache import cache
     from tasks.extract import content_hash, extract_company
 
@@ -112,6 +150,10 @@ def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
             )
             if existing is None:
                 db.add(Job(startup_id=startup.id, title=title, url=source_url))
+        db.commit()
+
+        # Phase 2: embed the enrichment output (summary + job descriptions).
+        _embed_startup(db, startup)
         db.commit()
 
         cache.set_hash(str(startup.id), text_hash)

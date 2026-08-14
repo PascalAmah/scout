@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
+  addFounderRequest,
+  addNoteRequest,
   createStartupRequest,
   deleteStartupRequest,
   enrichmentQueryOptions,
@@ -62,6 +64,28 @@ export function useTriggerEnrich() {
     onSuccess: (_data, startupId) => {
       void queryClient.invalidateQueries({ queryKey: ['startups', startupId] })
       void queryClient.invalidateQueries({ queryKey: ['startups', startupId, 'enrichment'] })
+    },
+  })
+}
+
+export function useAddFounder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ startupId, body }: { startupId: string; body: { name: string; title?: string | null } }) =>
+      addFounderRequest(startupId, body),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['startups', vars.startupId] })
+    },
+  })
+}
+
+export function useAddNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ startupId, body }: { startupId: string; body: { body: string } }) =>
+      addNoteRequest(startupId, body),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['startups', vars.startupId] })
     },
   })
 }

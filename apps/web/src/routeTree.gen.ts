@@ -13,11 +13,17 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppMatchesRouteImport } from './routes/_app.matches'
+import { Route as AppSettingsRouteRouteImport } from './routes/_app.settings.route'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as PasswordResetIndexRouteImport } from './routes/password-reset.index'
 import { Route as PasswordResetConfirmRouteImport } from './routes/password-reset.confirm'
 import { Route as AppCrmIndexRouteImport } from './routes/_app.crm.index'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
+import { Route as AppSettingsAccountRouteImport } from './routes/_app.settings.account'
+import { Route as AppSettingsIntegrationsRouteImport } from './routes/_app.settings.integrations'
+import { Route as AppSettingsProfileRouteImport } from './routes/_app.settings.profile'
 import { Route as AppStartupsIndexRouteImport } from './routes/_app.startups.index'
 import { Route as AppStartupsStartupIdRouteRouteImport } from './routes/_app.startups.$startupId.route'
 import { Route as AppCrmApplicationsApplicationIdRouteImport } from './routes/_app.crm.applications.$applicationId'
@@ -44,6 +50,16 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMatchesRoute = AppMatchesRouteImport.update({
+  id: '/matches',
+  path: '/matches',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -68,6 +84,26 @@ const AppCrmIndexRoute = AppCrmIndexRouteImport.update({
   id: '/crm/',
   path: '/crm/',
   getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppSettingsIntegrationsRoute = AppSettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppStartupsIndexRoute = AppStartupsIndexRouteImport.update({
   id: '/startups/',
@@ -113,13 +149,19 @@ const AppStartupsStartupIdNotesRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof AppSettingsRouteRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/matches': typeof AppMatchesRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset/': typeof PasswordResetIndexRoute
   '/startups/$startupId': typeof AppStartupsStartupIdRouteRouteWithChildren
+  '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
   '/crm/': typeof AppCrmIndexRoute
+  '/settings/': typeof AppSettingsIndexRoute
   '/startups/': typeof AppStartupsIndexRoute
   '/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
   '/startups/$startupId/founders': typeof AppStartupsStartupIdFoundersRoute
@@ -130,11 +172,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/matches': typeof AppMatchesRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset': typeof PasswordResetIndexRoute
+  '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
   '/crm': typeof AppCrmIndexRoute
+  '/settings': typeof AppSettingsIndexRoute
   '/startups': typeof AppStartupsIndexRoute
   '/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
   '/startups/$startupId/founders': typeof AppStartupsStartupIdFoundersRoute
@@ -147,13 +194,19 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_app/settings': typeof AppSettingsRouteRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/matches': typeof AppMatchesRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset/': typeof PasswordResetIndexRoute
   '/_app/startups/$startupId': typeof AppStartupsStartupIdRouteRouteWithChildren
+  '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/crm/': typeof AppCrmIndexRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/startups/': typeof AppStartupsIndexRoute
   '/_app/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
   '/_app/startups/$startupId/founders': typeof AppStartupsStartupIdFoundersRoute
@@ -165,13 +218,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/dashboard'
+    | '/matches'
     | '/login'
     | '/register'
     | '/password-reset/confirm'
     | '/password-reset/'
     | '/startups/$startupId'
+    | '/settings/account'
+    | '/settings/integrations'
+    | '/settings/profile'
     | '/crm/'
+    | '/settings/'
     | '/startups/'
     | '/crm/applications/$applicationId'
     | '/startups/$startupId/founders'
@@ -182,11 +241,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/matches'
     | '/login'
     | '/register'
     | '/password-reset/confirm'
     | '/password-reset'
+    | '/settings/account'
+    | '/settings/integrations'
+    | '/settings/profile'
     | '/crm'
+    | '/settings'
     | '/startups'
     | '/crm/applications/$applicationId'
     | '/startups/$startupId/founders'
@@ -198,13 +262,19 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/_auth'
+    | '/_app/settings'
     | '/_app/dashboard'
+    | '/_app/matches'
     | '/_auth/login'
     | '/_auth/register'
     | '/password-reset/confirm'
     | '/password-reset/'
     | '/_app/startups/$startupId'
+    | '/_app/settings/account'
+    | '/_app/settings/integrations'
+    | '/_app/settings/profile'
     | '/_app/crm/'
+    | '/_app/settings/'
     | '/_app/startups/'
     | '/_app/crm/applications/$applicationId'
     | '/_app/startups/$startupId/founders'
@@ -251,6 +321,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/matches': {
+      id: '/_app/matches'
+      path: '/matches'
+      fullPath: '/matches'
+      preLoaderRoute: typeof AppMatchesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_auth/login': {
       id: '/_auth/login'
       path: '/login'
@@ -285,6 +369,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/'
       preLoaderRoute: typeof AppCrmIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/account': {
+      id: '/_app/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof AppSettingsAccountRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/integrations': {
+      id: '/_app/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AppSettingsIntegrationsRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/profile': {
+      id: '/_app/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AppSettingsProfileRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/_app/startups/': {
       id: '/_app/startups/'
@@ -338,6 +450,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppSettingsRouteRouteChildren {
+  AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsIntegrationsRoute: typeof AppSettingsIntegrationsRoute
+  AppSettingsProfileRoute: typeof AppSettingsProfileRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+}
+
+const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
+  AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsIntegrationsRoute: AppSettingsIntegrationsRoute,
+  AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
+}
+
+const AppSettingsRouteRouteWithChildren =
+  AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
+
 interface AppStartupsStartupIdRouteRouteChildren {
   AppStartupsStartupIdFoundersRoute: typeof AppStartupsStartupIdFoundersRoute
   AppStartupsStartupIdJobsRoute: typeof AppStartupsStartupIdJobsRoute
@@ -359,7 +488,9 @@ const AppStartupsStartupIdRouteRouteWithChildren =
   )
 
 interface AppRouteChildren {
+  AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
+  AppMatchesRoute: typeof AppMatchesRoute
   AppStartupsStartupIdRouteRoute: typeof AppStartupsStartupIdRouteRouteWithChildren
   AppCrmIndexRoute: typeof AppCrmIndexRoute
   AppStartupsIndexRoute: typeof AppStartupsIndexRoute
@@ -367,7 +498,9 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
+  AppMatchesRoute: AppMatchesRoute,
   AppStartupsStartupIdRouteRoute: AppStartupsStartupIdRouteRouteWithChildren,
   AppCrmIndexRoute: AppCrmIndexRoute,
   AppStartupsIndexRoute: AppStartupsIndexRoute,

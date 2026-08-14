@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
+  applicationRequest,
   archiveApplicationRequest,
   createApplicationRequest,
   pipelineRequest,
@@ -13,6 +14,13 @@ export function usePipeline() {
     queryKey: ['crm', 'pipeline'],
     queryFn: pipelineRequest,
     select: (res) => res.data,
+  })
+}
+
+export function useApplication(applicationId: string) {
+  return useQuery({
+    queryKey: ['crm', 'applications', applicationId],
+    queryFn: () => applicationRequest(applicationId),
   })
 }
 
@@ -41,8 +49,9 @@ export function useArchiveApplication() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: archiveApplicationRequest,
-    onSuccess: () => {
+    onSuccess: (_data, applicationId) => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'pipeline'] })
+      queryClient.removeQueries({ queryKey: ['crm', 'applications', applicationId] })
     },
   })
 }

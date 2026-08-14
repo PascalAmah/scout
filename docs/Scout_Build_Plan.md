@@ -177,7 +177,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 |---|---|---|
 | Phase 0 — Foundations | ✅ **DONE** (2026-08-11) | Landing (`/`), Login + Register, Password reset (request/confirm), Dashboard shell, Extension popup auth |
 | Phase 1 — Core Loop (Save → Enrich → View) | ✅ **DONE** (2026-08-12) | Workspace list + filters, Startup detail (Overview/Founders/Jobs/Notes tabs), CRM pipeline + application detail, Notifications feed (bell + unread badge), Extension save flow (detect → prefilled → saved) |
-| Phase 2 — Personalization (CV + Matching v1) | pending | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
+| Phase 2 — Personalization (CV + Matching v1) | ✅ **DONE** (2026-08-14) | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
 | Phase 3 — Generation (Resume Studio) + Match Explanations | pending | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | pending | Dashboard "needs follow-up" section |
 | Phase 5 — Insight Layer | pending | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
@@ -190,6 +190,14 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - **Live end-to-end (headless, local HTTP source):** 27/27 checks passed — register → `quick-save` (auto-enrich queued) → `enrich_startup` succeeded (summary, tech stack `[AWS, FastAPI, PostgreSQL, Python]`, stage `series_a`, hiring `hiring`, tags merged, jobs persisted) → `enrichment_complete` notification + unread count → application `saved→interested→applied(applied_at)→interview→offer`, invalid transition rejected with `400`, 3 `application_status_change` notifications, pipeline grouped correctly → re-enrich on unchanged content **skipped** via content-hash cache.
 - Bug fixed during verification: `EnrichmentCache.last_hash` compared `bytes` (from redis) to `str`, so the content-hash skip never fired — now decodes to `str`, with 2 regression tests.
 - Not yet verified headlessly (manual, human): loading the extension in Chrome and saving a real Y Combinator URL (network-restricted sandbox; the yc adapter uses the same pipeline as the verified generic path).
+
+### Verified (2026-08-14) — Phase 2
+- API: 15 pytest pass (CV upload/get + matching added); ruff + mypy clean (66 files). Worker: 10 pytest pass.
+- Web: typecheck, oxlint, `pnpm build` clean (Matches screen, Settings Profile/CV/Account/Integrations, `Ring` component, nav links).
+- **Live end-to-end (headless, real Postgres):** 22/22 checks passed — register → `POST /cv` (pdf/text) → structured parse (roles, skills, `years_of_experience`, education) → `refresh_embeddings` → `last_embedded_at` set → job embed → `compute_match` → `GET /jobs/recommended` sorted by score (top = the matching backend role) → `explanation`/`confidence_band` `null` (Phase 2 deviation): → match detail + force recompute → CV + job embeddings confirmed at **1536 dims**.
+- Embeddings run at 1536 dims (pgvector hnsw caps at 2000); migration `0002_cv_match_embeddings` applied to live `scout_postgres` (head = `0002`).
+- Bug fixed during verification: bare "N years." (no "of experience") wasn't parsed for `years_of_experience` — added a trailing fallback pattern to `YEAR_PATTERNS`.
+- **Frontend fidelity note:** Settings Profile/CV follows `scout_settings.html` closely; Matches is a simplified card grid (ring + meta + description) — mockup's checkbox/bulk bar/filter pills/action buttons/skill chips/why-this-score/feedback are deferred to Phase 3.1 (they need `explanation` + `confidence_band`, which Phase 2 returns as `null`). Account/Integrations are read-only stubs pending their owning phases.
 
 ## Frontend Implementation Map
 
@@ -204,13 +212,13 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4/P5 additions pending) |
 | `_app.startups.index` — Workspace list + filters | 1 | `scout_workspace.html` | done |
 | `_app.startups.$startupId` (+ `index`, `founders`, `jobs`, `notes` tabs) | 1 | `scout_startup_detail.html` | done |
-| `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | pending |
+| `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | done (P2 score-only card grid; P3 adds why/feedback/actions) |
 | `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | pending |
 | `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop) | `scout_crm.html` | done (P6 upgrade pending) |
 | `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (basic; P3 upgrade pending) |
 | `_app.analytics` | 5 | `scout_analytics.html` | pending |
 | `_app.assistant` | 6 | `scout_assistant.html` | pending |
-| `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | pending |
+| `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | done (Profile/CV full; Account/Integrations read-only stubs) |
 | Extension popup (Detected / Saving / Saved / Unsupported / ManualFallback / AuthExpired / login) | 0 (auth) → 1 (save flow) | `scout_extension.html` | done |
 | Email templates (welcome, password reset) | 0 | `scout_email_welcome.html`, `scout_email_reset_password.html` | done (React Email) |
 
