@@ -36,6 +36,37 @@ export interface ApplicationOut {
   job: ApplicationJob | null
 }
 
+export interface TimelineEvent {
+  type: string
+  title: string
+  at: string
+}
+
+export interface OutreachOut {
+  id: string
+  application_id: string | null
+  channel: string
+  content: string | null
+  status: string
+  sent_at: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ResumeVersionRef {
+  id: string
+  created_at: string
+  reviewed_at: string | null
+}
+
+export interface ApplicationDetail extends ApplicationOut {
+  timeline: TimelineEvent[]
+  outreach: OutreachOut[]
+  resume_version: ResumeVersionRef | null
+  resume_version_content: Record<string, unknown> | null
+}
+
 export interface PipelineData {
   [status: string]: ApplicationOut[]
 }
@@ -52,8 +83,8 @@ export function pipelineRequest(): Promise<{ data: PipelineData }> {
   return api(`/applications/pipeline`)
 }
 
-export function applicationRequest(applicationId: string): Promise<ApplicationOut> {
-  return api(`/applications/${applicationId}`)
+export function applicationRequest(applicationId: string): Promise<ApplicationDetail> {
+  return api<ApplicationDetail>(`/applications/${applicationId}`)
 }
 
 export function createApplicationRequest(body: {

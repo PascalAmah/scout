@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
 
+    rate_limit_disabled: bool = False
+
     resend_api_key: str = ""
     email_from: str = "Scout <hello@yourdomain.com>"
     web_app_url: str = "http://localhost:5173"

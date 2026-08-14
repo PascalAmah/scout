@@ -91,7 +91,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 3 — Generation (Resume Studio) + Match Explanations
+## Phase 3 — Generation (Resume Studio) + Match Explanations — ✅ DONE (2026-08-14)
 **Goal:** this is `ROADMAP.md`'s MVP finish line + immediately following v1.1 gap-fill, combined — build them together since the review-gate logic is shared infrastructure either way.
 
 ### 3.1 Stage 2 re-rank (match explanations)
@@ -178,7 +178,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 0 — Foundations | ✅ **DONE** (2026-08-11) | Landing (`/`), Login + Register, Password reset (request/confirm), Dashboard shell, Extension popup auth |
 | Phase 1 — Core Loop (Save → Enrich → View) | ✅ **DONE** (2026-08-12) | Workspace list + filters, Startup detail (Overview/Founders/Jobs/Notes tabs), CRM pipeline + application detail, Notifications feed (bell + unread badge), Extension save flow (detect → prefilled → saved) |
 | Phase 2 — Personalization (CV + Matching v1) | ✅ **DONE** (2026-08-14) | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
-| Phase 3 — Generation (Resume Studio) + Match Explanations | pending | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
+| Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | pending | Dashboard "needs follow-up" section |
 | Phase 5 — Insight Layer | pending | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
 | Phase 6 — Expansion | pending | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |

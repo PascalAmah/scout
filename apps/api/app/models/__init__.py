@@ -8,6 +8,9 @@ from app.models.job_embedding import JobEmbedding
 from app.models.match_score import MatchScore
 from app.models.note import Note
 from app.models.notification import Notification
+from app.models.outreach import Outreach
+from app.models.resume import Resume
+from app.models.resume_version import ResumeVersion
 from app.models.saved_startup import SavedStartup
 from app.models.startup import Startup
 from app.models.startup_embedding import StartupEmbedding
@@ -24,6 +27,9 @@ __all__ = [
     "MatchScore",
     "Note",
     "Notification",
+    "Outreach",
+    "Resume",
+    "ResumeVersion",
     "SavedStartup",
     "Startup",
     "StartupEmbedding",

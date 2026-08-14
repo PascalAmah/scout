@@ -16,6 +16,7 @@ except ImportError:  # pragma: no cover
     _producer = None
 
 QUEUE_ENRICHMENT = "enrichment"
+QUEUE_GENERATION = "generation"
 
 
 def enqueue_enrich_startup(startup_id: uuid.UUID, user_id: uuid.UUID | None) -> None:
@@ -47,6 +48,45 @@ def enqueue_compute_match(user_id: str, job_id: str | None = None) -> None:
     if job_id:
         kwargs["job_id"] = job_id
     _send("compute_match", kwargs, queue=QUEUE_ENRICHMENT)
+
+
+def enqueue_generate_resume(
+    *,
+    resume_id: str,
+    job_id: str,
+    startup_id: str,
+    user_id: str,
+    application_id: str | None,
+    tone: str,
+    emphasize: list[str],
+    job_row_id: str,
+) -> None:
+    job_queue_kwargs = {
+        "resume_id": resume_id,
+        "job_id": job_id,
+        "startup_id": startup_id,
+        "user_id": user_id,
+        "application_id": application_id,
+        "tone": tone,
+        "emphasize": emphasize,
+        "job_row_id": job_row_id,
+    }
+    _send("generate_resume", job_queue_kwargs, queue=QUEUE_GENERATION)
+
+
+def enqueue_generate_cover_letter(
+    *, application_id: str, channel: str, user_id: str, job_row_id: str
+) -> None:
+    _send(
+        "generate_cover_letter",
+        {
+            "application_id": application_id,
+            "channel": channel,
+            "user_id": user_id,
+            "job_row_id": job_row_id,
+        },
+        queue=QUEUE_GENERATION,
+    )
 
 
 def _send(name: str, kwargs: dict[str, Any], queue: str) -> None:

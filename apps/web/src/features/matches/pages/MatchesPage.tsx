@@ -1,18 +1,37 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { Button } from '../../../components/ui/Button'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { useCV } from '../../cv/hooks'
+import type { MatchOut } from '../api'
 import { MatchCard } from '../components/MatchCard'
-import { useComputeMatches, useMatches } from '../hooks'
+import { useComputeMatches, useMatchFeedback, useMatches } from '../hooks'
 
 export function MatchesPage() {
   const cvQuery = useCV()
   const matchesQuery = useMatches()
   const compute = useComputeMatches()
+  const feedback = useMatchFeedback()
+  const [extra, setExtra] = useState<MatchOut[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const hasCv = cvQuery.isSuccess && cvQuery.data != null
-  const rows = matchesQuery.data?.data ?? []
+  const rows = [...(matchesQuery.data?.data ?? []), ...extra]
+  const cursor = nextCursor ?? matchesQuery.data?.next_cursor ?? null
+
+  async function loadMore() {
+    if (!cursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const page = await import('../api').then((m) => m.recommendedRequest(cursor))
+      setExtra((prev) => [...prev, ...page.data])
+      setNextCursor(page.next_cursor)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   return (
     <div>
@@ -21,7 +40,7 @@ export function MatchesPage() {
           <h1 className="font-serif text-2xl font-semibold text-[#1F2937]">Matches</h1>
           <p className="mt-1 text-sm text-[#6B7280]">
             Every open role scored against your CV — sorted by fit, not by how recently it was
-            posted.
+            posted. Each score ships with its matched skills and gaps.
           </p>
         </div>
         {hasCv ? (
@@ -51,7 +70,11 @@ export function MatchesPage() {
         <EmptyState
           title="Nothing scored yet"
           description="Save startups with open roles, then hit “Recompute scores” to rank them. Scores update automatically whenever your CV changes."
-          action={<Button onClick={() => compute.mutate()} loading={compute.isPending}>Recompute scores</Button>}
+          action={
+            <Button onClick={() => compute.mutate()} loading={compute.isPending}>
+              Recompute scores
+            </Button>
+          }
         />
       ) : (
         <>
@@ -60,12 +83,18 @@ export function MatchesPage() {
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((match) => (
-              <MatchCard key={match.job_id} match={match} />
+              <MatchCard
+                key={match.job_id}
+                match={match}
+                onFeedback={(jobId, fb) => feedback.mutate({ jobId, feedback: fb })}
+              />
             ))}
           </div>
-          {matchesQuery.data?.next_cursor ? (
+          {cursor ? (
             <div className="mt-6 text-center">
-              <Button variant="ghost">Load more</Button>
+              <Button variant="ghost" onClick={() => void loadMore()} loading={loadingMore}>
+                Load more
+              </Button>
             </div>
           ) : null}
         </>

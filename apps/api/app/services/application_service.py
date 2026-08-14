@@ -6,7 +6,15 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ScoutError
 from app.core.pagination import cursor_page
-from app.models import Application, Job, Startup, User
+from app.models import (
+    Application,
+    Job,
+    Outreach,
+    Resume,
+    ResumeVersion,
+    Startup,
+    User,
+)
 from app.schemas.application import APPLICATION_STATUSES, ApplicationCreate, ApplicationPatch
 
 STATE_MACHINE: dict[str, frozenset[str]] = {
@@ -95,6 +103,65 @@ def get_application(db: Session, user: User, application_id: uuid.UUID) -> Appli
     return _get_application(db, user, application_id)
 
 
+def resume_version_ref(db: Session, resume_version_id: uuid.UUID | None) -> dict | None:
+    if resume_version_id is None:
+        return None
+    rv = db.get(ResumeVersion, resume_version_id)
+    if rv is None:
+        return None
+    return {
+        "id": rv.id,
+        "created_at": rv.created_at,
+        "reviewed_at": rv.reviewed_at,
+        "content": rv.content,
+    }
+
+
+def last_outreach_ref(db: Session, application_id: uuid.UUID) -> dict | None:
+    row = db.scalar(
+        select(Outreach)
+        .where(Outreach.application_id == application_id)
+        .order_by(Outreach.created_at.desc())
+        .limit(1)
+    )
+    if row is None:
+        return None
+    return {"id": row.id, "channel": row.channel, "status": row.status, "sent_at": row.sent_at}
+
+
+def outreach_for(db: Session, application_id: uuid.UUID) -> list[Outreach]:
+    return list(
+        db.scalars(
+            select(Outreach)
+            .where(Outreach.application_id == application_id)
+            .order_by(Outreach.created_at.desc())
+        ).all()
+    )
+
+
+def timeline_events(db: Session, app: Application, outreach: list[Outreach]) -> list[dict]:
+    events: list[dict] = [
+        {"type": "created", "title": "Application saved", "at": app.created_at}
+    ]
+    if app.applied_at is not None:
+        events.append({"type": "applied", "title": "Marked as applied", "at": app.applied_at})
+    events.append(
+        {
+            "type": "status_change",
+            "title": f"Moved to {app.status}",
+            "at": app.updated_at or app.created_at,
+        }
+    )
+    for item in outreach:
+        events.append({"type": "outreach_created", "title": f"{item.channel} generated", "at": item.created_at})
+        if item.reviewed_at is not None:
+            events.append({"type": "reviewed", "title": f"{item.channel} reviewed", "at": item.reviewed_at})
+        if item.sent_at is not None:
+            events.append({"type": "outreach_sent", "title": f"{item.channel} sent", "at": item.sent_at})
+    events.sort(key=lambda e: e["at"])
+    return events
+
+
 def pipeline(db: Session, user: User) -> dict[str, list[Application]]:
     rows = list(
         db.scalars(
@@ -145,6 +212,17 @@ def update_application(
                     entity_id=row.id,
                 )
             )
+    if body.resume_version_id is not None:
+        rv = db.scalar(
+            select(ResumeVersion)
+            .join(Resume, Resume.id == ResumeVersion.resume_id)
+            .where(ResumeVersion.id == body.resume_version_id, Resume.user_id == user.id)
+        )
+        if rv is None:
+            raise ScoutError(
+                "RESUME_VERSION_NOT_FOUND", "No resume version found with that id.", status_code=404
+            )
+        row.resume_version_id = rv.id
     db.commit()
     return _get_application(db, user, row.id)
 

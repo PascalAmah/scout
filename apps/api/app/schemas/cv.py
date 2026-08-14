@@ -32,6 +32,10 @@ class ComputeMatchOut(BaseModel):
     computed_scores: int
 
 
+class MatchFeedback(BaseModel):
+    feedback: str
+
+
 class MatchOut(BaseModel):
     """A ranked job with its cached fit score.
 

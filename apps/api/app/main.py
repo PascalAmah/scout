@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     api.include_router(cv.router)
     api.include_router(match.router)
     api.include_router(resumes.router)
+    api.include_router(resumes.versions_router)
     api.include_router(outreach.router)
     api.include_router(applications.router)
     api.include_router(analytics.router)

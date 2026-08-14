@@ -1,9 +1,11 @@
-"""Embedding helpers — OpenAI embeddings with a deterministic offline fallback.
+"""Embedding helpers — configurable provider with a deterministic offline fallback.
 
-The fallback is a unit-norm bag-of-ngram hash vector: it is cheap, stable, and
-comparable without an API key, so the save → embed → match loop runs end to end
-headlessly. It mirrors the heuristic-first ethos of ``tasks/extract.py`` — when
-``OPENAI_API_KEY`` is configured we use the real model, otherwise the fallback.
+The client is built from ``tasks.ai_config`` (``AI_EMBEDDING_PROVIDER`` /
+``AI_EMBEDDING_API_KEY``), so embeddings can run on a different provider than
+chat (e.g. Gemini free while reasoning runs on DeepSeek). The fallback is a
+unit-norm bag-of-ngram hash vector: it is cheap, stable, and comparable without
+an API key, so the save → embed → match loop runs end to end headlessly. When a
+key is configured we use the real model, otherwise the fallback.
 """
 
 import hashlib
@@ -12,9 +14,11 @@ import math
 import os
 import re
 
+from tasks.ai_config import embedding_config
+
 logger = logging.getLogger(__name__)
 
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1536"))
 
 _MAX_INPUT_CHARS = 8000
@@ -35,25 +39,35 @@ def pseudo_embedding(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
     return [v / norm for v in vec]
 
 
+def _embedding_client():
+    from openai import OpenAI
+
+    cfg = embedding_config()
+    kwargs = {"api_key": cfg["api_key"]}
+    if cfg["base_url"]:
+        kwargs["base_url"] = cfg["base_url"]
+    return OpenAI(**kwargs)
+
+
 def embed_text(text: str, model: str | None = None, dim: int = EMBEDDING_DIM) -> tuple[list[float], str]:
     """Return ``(vector, model_label)``. Never raises — degraded to the fallback
-    when OpenAI is unavailable, so enqueue-and-forget embed steps can't wedge the
-    pipeline. Partial-failure isolation happens at the caller level."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
+    when no embedding provider/key is configured or it errors, so enqueue-and-
+    forget embed steps can't wedge the pipeline. Partial-failure isolation
+    happens at the caller level."""
+    cfg = embedding_config()
+    if cfg is not None and cfg["api_key"]:
         try:
-            from openai import OpenAI
-
-            client = OpenAI(api_key=api_key)
+            client = _embedding_client()
             prompt = (text or "")[:_MAX_INPUT_CHARS]
             if prompt.strip():
                 resp = client.embeddings.create(
-                    model=model or EMBEDDING_MODEL,
+                    model=model or cfg["model"],
                     input=[prompt],
                     dimensions=dim,
                 )
-                return list(resp.data[0].embedding), f"openai:{model or EMBEDDING_MODEL}"
+                used = model or cfg["model"]
+                return list(resp.data[0].embedding), f"{cfg['provider']}:{used}"
         except Exception as exc:  # pragma: no cover - depends on external service
-            logger.warning("OpenAI embedding failed (%s); using fallback", exc)
+            logger.warning("Embedding provider failed (%s); using fallback", exc)
 
     return pseudo_embedding(text or "", dim), f"fallback:{dim}"

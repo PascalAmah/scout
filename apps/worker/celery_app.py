@@ -13,7 +13,13 @@ celery_app = Celery(
     "scout-worker",
     broker=BROKER_URL,
     backend=BROKER_URL,
-    include=["tasks.enrich_startup", "tasks.refresh_embeddings", "tasks.compute_match"],
+    include=[
+        "tasks.enrich_startup",
+        "tasks.refresh_embeddings",
+        "tasks.compute_match",
+        "tasks.generate_resume",
+        "tasks.generate_cover_letter",
+    ],
 )
 
 celery_app.conf.update(

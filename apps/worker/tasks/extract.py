@@ -1,17 +1,15 @@
 """Structured extraction for startup enrichment.
 
-Tries the LLM path (OpenAI) first; falls back to a deterministic heuristic so
-the save→enrich→view loop works end-to-end even without an API key configured.
+Tries the LLM path (the configured AI provider) first; falls back to a
+deterministic heuristic so the save→enrich→view loop works end-to-end even
+without an API key configured.
 """
 
 import hashlib
-import json
-import os
 import re
-from pathlib import Path
 from typing import Any
 
-PROMPT_PATH = Path(__file__).resolve().parents[2] / "packages" / "prompts" / "enrich_startup.v1.txt"
+_load_prompt = None  # resolved lazily to avoid import cycles
 
 # Ordered: explicit stage mentions beat the "y combinator" hint (a YC company is
 # commonly pre-seed/seed, but an explicit round in the text wins).
@@ -73,7 +71,9 @@ def content_hash(text: str) -> str:
 
 
 def load_prompt() -> str:
-    return PROMPT_PATH.read_text(encoding="utf-8")
+    from tasks.prompts import load_prompt as _load
+
+    return _load("enrich_startup.v1")
 
 
 def _heuristic_extract(text: str) -> dict[str, Any]:
@@ -107,31 +107,18 @@ def _heuristic_extract(text: str) -> dict[str, Any]:
 
 
 def _llm_extract(text: str) -> dict[str, Any] | None:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return None
-    try:
-        from openai import OpenAI
+    from tasks.llm import structured_call
 
-        client = OpenAI(api_key=api_key)
-        prompt = load_prompt()
-        content = text[:8000]
-        resp = client.responses.create(
-            model="gpt-4o-mini",
-            instructions=prompt,
-            input=content,
-            text={"format": {"type": "json_object"}},
-        )
-        payload = json.loads(resp.output_text)
-        return {
-            "company_summary": payload.get("company_summary"),
-            "tech_stack": payload.get("tech_stack") or [],
-            "stage": payload.get("stage"),
-            "hiring_signal": payload.get("hiring_signal"),
-            "tags": payload.get("tags") or [],
-        }
-    except Exception:
+    result = structured_call(load_prompt(), text[:8000])
+    if result is None:
         return None
+    return {
+        "company_summary": result.get("company_summary"),
+        "tech_stack": result.get("tech_stack") or [],
+        "stage": result.get("stage"),
+        "hiring_signal": result.get("hiring_signal"),
+        "tags": result.get("tags") or [],
+    }
 
 
 def extract_company(text: str) -> dict[str, Any]:

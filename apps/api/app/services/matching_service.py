@@ -1,19 +1,23 @@
-"""matching_service — Phase 2 Stage 1 retrieval (embedding similarity).
+"""matching_service — the two-stage matching pipeline.
 
-Per the build plan this ships embedding-only scores:
-- ``recompute_user`` computes cached ``match_scores`` for every open job in the
-  user's workspace — cosine similarity over pgvector embeddings, with a
-  token-overlap fallback so matching works end to end before any of a user's
-  content has been embedded (and on non-postgres test dialects).
-- ``recommended`` reads the cached scores (sorted by fit, not recency).
-- The Phase 3.1 LLM re-rank fills ``confidence_band``/``explanation`` on these
-  same cached rows — they are deliberately ``null`` here.
+- Stage 1 retrieval: cosine similarity over pgvector ``job_embeddings`` (with a
+  deterministic token-overlap fallback so scores exist before any content is
+  embedded and unit tests on sqlite can exercise matching).
+- Stage 2 re-rank: an LLM ``{score, matched_skills, gaps, summary}`` verdict per
+  candidate, with a deterministic ``heuristic_explanation`` fallback so the API
+  contract (explanation + confidence_band always present, gaps required) holds
+  even with no model key. The LLM scorer lives in the worker; the API uses the
+  heuristic fallback synchronously on ``POST /match/compute``.
+- Reads serve the cached ``match_scores`` rows; explanations are stored, never
+  regenerated per view (AI_DESIGN explainability).
 """
 
 import base64
 import math
 import re
 import uuid
+from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from sqlalchemy import ColumnElement, Select, select, tuple_
@@ -30,12 +34,35 @@ from app.models import (
     Startup,
     User,
 )
-from app.schemas.cv import MatchOut
+from app.schemas.cv import MatchExplanation, MatchOut
 
 MATCH_MODEL = "phase_2_embedding"
+RERANK_MODEL = "phase_3_rerank"
+
+STOPWORDS = {
+    "the", "and", "for", "with", "you", "will", "a", "an", "to", "of", "in",
+    "on", "our", "we", "your", "are", "is", "be", "role", "this", "that",
+    "working", "work", "experience", "team", "company", "what", "who", "as",
+    "at", "by", "or", "from", "it", "would", "should", "about",
+}
+
+REQ_KEYWORDS = {
+    "python": "Python", "golang": "Go", "go": "Go", "typescript": "TypeScript",
+    "javascript": "JavaScript", "react": "React", "vue": "Vue", "node": "Node.js",
+    "postgres": "PostgreSQL", "postgresql": "PostgreSQL", "mysql": "MySQL",
+    "graphql": "GraphQL", "docker": "Docker", "kubernetes": "Kubernetes",
+    "k8s": "Kubernetes", "aws": "AWS", "gcp": "Google Cloud",
+    "microsoft azure": "Azure", "azure": "Azure", "redis": "Redis",
+    "fastapi": "FastAPI", "django": "Django", "flask": "Flask",
+    "next.js": "Next.js", "nextjs": "Next.js", "tensorflow": "TensorFlow",
+    "pytorch": "PyTorch", "sql": "SQL", "api": "API", "machine learning": "Machine Learning",
+    "leadership": "Leadership",
+}
+
+Scorer = Callable[[dict[str, Any], Job, Startup, float], tuple[float, dict[str, Any]]]
 
 
-# --- score computation ------------------------------------------------------
+# --- Stage 1: score computation ----------------------------------------------
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -78,16 +105,20 @@ def _job_text(job: Job, startup: Startup) -> str:
     return " ".join(part for part in (startup.summary, job.title, job.description) if part)
 
 
-# --- recompute --------------------------------------------------------------
+def _cv_context(profile: CVProfile) -> dict[str, Any]:
+    sd = profile.structured_data or {}
+    return {
+        "raw_text": profile.raw_text or "",
+        "skills": sd.get("skills") or [],
+        "roles": sd.get("roles") or [],
+        "years_of_experience": sd.get("years_of_experience"),
+        "education": sd.get("education") or [],
+    }
 
 
 def recompute_user(db: Session, user: User, job_id: uuid.UUID | None = None) -> int:
-    """Compute and cache Stage 1 scores for the user's workspace jobs.
-
-    Idempotent: existing ``match_scores`` rows are upserted in place. Returns the
-    number of scores written. Raises nothing — a user without a CV or without
-    workspace jobs simply produces zero scores.
-    """
+    """Stage 1 only: compute and cache summary-embedding scores for the user's
+    workspace jobs. Idempotent upsert. Returns the number of scores written."""
     profile = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
     if profile is None:
         return 0
@@ -142,13 +173,151 @@ def recompute_user(db: Session, user: User, job_id: uuid.UUID | None = None) -> 
             row.score = score
             row.startup_id = startup.id
             row.model = MATCH_MODEL
+        row.computed_at = datetime.now(UTC)
         written += 1
 
     db.commit()
     return written
 
 
-# --- reads ------------------------------------------------------------------
+# --- Stage 2: re-rank (explanation) ------------------------------------------
+
+
+def _job_mentions(job_text_lower: str, skill: str) -> bool:
+    return skill.lower() in job_text_lower
+
+
+def _fallback_gap(job: Job, startup: Startup, cv_text_lower: str) -> str:
+    text = _job_text(job, startup).lower()
+    for word in text.split():
+        w = word.strip(".,;:()[]{}'\"!")
+        if len(w) < 5 or w in STOPWORDS or w in cv_text_lower:
+            continue
+        return w.capitalize()
+    return "Domain-specific specialist knowledge"
+
+
+def heuristic_explanation(
+    cv_ctx: dict[str, Any], job: Job, startup: Startup, stage1_score: float
+) -> tuple[float, dict[str, Any]]:
+    """Deterministic Stage-2 fallback so explanations are always present even
+    without an LLM key. Mirrors the LLM output schema."""
+    job_text = _job_text(job, startup)
+    job_lower = job_text.lower()
+    cv_text_lower = (cv_ctx["raw_text"] or "").lower()
+    skills = list(cv_ctx["skills"] or [])
+    skill_lower = {s.lower() for s in skills}
+
+    matched = [s for s in skills if _job_mentions(job_lower, s)]
+    if not matched:
+        overlap = sorted(_tokens(job_text) & (_tokens(cv_ctx["raw_text"]) | _tokens(*skills)))
+        matched = [t.capitalize() for t in overlap[:4]]
+
+    gaps: list[str] = []
+    for keyword, label in REQ_KEYWORDS.items():
+        if keyword in job_lower and keyword not in cv_text_lower and label.lower() not in skill_lower:
+            if label not in gaps:
+                gaps.append(label)
+    if not gaps:
+        fb = _fallback_gap(job, startup, cv_text_lower)
+        if fb:
+            gaps.append(fb)
+    gaps = gaps[:4]
+
+    score = max(0.0, round(float(stage1_score or 0) - 8.0 * len(gaps), 2))
+    matched_head = ", ".join(matched[:3]) or "your background"
+    explanation = {
+        "matched_skills": matched[:6],
+        "gaps": gaps,
+        "summary": (
+            f"Your background overlaps the role on {matched_head}"
+            f"{'. Specified requirements not evidenced in the CV: ' + ', '.join(gaps[:2]) + '.' if gaps else '.'}"
+        ),
+    }
+    return score, explanation
+
+
+def rerank_user(
+    db: Session, user: User, job_id: uuid.UUID | None = None, scorer: Scorer | None = None
+) -> int:
+    """Stage 2 re-rank: run a scorer over the cached Stage-1 rows and persist the
+    final ``score`` + ``explanation``. Defaults to the deterministic heuristic."""
+    if scorer is None:
+        scorer = heuristic_explanation
+    profile = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
+    if profile is None:
+        return 0
+    cv_ctx = _cv_context(profile)
+
+    stmt: Select = (
+        select(MatchScore, Job, Startup)
+        .join(Job, Job.id == MatchScore.job_id)
+        .join(Startup, Startup.id == Job.startup_id)
+        .where(MatchScore.user_id == user.id)
+    )
+    if job_id is not None:
+        stmt = stmt.where(MatchScore.job_id == job_id)
+
+    rows = list(db.execute(stmt).all())
+    count = 0
+    for score_row, job, startup in rows:
+        stage1 = float(score_row.score or 0)
+        final_score, explanation = scorer(cv_ctx, job, startup, stage1)
+        score_row.score = max(0.0, min(100.0, float(final_score)))
+        score_row.explanation = explanation
+        score_row.model = RERANK_MODEL
+        score_row.computed_at = datetime.now(UTC)
+        count += 1
+    if rows:
+        db.commit()
+    return count
+
+
+def set_feedback(db: Session, user: User, job_id: uuid.UUID, feedback: str) -> MatchScore:
+    if feedback not in ("good", "poor"):
+        raise ScoutError("INVALID_FEEDBACK", "Feedback must be 'good' or 'poor'.", status_code=400)
+    row = db.scalar(
+        select(MatchScore).where(MatchScore.user_id == user.id, MatchScore.job_id == job_id)
+    )
+    if row is None:
+        raise ScoutError("MATCH_NOT_FOUND", "No match score for that job.", status_code=404)
+    row.feedback = feedback
+    db.add(row)
+    db.commit()
+    return row
+
+
+# --- reads -------------------------------------------------------------------
+
+
+def _derive_band(score: float) -> str:
+    if score >= 70:
+        return "strong"
+    if score >= 40:
+        return "moderate"
+    return "weak"
+
+
+def _to_match_out(score: MatchScore, job: Job, startup: Startup) -> MatchOut:
+    explanation = None
+    if score.explanation:
+        explanation = MatchExplanation(**score.explanation)
+    return MatchOut(
+        job_id=job.id,
+        startup_id=startup.id,
+        startup_name=startup.name,
+        title=job.title,
+        description=job.description,
+        location=job.location,
+        remote=job.remote,
+        employment_type=job.employment_type,
+        seniority=job.seniority,
+        url=job.url,
+        status=job.status,
+        score=float(score.score),
+        confidence_band=_derive_band(float(score.score)),
+        explanation=explanation,
+    )
 
 
 def _encode_score_cursor(score: Any, job_id: uuid.UUID) -> str:
@@ -163,25 +332,6 @@ def _decode_score_cursor(cursor: str) -> tuple[float, uuid.UUID]:
         return float(score_str), uuid.UUID(id_str)
     except Exception as exc:
         raise ScoutError("INVALID_CURSOR", "Malformed pagination cursor.", status_code=400) from exc
-
-
-def _to_match_out(score: MatchScore, job: Job, startup: Startup) -> MatchOut:
-    return MatchOut(
-        job_id=job.id,
-        startup_id=startup.id,
-        startup_name=startup.name,
-        title=job.title,
-        description=job.description,
-        location=job.location,
-        remote=job.remote,
-        employment_type=job.employment_type,
-        seniority=job.seniority,
-        url=job.url,
-        status=job.status,
-        score=float(score.score),
-        confidence_band=None,
-        explanation=None,
-    )
 
 
 def recommended(db: Session, user: User, cursor: str | None, limit: int) -> tuple[list[MatchOut], str | None]:

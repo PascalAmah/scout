@@ -61,9 +61,13 @@ def test_match_compute_and_recommended(client: TestClient) -> None:
     first, second = payload["data"]
     assert first["job_id"] == str(job_backend)
     assert first["score"] > second["score"]
-    # Temporary Phase 2 contract deviation — explanation restored in Phase 3.1.
-    assert first["explanation"] is None
-    assert first["confidence_band"] is None
+    # Phase 3.1 restored the full API_SPEC contract: score ships with an
+    # explanation + confidence band, and gaps is required (never "perfect fit").
+    assert first["confidence_band"] in ("strong", "moderate", "weak")
+    assert first["explanation"] is not None
+    assert first["explanation"]["matched_skills"]
+    assert first["explanation"]["gaps"]
+    assert isinstance(first["explanation"]["summary"], str) and first["explanation"]["summary"]
     assert first["startup_name"] == "Acme Robotics"
 
 
@@ -84,7 +88,10 @@ def test_match_detail_after_compute(client: TestClient) -> None:
     body = r.json()
     assert body["job_id"] == str(job_id)
     assert body["score"] > 0
-    assert body["explanation"] is None
+    assert body["confidence_band"] in ("strong", "moderate", "weak")
+    assert body["explanation"] is not None
+    assert body["explanation"]["matched_skills"]
+    assert body["explanation"]["gaps"]
 
     # Not in workspace → 404.
     other = uuid.uuid4()

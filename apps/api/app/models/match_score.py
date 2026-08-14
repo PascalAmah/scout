@@ -2,8 +2,10 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     ForeignKey,
     Index,
@@ -13,9 +15,12 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+ExplanationData = JSON().with_variant(JSONB(), "postgresql")
 
 
 class MatchScore(Base):
@@ -35,6 +40,9 @@ class MatchScore(Base):
     model: Mapped[str] = mapped_column(
         String(50), nullable=False, server_default="phase_2_embedding"
     )
+    explanation: Mapped[dict[str, Any] | None] = mapped_column(ExplanationData, nullable=True)
+    computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    feedback: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

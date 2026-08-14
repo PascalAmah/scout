@@ -20,6 +20,8 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as PasswordResetIndexRouteImport } from './routes/password-reset.index'
 import { Route as PasswordResetConfirmRouteImport } from './routes/password-reset.confirm'
 import { Route as AppCrmIndexRouteImport } from './routes/_app.crm.index'
+import { Route as AppResumeStudioIndexRouteImport } from './routes/_app.resume-studio.index'
+import { Route as AppResumeStudioVersionIdRouteImport } from './routes/_app.resume-studio.$versionId'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app.settings.account'
 import { Route as AppSettingsIntegrationsRouteImport } from './routes/_app.settings.integrations'
@@ -85,6 +87,17 @@ const AppCrmIndexRoute = AppCrmIndexRouteImport.update({
   path: '/crm/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppResumeStudioIndexRoute = AppResumeStudioIndexRouteImport.update({
+  id: '/resume-studio/',
+  path: '/resume-studio/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResumeStudioVersionIdRoute =
+  AppResumeStudioVersionIdRouteImport.update({
+    id: '/resume-studio/$versionId',
+    path: '/resume-studio/$versionId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -157,10 +170,12 @@ export interface FileRoutesByFullPath {
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset/': typeof PasswordResetIndexRoute
   '/startups/$startupId': typeof AppStartupsStartupIdRouteRouteWithChildren
+  '/resume-studio/$versionId': typeof AppResumeStudioVersionIdRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/crm/': typeof AppCrmIndexRoute
+  '/resume-studio/': typeof AppResumeStudioIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/startups/': typeof AppStartupsIndexRoute
   '/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
@@ -177,10 +192,12 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset': typeof PasswordResetIndexRoute
+  '/resume-studio/$versionId': typeof AppResumeStudioVersionIdRoute
   '/settings/account': typeof AppSettingsAccountRoute
   '/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
   '/crm': typeof AppCrmIndexRoute
+  '/resume-studio': typeof AppResumeStudioIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/startups': typeof AppStartupsIndexRoute
   '/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
@@ -202,10 +219,12 @@ export interface FileRoutesById {
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
   '/password-reset/': typeof PasswordResetIndexRoute
   '/_app/startups/$startupId': typeof AppStartupsStartupIdRouteRouteWithChildren
+  '/_app/resume-studio/$versionId': typeof AppResumeStudioVersionIdRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
   '/_app/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/crm/': typeof AppCrmIndexRoute
+  '/_app/resume-studio/': typeof AppResumeStudioIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/startups/': typeof AppStartupsIndexRoute
   '/_app/crm/applications/$applicationId': typeof AppCrmApplicationsApplicationIdRoute
@@ -226,10 +245,12 @@ export interface FileRouteTypes {
     | '/password-reset/confirm'
     | '/password-reset/'
     | '/startups/$startupId'
+    | '/resume-studio/$versionId'
     | '/settings/account'
     | '/settings/integrations'
     | '/settings/profile'
     | '/crm/'
+    | '/resume-studio/'
     | '/settings/'
     | '/startups/'
     | '/crm/applications/$applicationId'
@@ -246,10 +267,12 @@ export interface FileRouteTypes {
     | '/register'
     | '/password-reset/confirm'
     | '/password-reset'
+    | '/resume-studio/$versionId'
     | '/settings/account'
     | '/settings/integrations'
     | '/settings/profile'
     | '/crm'
+    | '/resume-studio'
     | '/settings'
     | '/startups'
     | '/crm/applications/$applicationId'
@@ -270,10 +293,12 @@ export interface FileRouteTypes {
     | '/password-reset/confirm'
     | '/password-reset/'
     | '/_app/startups/$startupId'
+    | '/_app/resume-studio/$versionId'
     | '/_app/settings/account'
     | '/_app/settings/integrations'
     | '/_app/settings/profile'
     | '/_app/crm/'
+    | '/_app/resume-studio/'
     | '/_app/settings/'
     | '/_app/startups/'
     | '/_app/crm/applications/$applicationId'
@@ -368,6 +393,20 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/crm/'
       preLoaderRoute: typeof AppCrmIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resume-studio/': {
+      id: '/_app/resume-studio/'
+      path: '/resume-studio'
+      fullPath: '/resume-studio/'
+      preLoaderRoute: typeof AppResumeStudioIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resume-studio/$versionId': {
+      id: '/_app/resume-studio/$versionId'
+      path: '/resume-studio/$versionId'
+      fullPath: '/resume-studio/$versionId'
+      preLoaderRoute: typeof AppResumeStudioVersionIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings/': {
@@ -492,7 +531,9 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppMatchesRoute: typeof AppMatchesRoute
   AppStartupsStartupIdRouteRoute: typeof AppStartupsStartupIdRouteRouteWithChildren
+  AppResumeStudioVersionIdRoute: typeof AppResumeStudioVersionIdRoute
   AppCrmIndexRoute: typeof AppCrmIndexRoute
+  AppResumeStudioIndexRoute: typeof AppResumeStudioIndexRoute
   AppStartupsIndexRoute: typeof AppStartupsIndexRoute
   AppCrmApplicationsApplicationIdRoute: typeof AppCrmApplicationsApplicationIdRoute
 }
@@ -502,7 +543,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppMatchesRoute: AppMatchesRoute,
   AppStartupsStartupIdRouteRoute: AppStartupsStartupIdRouteRouteWithChildren,
+  AppResumeStudioVersionIdRoute: AppResumeStudioVersionIdRoute,
   AppCrmIndexRoute: AppCrmIndexRoute,
+  AppResumeStudioIndexRoute: AppResumeStudioIndexRoute,
   AppStartupsIndexRoute: AppStartupsIndexRoute,
   AppCrmApplicationsApplicationIdRoute: AppCrmApplicationsApplicationIdRoute,
 }

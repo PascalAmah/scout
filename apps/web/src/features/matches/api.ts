@@ -36,3 +36,10 @@ export function recommendedRequest(cursor?: string): Promise<Page<MatchOut>> {
 export function computeMatchesRequest(): Promise<ComputeMatchesOut> {
   return api('/match/compute', { method: 'POST' })
 }
+
+export function matchFeedbackRequest(jobId: string, feedback: 'good' | 'poor'): Promise<MatchOut> {
+  return api(`/match/${jobId}/feedback`, {
+    method: 'POST',
+    body: JSON.stringify({ feedback }),
+  })
+}
