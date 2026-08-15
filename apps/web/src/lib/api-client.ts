@@ -2,8 +2,10 @@ import type { TokenResponse, User } from "@scout/types";
 
 import { refreshAccessToken, tokens } from "./auth";
 
-export const API_BASE =
-  import.meta.env.VITE_API_BASE ?? "http://localhost:8000/v1";
+// Relative path: dev requests go through the Vite proxy (/v1 → :8000),
+// so no CORS is involved locally. Production sets VITE_API_BASE to the
+// real API origin (e.g. https://api.scout.app/v1).
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "/v1";
 
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: Record<string, unknown> };
