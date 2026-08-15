@@ -10,12 +10,19 @@ class CVProfileOut(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    name: str
+    is_default: bool
     raw_text: str | None
     structured_data: dict[str, Any] | None
     source_file_key: str | None
     last_embedded_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class CVProfilePatch(BaseModel):
+    name: str | None = None
+    is_default: bool | None = None
 
 
 class MatchExplanation(BaseModel):

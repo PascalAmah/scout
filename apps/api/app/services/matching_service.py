@@ -105,6 +105,17 @@ def _job_text(job: Job, startup: Startup) -> str:
     return " ".join(part for part in (startup.summary, job.title, job.description) if part)
 
 
+def _default_profile(db: Session, user: User) -> CVProfile | None:
+    """The user's active CV profile — matches anchor to it. With multiple
+    profiles (Phase 6.2) the marked default wins, oldest as fallback."""
+    return db.scalar(
+        select(CVProfile)
+        .where(CVProfile.user_id == user.id)
+        .order_by(CVProfile.is_default.desc(), CVProfile.created_at.asc())
+        .limit(1)
+    )
+
+
 def _cv_context(profile: CVProfile) -> dict[str, Any]:
     sd = profile.structured_data or {}
     return {
@@ -119,7 +130,7 @@ def _cv_context(profile: CVProfile) -> dict[str, Any]:
 def recompute_user(db: Session, user: User, job_id: uuid.UUID | None = None) -> int:
     """Stage 1 only: compute and cache summary-embedding scores for the user's
     workspace jobs. Idempotent upsert. Returns the number of scores written."""
-    profile = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
+    profile = _default_profile(db, user)
     if profile is None:
         return 0
 
@@ -244,7 +255,7 @@ def rerank_user(
     final ``score`` + ``explanation``. Defaults to the deterministic heuristic."""
     if scorer is None:
         scorer = heuristic_explanation
-    profile = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
+    profile = _default_profile(db, user)
     if profile is None:
         return 0
     cv_ctx = _cv_context(profile)

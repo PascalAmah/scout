@@ -1321,6 +1321,7 @@
           "cv"
         ],
         "summary": "Get Cv",
+        "description": "The user's default (active) CV profile.",
         "operationId": "get_cv_v1_cv_get",
         "responses": {
           "200": {
@@ -1345,7 +1346,7 @@
           "cv"
         ],
         "summary": "Upload Cv",
-        "description": "Upload or replace the active CV \u2014 either a file (PDF/text) or raw text.",
+        "description": "Upload or replace the default CV profile \u2014 either a file (PDF/text) or raw text.",
         "operationId": "upload_cv_v1_cv_post",
         "requestBody": {
           "content": {
@@ -1383,6 +1384,180 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/v1/cv/profiles": {
+      "get": {
+        "tags": [
+          "cv"
+        ],
+        "summary": "List Profiles",
+        "operationId": "list_profiles_v1_cv_profiles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CVProfileOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Profiles V1 Cv Profiles Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "cv"
+        ],
+        "summary": "Create Profile",
+        "description": "Create a new named CV profile (e.g. \"backend\" vs \"product\"). The first\nprofile a user creates becomes their default.",
+        "operationId": "create_profile_v1_cv_profiles_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_profile_v1_cv_profiles_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CVProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/cv/profiles/{profile_id}": {
+      "patch": {
+        "tags": [
+          "cv"
+        ],
+        "summary": "Patch Profile",
+        "description": "Rename a profile and/or promote it to default.",
+        "operationId": "patch_profile_v1_cv_profiles__profile_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CVProfilePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CVProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "cv"
+        ],
+        "summary": "Delete Profile",
+        "description": "Delete a profile. Deleting the default promotes the oldest remaining one.",
+        "operationId": "delete_profile_v1_cv_profiles__profile_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/match/compute": {
@@ -3487,6 +3662,42 @@
         ],
         "title": "ApplicationStartup"
       },
+      "Body_create_profile_v1_cv_profiles_post": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Body_create_profile_v1_cv_profiles_post"
+      },
       "Body_upload_cv_v1_cv_post": {
         "properties": {
           "file": {
@@ -3527,6 +3738,14 @@
             "type": "string",
             "format": "uuid",
             "title": "User Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
           },
           "raw_text": {
             "anyOf": [
@@ -3589,6 +3808,8 @@
         "required": [
           "id",
           "user_id",
+          "name",
+          "is_default",
           "raw_text",
           "structured_data",
           "source_file_key",
@@ -3597,6 +3818,34 @@
           "updated_at"
         ],
         "title": "CVProfileOut"
+      },
+      "CVProfilePatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "is_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Default"
+          }
+        },
+        "type": "object",
+        "title": "CVProfilePatch"
       },
       "ComputeMatchOut": {
         "properties": {

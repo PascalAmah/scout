@@ -8,6 +8,7 @@ configured. The LLM parse path is a Phase 3+ refinement, not an MVP dependency.
 
 import io
 import re
+import uuid
 from typing import Any
 
 from sqlalchemy import select
@@ -171,23 +172,77 @@ def parse_cv_text(raw_text: str) -> dict[str, Any]:
     }
 
 
+DEFAULT_PROFILE_NAME = "Default"
+
+
+def default_profile(db: Session, user: User) -> CVProfile | None:
+    """The user's active CV profile — the anchor for matching. Prefers the
+    marked default, falling back to the oldest profile when none is marked."""
+    return db.scalar(
+        select(CVProfile)
+        .where(CVProfile.user_id == user.id)
+        .order_by(CVProfile.is_default.desc(), CVProfile.created_at.asc())
+        .limit(1)
+    )
+
+
 def get_cv(db: Session, user: User) -> CVProfile:
-    row = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
-    if row is None:
+    profile = default_profile(db, user)
+    if profile is None:
         raise ScoutError(
             "CV_NOT_FOUND", "No CV uploaded yet. Upload one in Settings → Profile/CV.", status_code=404
         )
+    return profile
+
+
+def _get_owned_profile(db: Session, user: User, profile_id: uuid.UUID) -> CVProfile:
+    row = db.scalar(
+        select(CVProfile).where(CVProfile.id == profile_id, CVProfile.user_id == user.id)
+    )
+    if row is None:
+        raise ScoutError("CV_PROFILE_NOT_FOUND", "No CV profile found with that id.", status_code=404)
     return row
 
 
+def _enqueue_for_profile(db: Session, user: User, profile: CVProfile) -> None:
+    """Re-embed the profile and recompute matches (anchored to the default)."""
+    job_queue.enqueue_refresh_embeddings("cv", str(profile.id))
+    job_queue.enqueue_compute_match(str(user.id))
+
+
+def _validate_name(name: str) -> str:
+    cleaned = (name or "").strip()
+    if not cleaned:
+        raise ScoutError("CV_PROFILE_NAME_REQUIRED", "Profile name is required.", status_code=422)
+    if len(cleaned) > 60:
+        raise ScoutError("CV_PROFILE_NAME_TOO_LONG", "Profile name must be 60 characters or fewer.", status_code=422)
+    return cleaned
+
+
+def _ensure_unique_name(db: Session, user: User, name: str, exclude_id: uuid.UUID | None = None) -> None:
+    stmt = select(CVProfile).where(CVProfile.user_id == user.id, CVProfile.name == name)
+    if exclude_id is not None:
+        stmt = stmt.where(CVProfile.id != exclude_id)
+    if db.scalar(stmt) is not None:
+        raise ScoutError(
+            "CV_PROFILE_NAME_TAKEN", f"A CV profile named '{name}' already exists.", status_code=409
+        )
+
+
 def upsert_cv(db: Session, user: User, raw_text: str, source_file_key: str | None = None) -> CVProfile:
-    """Replace the user's active CV profile and re-queue embedding + matching."""
+    """Replace the user's default CV profile and re-queue embedding + matching."""
     if not raw_text or not raw_text.strip():
         raise ScoutError("CV_EMPTY", "Uploaded CV contains no readable text.", status_code=422)
 
-    profile = db.scalar(select(CVProfile).where(CVProfile.user_id == user.id))
+    profile = default_profile(db, user)
     if profile is None:
-        profile = CVProfile(user_id=user.id, raw_text=raw_text, source_file_key=source_file_key)
+        profile = CVProfile(
+            user_id=user.id,
+            name=DEFAULT_PROFILE_NAME,
+            is_default=True,
+            raw_text=raw_text,
+            source_file_key=source_file_key,
+        )
         db.add(profile)
     else:
         profile.raw_text = raw_text
@@ -204,11 +259,93 @@ def upsert_cv(db: Session, user: User, raw_text: str, source_file_key: str | Non
 
     db.commit()
     db.refresh(profile)
-
-    job_queue.enqueue_refresh_embeddings("cv", str(profile.id))
-    job_queue.enqueue_compute_match(str(user.id))
-
+    _enqueue_for_profile(db, user, profile)
     return profile
+
+
+def list_profiles(db: Session, user: User) -> list[CVProfile]:
+    return list(
+        db.scalars(
+            select(CVProfile)
+            .where(CVProfile.user_id == user.id)
+            .order_by(CVProfile.is_default.desc(), CVProfile.created_at.asc())
+        ).all()
+    )
+
+
+def create_profile(
+    db: Session, user: User, name: str, raw_text: str, source_file_key: str | None = None
+) -> CVProfile:
+    """Create a new named CV profile. The first profile becomes the default."""
+    if not raw_text or not raw_text.strip():
+        raise ScoutError("CV_EMPTY", "Uploaded CV contains no readable text.", status_code=422)
+    cleaned = _validate_name(name)
+    _ensure_unique_name(db, user, cleaned)
+
+    has_any = db.scalar(select(CVProfile.id).where(CVProfile.user_id == user.id).limit(1))
+    profile = CVProfile(
+        user_id=user.id,
+        name=cleaned,
+        is_default=has_any is None,
+        raw_text=raw_text,
+        source_file_key=source_file_key,
+        structured_data=parse_cv_text(raw_text),
+    )
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    _enqueue_for_profile(db, user, profile)
+    return profile
+
+
+def update_profile(
+    db: Session,
+    user: User,
+    profile_id: uuid.UUID,
+    *,
+    name: str | None = None,
+    is_default: bool | None = None,
+) -> CVProfile:
+    profile = _get_owned_profile(db, user, profile_id)
+    if name is not None:
+        cleaned = _validate_name(name)
+        _ensure_unique_name(db, user, cleaned, exclude_id=profile.id)
+        profile.name = cleaned
+    if is_default is True and not profile.is_default:
+        # Promote this profile: clear the old default and flush BEFORE setting
+        # the new one, so the one-default partial index never sees two rows as
+        # default within a single flush (sqlite checks per-row in executemany).
+        for other in db.scalars(
+            select(CVProfile).where(CVProfile.user_id == user.id, CVProfile.is_default.is_(True))
+        ).all():
+            other.is_default = False
+        db.flush()
+        profile.is_default = True
+    db.commit()
+    db.refresh(profile)
+    if is_default is True:
+        _enqueue_for_profile(db, user, profile)
+    return profile
+
+
+def delete_profile(db: Session, user: User, profile_id: uuid.UUID) -> None:
+    """Delete a profile; if it was the default, promote the oldest remaining one."""
+    profile = _get_owned_profile(db, user, profile_id)
+    was_default = profile.is_default
+    db.delete(profile)
+    db.flush()
+
+    if was_default:
+        next_default = db.scalar(
+            select(CVProfile)
+            .where(CVProfile.user_id == user.id)
+            .order_by(CVProfile.created_at.asc())
+            .limit(1)
+        )
+        if next_default is not None:
+            next_default.is_default = True
+    db.commit()
+    job_queue.enqueue_compute_match(str(user.id))
 
 
 def cv_embedding(db: Session, profile: CVProfile) -> CVEmbedding | None:

@@ -317,18 +317,67 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Cv */
+        /**
+         * Get Cv
+         * @description The user's default (active) CV profile.
+         */
         get: operations["get_cv_v1_cv_get"];
         put?: never;
         /**
          * Upload Cv
-         * @description Upload or replace the active CV — either a file (PDF/text) or raw text.
+         * @description Upload or replace the default CV profile — either a file (PDF/text) or raw text.
          */
         post: operations["upload_cv_v1_cv_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/cv/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Profiles */
+        get: operations["list_profiles_v1_cv_profiles_get"];
+        put?: never;
+        /**
+         * Create Profile
+         * @description Create a new named CV profile (e.g. "backend" vs "product"). The first
+         *     profile a user creates becomes their default.
+         */
+        post: operations["create_profile_v1_cv_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cv/profiles/{profile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Profile
+         * @description Delete a profile. Deleting the default promotes the oldest remaining one.
+         */
+        delete: operations["delete_profile_v1_cv_profiles__profile_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Patch Profile
+         * @description Rename a profile and/or promote it to default.
+         */
+        patch: operations["patch_profile_v1_cv_profiles__profile_id__patch"];
         trace?: never;
     };
     "/v1/match/compute": {
@@ -1027,6 +1076,15 @@ export interface components {
             /** Website */
             website?: string | null;
         };
+        /** Body_create_profile_v1_cv_profiles_post */
+        Body_create_profile_v1_cv_profiles_post: {
+            /** Name */
+            name: string;
+            /** File */
+            file?: string | null;
+            /** Text */
+            text?: string | null;
+        };
         /** Body_upload_cv_v1_cv_post */
         Body_upload_cv_v1_cv_post: {
             /** File */
@@ -1046,6 +1104,10 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+            /** Name */
+            name: string;
+            /** Is Default */
+            is_default: boolean;
             /** Raw Text */
             raw_text: string | null;
             /** Structured Data */
@@ -1066,6 +1128,13 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** CVProfilePatch */
+        CVProfilePatch: {
+            /** Name */
+            name?: string | null;
+            /** Is Default */
+            is_default?: boolean | null;
         };
         /** ComputeMatchOut */
         ComputeMatchOut: {
@@ -2891,6 +2960,123 @@ export interface operations {
         requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_upload_cv_v1_cv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CVProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_profiles_v1_cv_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CVProfileOut"][];
+                };
+            };
+        };
+    };
+    create_profile_v1_cv_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_profile_v1_cv_profiles_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CVProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_profile_v1_cv_profiles__profile_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_profile_v1_cv_profiles__profile_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CVProfilePatch"];
             };
         };
         responses: {
