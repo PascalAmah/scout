@@ -26,7 +26,6 @@ data/
 # tooling
 .plasmo/
 chrome-extension/*
-!.plasmo/
 *.tsbuildinfo
 pytest_cache/
 .pytest_cache/
