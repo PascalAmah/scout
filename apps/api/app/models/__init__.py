@@ -12,6 +12,7 @@ from app.models.outreach import Outreach
 from app.models.resume import Resume
 from app.models.resume_version import ResumeVersion
 from app.models.saved_startup import SavedStartup
+from app.models.source_registry import SourceRegistry
 from app.models.startup import Startup
 from app.models.startup_embedding import StartupEmbedding
 from app.models.user import User
@@ -31,6 +32,7 @@ __all__ = [
     "Resume",
     "ResumeVersion",
     "SavedStartup",
+    "SourceRegistry",
     "Startup",
     "StartupEmbedding",
     "User",

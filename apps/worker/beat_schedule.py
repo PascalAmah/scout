@@ -19,6 +19,19 @@ beat_schedule = {
         "task": "send_reminder_emails",
         "schedule": crontab(hour=8, minute=0),
     },
+    # Expansion (Phase 6): server-initiated source sync. Compliance is hard-
+    # gated inside sync_company (source_registry tiers) — restricted and
+    # user_capture-only sources refuse to run even if scheduled.
+    "sync-techstars-daily": {
+        "task": "sync_company",
+        "schedule": crontab(hour=5, minute=30),
+        "kwargs": {"source": "techstars", "discovery": True},
+    },
+    "sync-producthunt-daily": {
+        "task": "sync_company",
+        "schedule": crontab(hour=6, minute=0),
+        "kwargs": {"source": "producthunt", "discovery": True},
+    },
 }
 
 # Keep the name stable for future importers.

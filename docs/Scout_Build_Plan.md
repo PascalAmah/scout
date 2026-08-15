@@ -140,7 +140,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 ## Phase 6 — Expansion
 **Goal:** more sources, less manual work, and the assistant.
 
-1. Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`.
+1. ✅ **DONE (2026-08-15)** — Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`. (Wellfound seeded `user_capture` — login-walled/anti-scraping terms — so it correctly gets no server-side sync; flip the tier if a data agreement ever exists.)
 2. Add multiple CV/resume profiles (e.g. "backend" vs "product" positioning).
 3. Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
 4. Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
@@ -181,7 +181,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
 | Phase 5 — Insight Layer | ✅ **DONE** (2026-08-15) | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
-| Phase 6 — Expansion | pending | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
+| Phase 6 — Expansion | in progress (6.1 sync_company done) | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
 
 ### Verified (2026-08-12) — Phase 1
 - API: 7 pytest pass; ruff + mypy clean (59 files). Worker: 6 pytest pass; ruff clean.
@@ -213,6 +213,14 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - Analytics endpoints verified headlessly: `GET /analytics/summary` returns applications-sent / response-rate / applied→interview / offers with previous-period deltas, a per-status breakdown, and a weekly response-rate series; `GET /analytics/funnel` returns cumulative "reached stage" counts (saved→interested→applied→interview→offer) with stage-over-stage conversion %. Filters (`from`/`to`, `source`) honored; previous-period window equals the current window length; empty state returns zeroed counts + null rates.
 - Snapshot semantics (no status-history table): `rejected` counts as having reached interview (state machine: only reachable from interview); `archived` applications are excluded from the funnel and rate denominators. Documented in the service.
 - Bug fixed during verification: `rejected` was initially ranked above `offer`, so rejections inflated the offer count — now ranked at interview level with a regression test (`test_funnel_rejected_reaches_interview`).
+
+### Verified (2026-08-15) — Phase 6.1
+- API: 34 pytest pass; ruff + mypy clean (79 files). Worker: 28 pytest pass (14 new: sync gate, robots gate, techstars + producthunt adapters, sync_company task); ruff clean.
+- `source_registry` migration `0005` (table + tier seeds) imports clean; registered in `app.models`.
+- Compliance gate verified headlessly: `assert_sync_allowed` accepts `direct_api`/`permitted_crawl`, rejects `restricted`/`user_capture`/inactive; `sync_company` returns `status: blocked` for wellfound (user_capture) and for unknown sources; robots.txt gate blocks disallowed paths and allows missing robots.txt.
+- Adapters verified with mocks: techstars sitemap discovery + HTML cleaning; producthunt GraphQL fetch/discover (loud `NotConfiguredError` without `PRODUCTHUNT_API_TOKEN`).
+- Beat schedule: daily `sync-techstars-daily` + `sync-producthunt-daily` — both hard-gated inside the task, so a source flipped to `restricted` stops syncing automatically.
+- **Note:** Wellfound is seeded `user_capture` (login-walled, anti-scraping ToS) — no server-side sync for it per ARCHITECTURE.md; the registry row is the reviewed config entry to flip if terms change.
 
 ## Frontend Implementation Map
 
