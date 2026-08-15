@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 
 import { tokens } from '../../lib/auth'
+import { clearExtensionSession, pushSessionToExtension } from '../../lib/extension-auth'
 import { type TokenResponse, type User } from '../../lib/api-client'
 import {
   loginRequest,
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 function applySession(tokensResult: TokenResponse) {
   tokens.set(tokensResult.access_token, tokensResult.refresh_token)
+  pushSessionToExtension(tokensResult.access_token, tokensResult.refresh_token)
   return tokensResult.user
 }
 
@@ -33,6 +35,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
   const sessionQuery = useQuery(sessionQueryOptions)
+
+  // On boot (page reload with tokens already in localStorage), re-push the
+  // session to the extension so it stays in sync across browser restarts.
+  useEffect(() => {
+    if (sessionQuery.data) {
+      const access = tokens.access
+      const refresh = tokens.refresh
+      if (access && refresh) pushSessionToExtension(access, refresh)
+    }
+  }, [sessionQuery.data])
 
   const loginMutation = useMutation({
     mutationFn: (body: LoginBody) => loginRequest(body),
@@ -61,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       tokens.clear()
+      clearExtensionSession()
       queryClient.setQueryData(['me'], null)
       queryClient.clear()
     },

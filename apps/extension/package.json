@@ -22,6 +22,12 @@
     "action": {
       "default_title": "Save to Scout",
       "default_popup": "popup.html"
+    },
+    "externally_connectable": {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://scout.app/*"
+      ]
     }
   },
   "dependencies": {
