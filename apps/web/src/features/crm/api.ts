@@ -84,6 +84,16 @@ export function updateApplicationRequest(
   return api(`/applications/${applicationId}`, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
+export interface BulkApplicationBody {
+  application_ids: string[]
+  status?: 'archived'
+  tags?: string[]
+}
+
+export function bulkApplicationsRequest(body: BulkApplicationBody): Promise<{ updated: number }> {
+  return api('/applications/bulk', { method: 'POST', body: JSON.stringify(body) })
+}
+
 export function archiveApplicationRequest(applicationId: string): Promise<void> {
   return api(`/applications/${applicationId}`, { method: 'DELETE' })
 }

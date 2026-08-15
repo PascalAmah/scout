@@ -680,6 +680,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/applications/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Actions
+         * @description Bulk pipeline actions (Phase 6.3): archive selected applications and/or
+         *     set tags on them in one call.
+         */
+        post: operations["bulk_actions_v1_applications_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/applications/{application_id}/follow-up": {
         parameters: {
             query?: never;
@@ -989,6 +1010,8 @@ export interface components {
             job_id: string | null;
             /** Status */
             status: string;
+            /** Tags */
+            tags?: string[] | null;
             /** Applied At */
             applied_at: string | null;
             /**
@@ -1040,6 +1063,8 @@ export interface components {
             job_id: string | null;
             /** Status */
             status: string;
+            /** Tags */
+            tags?: string[] | null;
             /** Applied At */
             applied_at: string | null;
             /**
@@ -1061,6 +1086,8 @@ export interface components {
         ApplicationPatch: {
             /** Status */
             status?: string | null;
+            /** Tags */
+            tags?: string[] | null;
             /** Resume Version Id */
             resume_version_id?: string | null;
         };
@@ -1091,6 +1118,25 @@ export interface components {
             file?: string | null;
             /** Text */
             text?: string | null;
+        };
+        /** BulkApplicationOut */
+        BulkApplicationOut: {
+            /** Updated */
+            updated: number;
+        };
+        /**
+         * BulkApplicationRequest
+         * @description Bulk pipeline actions (Phase 6.3). ``status`` is limited to ``archived``
+         *     — it's the only transition valid from every state in the state machine;
+         *     ``tags`` replaces the tags on every listed application.
+         */
+        BulkApplicationRequest: {
+            /** Application Ids */
+            application_ids: string[];
+            /** Status */
+            status?: string | null;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** CVProfileOut */
         CVProfileOut: {
@@ -3669,6 +3715,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FollowUpOut"][];
+                };
+            };
+        };
+    };
+    bulk_actions_v1_applications_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkApplicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkApplicationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

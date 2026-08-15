@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   applicationRequest,
   archiveApplicationRequest,
+  bulkApplicationsRequest,
   createApplicationRequest,
   generateOutreachRequest,
   jobStatusRequest,
@@ -11,6 +12,7 @@ import {
   updateApplicationRequest,
   updateOutreachRequest,
   type ApplicationStatus,
+  type BulkApplicationBody,
   type OutreachChannel,
 } from './api'
 
@@ -46,6 +48,17 @@ export function useUpdateApplicationStatus() {
       updateApplicationRequest(applicationId, { status }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['crm', 'pipeline'] })
+    },
+  })
+}
+
+export function useBulkApplications() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: BulkApplicationBody) => bulkApplicationsRequest(body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'pipeline'] })
+      void queryClient.invalidateQueries({ queryKey: ['applications'] })
     },
   })
 }

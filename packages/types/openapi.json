@@ -2468,6 +2468,53 @@
         ]
       }
     },
+    "/v1/applications/bulk": {
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Bulk Actions",
+        "description": "Bulk pipeline actions (Phase 6.3): archive selected applications and/or\nset tags on them in one call.",
+        "operationId": "bulk_actions_v1_applications_bulk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkApplicationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/applications/{application_id}/follow-up": {
       "post": {
         "tags": [
@@ -3380,6 +3427,20 @@
             "type": "string",
             "title": "Status"
           },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
           "applied_at": {
             "anyOf": [
               {
@@ -3528,6 +3589,20 @@
             "type": "string",
             "title": "Status"
           },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
           "applied_at": {
             "anyOf": [
               {
@@ -3615,6 +3690,20 @@
               }
             ],
             "title": "Status"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
           },
           "resume_version_id": {
             "anyOf": [
@@ -3726,6 +3815,62 @@
         },
         "type": "object",
         "title": "Body_upload_cv_v1_cv_post"
+      },
+      "BulkApplicationOut": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "title": "BulkApplicationOut"
+      },
+      "BulkApplicationRequest": {
+        "properties": {
+          "application_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Application Ids"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application_ids"
+        ],
+        "title": "BulkApplicationRequest",
+        "description": "Bulk pipeline actions (Phase 6.3). ``status`` is limited to ``archived``\n\u2014 it's the only transition valid from every state in the state machine;\n``tags`` replaces the tags on every listed application."
       },
       "CVProfileOut": {
         "properties": {

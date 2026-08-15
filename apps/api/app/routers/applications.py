@@ -12,6 +12,8 @@ from app.schemas.application import (
     ApplicationDetail,
     ApplicationOut,
     ApplicationPatch,
+    BulkApplicationOut,
+    BulkApplicationRequest,
     FollowUpAccepted,
     FollowUpOut,
     LastOutreachRef,
@@ -34,6 +36,7 @@ def _to_out(app, db: Session) -> ApplicationOut:
         startup_id=app.startup_id,
         job_id=app.job_id,
         status=app.status,
+        tags=app.tags,
         applied_at=app.applied_at,
         created_at=app.created_at,
         updated_at=app.updated_at,
@@ -102,6 +105,17 @@ def needs_follow_up(
             )
         )
     return out
+
+
+@router.post("/bulk", response_model=BulkApplicationOut)
+def bulk_actions(
+    body: BulkApplicationRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BulkApplicationOut:
+    """Bulk pipeline actions (Phase 6.3): archive selected applications and/or
+    set tags on them in one call."""
+    return BulkApplicationOut(updated=application_service.bulk_update(db, user, body))
 
 
 @router.post("/{application_id}/follow-up", response_model=FollowUpAccepted, status_code=status.HTTP_202_ACCEPTED)

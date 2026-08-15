@@ -19,7 +19,22 @@ class ApplicationCreate(BaseModel):
 
 class ApplicationPatch(BaseModel):
     status: str | None = None
+    tags: list[str] | None = None
     resume_version_id: uuid.UUID | None = None
+
+
+class BulkApplicationRequest(BaseModel):
+    """Bulk pipeline actions (Phase 6.3). ``status`` is limited to ``archived``
+    — it's the only transition valid from every state in the state machine;
+    ``tags`` replaces the tags on every listed application."""
+
+    application_ids: list[uuid.UUID]
+    status: str | None = None
+    tags: list[str] | None = None
+
+
+class BulkApplicationOut(BaseModel):
+    updated: int
 
 
 class ApplicationJob(BaseModel):
@@ -53,6 +68,7 @@ class ApplicationOut(BaseModel):
     startup_id: uuid.UUID
     job_id: uuid.UUID | None
     status: str
+    tags: list[str] | None = None
     applied_at: datetime | None
     created_at: datetime
     updated_at: datetime

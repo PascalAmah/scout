@@ -15,7 +15,12 @@ from app.models import (
     Startup,
     User,
 )
-from app.schemas.application import APPLICATION_STATUSES, ApplicationCreate, ApplicationPatch
+from app.schemas.application import (
+    APPLICATION_STATUSES,
+    ApplicationCreate,
+    ApplicationPatch,
+    BulkApplicationRequest,
+)
 
 STATE_MACHINE: dict[str, frozenset[str]] = {
     "saved": frozenset({"interested", "applied", "archived"}),
@@ -212,6 +217,8 @@ def update_application(
                     entity_id=row.id,
                 )
             )
+    if body.tags is not None:
+        row.tags = list(dict.fromkeys(tag.strip() for tag in body.tags if tag.strip()))
     if body.resume_version_id is not None:
         rv = db.scalar(
             select(ResumeVersion)
@@ -225,6 +232,43 @@ def update_application(
         row.resume_version_id = rv.id
     db.commit()
     return _get_application(db, user, row.id)
+
+
+def bulk_update(db: Session, user: User, body: BulkApplicationRequest) -> int:
+    """Bulk pipeline actions (Phase 6.3): archive a set of applications and/or
+    replace their tags. Ownership is enforced per row; every listed id must
+    exist and belong to the user."""
+    if not body.application_ids:
+        raise ScoutError("EMPTY_BULK", "No applications selected.", status_code=422)
+    if body.status is not None and body.status != "archived":
+        raise ScoutError(
+            "INVALID_BULK_STATUS",
+            "Bulk status moves are limited to 'archived' (valid from any state).",
+            status_code=422,
+        )
+
+    ids = list(dict.fromkeys(body.application_ids))
+    rows = list(
+        db.scalars(
+            select(Application).where(
+                Application.id.in_(ids), Application.user_id == user.id
+            )
+        ).all()
+    )
+    if len(rows) != len(ids):
+        raise ScoutError(
+            "APPLICATION_NOT_FOUND",
+            "One or more applications were not found.",
+            status_code=404,
+        )
+
+    for row in rows:
+        if body.status is not None:
+            row.status = body.status
+        if body.tags is not None:
+            row.tags = list(dict.fromkeys(tag.strip() for tag in body.tags if tag.strip()))
+    db.commit()
+    return len(rows)
 
 
 def archive_application(db: Session, user: User, application_id: uuid.UUID) -> Application:

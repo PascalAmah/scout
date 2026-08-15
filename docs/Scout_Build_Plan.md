@@ -142,7 +142,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 1. ✅ **DONE (2026-08-15)** — Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`. (Wellfound seeded `user_capture` — login-walled/anti-scraping terms — so it correctly gets no server-side sync; flip the tier if a data agreement ever exists.)
 2. ✅ **DONE (2026-08-15)** — Add multiple CV/resume profiles (e.g. "backend" vs "product" positioning).
-3. Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
+3. ✅ **DONE (2026-08-15)** — Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
 4. Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
 5. Build hybrid (keyword + semantic) search across saved startups.
 6. Build the AI Assistant (v3): tool-use agent per `AI_DESIGN.md`'s RAG architecture — typed SQL query tools for structured questions, pgvector semantic search for fuzzy ones, read-only in this scope (no write actions), strict per-user scoping enforced server-side on every tool call.
@@ -181,7 +181,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
 | Phase 5 — Insight Layer | ✅ **DONE** (2026-08-15) | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
-| Phase 6 — Expansion | in progress (6.1 + 6.2 done) | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
+| Phase 6 — Expansion | in progress (6.1 + 6.2 + 6.3 done) | Assistant chat UI (tool traces), Matches feedback thumbs |
 
 ### Verified (2026-08-12) — Phase 1
 - API: 7 pytest pass; ruff + mypy clean (59 files). Worker: 6 pytest pass; ruff clean.
@@ -229,6 +229,13 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - Bug fixed during verification: promoting a default could briefly leave two profiles as default in one flush, tripping the one-default partial index (sqlite checks per-row) — now clears + flushes the old default before promoting (deterministic).
 - Web: Settings → Profile/CV reworked — profile list (default badge, make-default, delete, replace), new-profile form (name + paste/file), parsed detail follows the default. Typecheck + lint + build clean.
 
+### Verified (2026-08-15) — Phase 6.3
+- API: 49 pytest pass (6 new bulk-action tests); ruff + mypy clean (79 files).
+- Migration `0007_applications_tags`: adds `applications.tags` (JSON list). `ApplicationPatch`/`ApplicationOut` carry `tags`.
+- `POST /applications/bulk` verified headlessly: bulk archive (any status → `archived`, ownership-checked) and bulk tag (appends tag, deduped). Per-application ownership validation → foreign ids get `404`-style partial results returned as per-id results.
+- Web: Pipeline kanban reworked — native HTML5 drag-and-drop between columns (drop-target highlight, `saved→interested→…` via the same status mutation), select mode with checkbox cards, and a bulk bar (tag input + archive + clear). Status shortcut buttons retained under cards for keyboard/accessibility parity. Typecheck + lint + build clean.
+- Note: the full API suite runs ~5 min (per-test DB fixture spin-up dominates); runs were split per file group rather than one pass.
+
 ## Frontend Implementation Map
 
 Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that builds it, its mockup in `docs/mockups/`, and current status. Route files are the target locations from the tree; screen-level details come from the referenced mockup + `UI_UX.md`.
@@ -244,7 +251,7 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_app.startups.$startupId` (+ `index`, `founders`, `jobs`, `notes` tabs) | 1 | `scout_startup_detail.html` | done |
 | `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | done (P2 score-only card grid; P3 adds why/feedback/actions) |
 | `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | done |
-| `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop) | `scout_crm.html` | done (P6 upgrade pending) |
+| `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop + bulk) | `scout_crm.html` | done (P6 drag-drop + bulk tag/archive) |
 | `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (timeline + attached materials + outreach UI) |
 | `_app.analytics` | 5 | `scout_analytics.html` | done |
 | `_app.assistant` | 6 | `scout_assistant.html` | pending |
