@@ -671,6 +671,46 @@ export interface paths {
         patch: operations["patch_application_v1_applications__application_id__patch"];
         trace?: never;
     };
+    "/v1/analytics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summary
+         * @description Applications, response rate, interviews, offers over a date range.
+         */
+        get: operations["summary_v1_analytics_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Funnel
+         * @description Conversion funnel across CRM statuses (cumulative "reached stage").
+         */
+        get: operations["funnel_v1_analytics_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/extension/detect": {
         parameters: {
             query?: never;
@@ -834,6 +874,41 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalyticsSummaryOut */
+        AnalyticsSummaryOut: {
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Applications Sent */
+            applications_sent: number;
+            /** Applications Sent Prev */
+            applications_sent_prev: number;
+            /** Response Rate */
+            response_rate: number | null;
+            /** Response Rate Prev */
+            response_rate_prev: number | null;
+            /** Applied To Interview */
+            applied_to_interview: number | null;
+            /** Applied To Interview Prev */
+            applied_to_interview_prev: number | null;
+            /** Offers */
+            offers: number;
+            /** Offers Prev */
+            offers_prev: number;
+            /** By Status */
+            by_status: {
+                [key: string]: number;
+            };
+            /** Response Rate Series */
+            response_rate_series: components["schemas"]["RatePoint"][];
+        };
         /** ApplicationCreate */
         ApplicationCreate: {
             /**
@@ -1132,6 +1207,29 @@ export interface components {
             twitter_url?: string | null;
             /** Bio */
             bio?: string | null;
+        };
+        /** FunnelConversionOut */
+        FunnelConversionOut: {
+            /** From Stage */
+            from_stage: string;
+            /** To Stage */
+            to_stage: string;
+            /** Rate */
+            rate: number | null;
+        };
+        /** FunnelOut */
+        FunnelOut: {
+            /** Stages */
+            stages: components["schemas"]["FunnelStageOut"][];
+            /** Conversions */
+            conversions: components["schemas"]["FunnelConversionOut"][];
+        };
+        /** FunnelStageOut */
+        FunnelStageOut: {
+            /** Stage */
+            stage: string;
+            /** Count */
+            count: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1518,6 +1616,20 @@ export interface components {
             company_url?: string | null;
             /** Tags */
             tags?: string[];
+        };
+        /**
+         * RatePoint
+         * @description One weekly bucket of the response-rate-over-time series.
+         */
+        RatePoint: {
+            /** Bucket */
+            bucket: string;
+            /** Applied */
+            applied: number;
+            /** Responses */
+            responses: number;
+            /** Rate */
+            rate: number | null;
         };
         /** RefreshRequest */
         RefreshRequest: {
@@ -3488,6 +3600,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_v1_analytics_summary_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                source?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsSummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    funnel_v1_analytics_funnel_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                source?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunnelOut"];
                 };
             };
             /** @description Validation Error */

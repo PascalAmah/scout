@@ -2485,6 +2485,184 @@
         }
       }
     },
+    "/v1/analytics/summary": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Summary",
+        "description": "Applications, response rate, interviews, offers over a date range.",
+        "operationId": "summary_v1_analytics_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsSummaryOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/funnel": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Funnel",
+        "description": "Conversion funnel across CRM statuses (cumulative \"reached stage\").",
+        "operationId": "funnel_v1_analytics_funnel_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunnelOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/extension/detect": {
       "post": {
         "tags": [
@@ -2864,6 +3042,110 @@
   },
   "components": {
     "schemas": {
+      "AnalyticsSummaryOut": {
+        "properties": {
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
+          },
+          "applications_sent": {
+            "type": "integer",
+            "title": "Applications Sent"
+          },
+          "applications_sent_prev": {
+            "type": "integer",
+            "title": "Applications Sent Prev"
+          },
+          "response_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Rate"
+          },
+          "response_rate_prev": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Rate Prev"
+          },
+          "applied_to_interview": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied To Interview"
+          },
+          "applied_to_interview_prev": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied To Interview Prev"
+          },
+          "offers": {
+            "type": "integer",
+            "title": "Offers"
+          },
+          "offers_prev": {
+            "type": "integer",
+            "title": "Offers Prev"
+          },
+          "by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Status"
+          },
+          "response_rate_series": {
+            "items": {
+              "$ref": "#/components/schemas/RatePoint"
+            },
+            "type": "array",
+            "title": "Response Rate Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period_start",
+          "period_end",
+          "applications_sent",
+          "applications_sent_prev",
+          "response_rate",
+          "response_rate_prev",
+          "applied_to_interview",
+          "applied_to_interview_prev",
+          "offers",
+          "offers_prev",
+          "by_status",
+          "response_rate_series"
+        ],
+        "title": "AnalyticsSummaryOut"
+      },
       "ApplicationCreate": {
         "properties": {
           "startup_id": {
@@ -3819,6 +4101,78 @@
         },
         "type": "object",
         "title": "FounderPatch"
+      },
+      "FunnelConversionOut": {
+        "properties": {
+          "from_stage": {
+            "type": "string",
+            "title": "From Stage"
+          },
+          "to_stage": {
+            "type": "string",
+            "title": "To Stage"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_stage",
+          "to_stage",
+          "rate"
+        ],
+        "title": "FunnelConversionOut"
+      },
+      "FunnelOut": {
+        "properties": {
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/FunnelStageOut"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "conversions": {
+            "items": {
+              "$ref": "#/components/schemas/FunnelConversionOut"
+            },
+            "type": "array",
+            "title": "Conversions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stages",
+          "conversions"
+        ],
+        "title": "FunnelOut"
+      },
+      "FunnelStageOut": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "count"
+        ],
+        "title": "FunnelStageOut"
       },
       "HTTPValidationError": {
         "properties": {
@@ -5139,6 +5493,42 @@
         },
         "type": "object",
         "title": "QuickSaveStartup"
+      },
+      "RatePoint": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "title": "Bucket"
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied"
+          },
+          "responses": {
+            "type": "integer",
+            "title": "Responses"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bucket",
+          "applied",
+          "responses",
+          "rate"
+        ],
+        "title": "RatePoint",
+        "description": "One weekly bucket of the response-rate-over-time series."
       },
       "RefreshRequest": {
         "properties": {

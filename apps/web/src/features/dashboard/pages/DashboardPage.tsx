@@ -1,5 +1,6 @@
 import { useSession } from '../../auth/hooks'
 import { NeedsFollowUpSection } from '../components/NeedsFollowUpSection'
+import { QuickStatsStrip } from '../components/QuickStatsStrip'
 
 export function DashboardPage() {
   const { user } = useSession()
@@ -15,6 +16,7 @@ export function DashboardPage() {
           Y Combinator or company careers pages.
         </p>
       </div>
+      <QuickStatsStrip />
       <NeedsFollowUpSection />
     </div>
   )

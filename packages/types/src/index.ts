@@ -77,6 +77,13 @@ export type QuickSaveStartup = Schema['QuickSaveStartup']
 export type QuickSaveJob = Schema['QuickSaveJob']
 export type QuickSaveFounder = Schema['QuickSaveFounder']
 
+// --- analytics ---
+export type AnalyticsSummary = Schema['AnalyticsSummaryOut']
+export type RatePoint = Schema['RatePoint']
+export type FunnelStage = Schema['FunnelStageOut']
+export type FunnelConversion = Schema['FunnelConversionOut']
+export type Funnel = Schema['FunnelOut']
+
 // --- pagination ---
 export type PageStartupList = Schema['Page_StartupListItem_']
 export type PageMatchOut = Schema['Page_MatchOut_']

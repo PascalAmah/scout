@@ -128,7 +128,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 5 — Insight Layer
+## Phase 5 — Insight Layer — ✅ DONE (2026-08-15)
 **Goal:** answer "is this working."
 
 1. Implement `GET /analytics/summary` and `GET /analytics/funnel` per `API_SPEC.md`.
@@ -180,7 +180,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 2 — Personalization (CV + Matching v1) | ✅ **DONE** (2026-08-14) | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
 | Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
-| Phase 5 — Insight Layer | pending | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
+| Phase 5 — Insight Layer | ✅ **DONE** (2026-08-15) | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
 | Phase 6 — Expansion | pending | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
 
 ### Verified (2026-08-12) — Phase 1
@@ -207,6 +207,13 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - Digest email verified headlessly: PATCH `/auth/me` toggles `email_reminders_enabled` (persisted, reflected in `/auth/me`); `send_reminder_emails` emails opted-in users one digest of unread notifications and marks them read; un-opted users are skipped. Send itself is a no-op log without `RESEND_API_KEY` (dev-safe).
 - Migration `0004_email_reminders` added (`users.email_reminders_enabled`, default `false`). Not yet applied to live DB.
 
+### Verified (2026-08-15) — Phase 5
+- API: 34 pytest pass (7 new analytics tests); ruff + mypy clean (78 files).
+- Web: typecheck + oxlint + `pnpm build` clean (Analytics screen with funnel + response-rate chart, Dashboard quick-stats strip, Analytics nav link wired).
+- Analytics endpoints verified headlessly: `GET /analytics/summary` returns applications-sent / response-rate / applied→interview / offers with previous-period deltas, a per-status breakdown, and a weekly response-rate series; `GET /analytics/funnel` returns cumulative "reached stage" counts (saved→interested→applied→interview→offer) with stage-over-stage conversion %. Filters (`from`/`to`, `source`) honored; previous-period window equals the current window length; empty state returns zeroed counts + null rates.
+- Snapshot semantics (no status-history table): `rejected` counts as having reached interview (state machine: only reachable from interview); `archived` applications are excluded from the funnel and rate denominators. Documented in the service.
+- Bug fixed during verification: `rejected` was initially ranked above `offer`, so rejections inflated the offer count — now ranked at interview level with a regression test (`test_funnel_rejected_reaches_interview`).
+
 ## Frontend Implementation Map
 
 Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that builds it, its mockup in `docs/mockups/`, and current status. Route files are the target locations from the tree; screen-level details come from the referenced mockup + `UI_UX.md`.
@@ -217,14 +224,14 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_auth.login`, `_auth.register` | 0 | `scout_auth.html` | done |
 | `password-reset.index`, `password-reset.confirm` | 0 | `scout_auth.html` ("Reset your password" / "Check your email") | done |
 | `_app` shell — sidebar, topbar, notification bell/badge | 1 | `scout_dashboard.html` (topbar) | done |
-| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4 follow-up section added; P5 stats pending) |
+| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4 follow-up section + P5 quick-stats strip) |
 | `_app.startups.index` — Workspace list + filters | 1 | `scout_workspace.html` | done |
 | `_app.startups.$startupId` (+ `index`, `founders`, `jobs`, `notes` tabs) | 1 | `scout_startup_detail.html` | done |
 | `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | done (P2 score-only card grid; P3 adds why/feedback/actions) |
 | `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | done |
 | `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop) | `scout_crm.html` | done (P6 upgrade pending) |
 | `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (timeline + attached materials + outreach UI) |
-| `_app.analytics` | 5 | `scout_analytics.html` | pending |
+| `_app.analytics` | 5 | `scout_analytics.html` | done |
 | `_app.assistant` | 6 | `scout_assistant.html` | pending |
 | `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | done (Profile/CV full; Account/Integrations read-only stubs) |
 | Extension popup (Detected / Saving / Saved / Unsupported / ManualFallback / AuthExpired / login) | 0 (auth) → 1 (save flow) | `scout_extension.html` | done |

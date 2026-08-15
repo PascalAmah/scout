@@ -12,7 +12,7 @@ const NAV_ITEMS: Array<{ label: string; href?: string }> = [
   { label: 'Matches', href: '/matches' },
   { label: 'Resume Studio', href: '/resume-studio' },
   { label: 'Pipeline', href: '/crm' },
-  { label: 'Analytics' },
+  { label: 'Analytics', href: '/analytics' },
   { label: 'Assistant' },
   { label: 'Settings', href: '/settings' },
 ]
