@@ -4,6 +4,8 @@ Revision ID: 0005
 Revises: 0004
 Create Date: 2026-08-15
 """
+import uuid
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -43,29 +45,32 @@ def upgrade() -> None:
     # sync_company is hard-gated to direct_api/permitted_crawl; wellfound is
     # login-walled with anti-scraping terms, so it stays user_capture (no
     # server-side crawl) until a data agreement exists.
+    # bulk_insert bypasses the ORM, so id must be supplied explicitly — on
+    # Postgres a bare UUID primary key has no server default (SQLite's
+    # implicit rowid auto-increment masked this until the migration was
+    # actually applied to Postgres).
     registry = sa.table(
         "source_registry",
+        sa.column("id", sa.Uuid),
         sa.column("source_key", sa.String),
         sa.column("compliance_tier", sa.String),
         sa.column("source_status", sa.String),
         sa.column("base_url", sa.String),
         sa.column("source_terms_checked_at", sa.DateTime(timezone=True)),
     )
-    op.bulk_insert(
-        registry,
-        [
-            {"source_key": "yc", "compliance_tier": "direct_api", "base_url": "https://www.ycombinator.com/"},
-            {"source_key": "producthunt", "compliance_tier": "direct_api", "base_url": "https://www.producthunt.com/"},
-            {"source_key": "greenhouse", "compliance_tier": "direct_api", "base_url": "https://boards.greenhouse.io/"},
-            {"source_key": "lever", "compliance_tier": "direct_api", "base_url": "https://jobs.lever.co/"},
-            {"source_key": "ashby", "compliance_tier": "direct_api", "base_url": "https://jobs.ashbyhq.com/"},
-            {"source_key": "techstars", "compliance_tier": "permitted_crawl", "base_url": "https://www.techstars.com/"},
-            {"source_key": "generic_careers", "compliance_tier": "permitted_crawl", "base_url": None},
-            {"source_key": "wellfound", "compliance_tier": "user_capture", "base_url": "https://wellfound.com/"},
-            {"source_key": "manual", "compliance_tier": "user_capture", "base_url": None},
-            {"source_key": "linkedin", "compliance_tier": "restricted", "base_url": "https://www.linkedin.com/"},
-        ],
-    )
+    _seed = [
+        {"source_key": "yc", "compliance_tier": "direct_api", "base_url": "https://www.ycombinator.com/"},
+        {"source_key": "producthunt", "compliance_tier": "direct_api", "base_url": "https://www.producthunt.com/"},
+        {"source_key": "greenhouse", "compliance_tier": "direct_api", "base_url": "https://boards.greenhouse.io/"},
+        {"source_key": "lever", "compliance_tier": "direct_api", "base_url": "https://jobs.lever.co/"},
+        {"source_key": "ashby", "compliance_tier": "direct_api", "base_url": "https://jobs.ashbyhq.com/"},
+        {"source_key": "techstars", "compliance_tier": "permitted_crawl", "base_url": "https://www.techstars.com/"},
+        {"source_key": "generic_careers", "compliance_tier": "permitted_crawl", "base_url": None},
+        {"source_key": "wellfound", "compliance_tier": "user_capture", "base_url": "https://wellfound.com/"},
+        {"source_key": "manual", "compliance_tier": "user_capture", "base_url": None},
+        {"source_key": "linkedin", "compliance_tier": "restricted", "base_url": "https://www.linkedin.com/"},
+    ]
+    op.bulk_insert(registry, [{"id": uuid.uuid4(), **row} for row in _seed])
 
 
 def downgrade() -> None:

@@ -13,10 +13,26 @@ branch_labels = None
 depends_on = None
 
 
+def _drop_user_uniqueness() -> None:
+    """Drop the old one-profile-per-user uniqueness however it was created.
+
+    ``0002`` declared ``user_id unique=True, index=True``: on Postgres that
+    yields a single UNIQUE INDEX ``ix_cv_profiles_user_id``, while other
+    paths (e.g. sqlite ``create_all`` with ``unique=True`` alone) produce a
+    UNIQUE CONSTRAINT ``cv_profiles_user_id_key``. Drop whichever exists so
+    the migration is safe on both.
+    """
+    inspector = sa.inspect(op.get_bind())
+    constraint_names = {c["name"] for c in inspector.get_unique_constraints("cv_profiles")}
+    if "cv_profiles_user_id_key" in constraint_names:
+        op.drop_constraint("cv_profiles_user_id_key", "cv_profiles", type_="unique")
+    index_names = {i["name"] for i in inspector.get_indexes("cv_profiles")}
+    if "ix_cv_profiles_user_id" in index_names:
+        op.drop_index("ix_cv_profiles_user_id", table_name="cv_profiles")
+
+
 def upgrade() -> None:
-    # Replace the one-profile-per-user unique constraint with (user_id, name).
-    # Postgres names column-level UNIQUE constraints <table>_<column>_key.
-    op.drop_constraint("cv_profiles_user_id_key", "cv_profiles", type_="unique")
+    _drop_user_uniqueness()
 
     op.add_column(
         "cv_profiles",
