@@ -1,3 +1,5 @@
+import type { TokenResponse, User } from '@scout/types'
+
 import { refreshAccessToken, tokens } from './auth'
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? '/v1'
@@ -6,22 +8,7 @@ export interface ApiErrorBody {
   error: { code: string; message: string; details?: Record<string, unknown> }
 }
 
-export interface User {
-  id: string
-  email: string
-  full_name: string | null
-  role: string
-  email_reminders_enabled: boolean
-  created_at: string
-}
-
-export interface TokenResponse {
-  access_token: string
-  refresh_token: string
-  token_type: string
-  expires_in: number
-  user: User
-}
+export type { TokenResponse, User }
 
 export class ApiRequestError extends Error {
   status: number

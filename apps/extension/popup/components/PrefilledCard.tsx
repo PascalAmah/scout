@@ -1,4 +1,4 @@
-import type { DetectedStartup } from '../../background/state'
+import type { DetectedStartup } from '@scout/types'
 
 export function PrefilledCard({
   startup,

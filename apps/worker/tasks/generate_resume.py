@@ -28,7 +28,6 @@ def _session():
 def _grounding_text(
     base, job, startup, match, user_name: str | None, tone: str, emphasize: list[str]
 ) -> str:
-    from app.services.matching_service import _job_text
 
     return json.dumps(
         {

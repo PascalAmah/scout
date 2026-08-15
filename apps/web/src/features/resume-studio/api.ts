@@ -1,3 +1,10 @@
+import type {
+  EnrichmentJobOut,
+  ResumeGenerateAccepted,
+  ResumeOut as ResumeOutShared,
+  ResumeVersionOut as ResumeVersionOutShared,
+} from '@scout/types'
+
 import { ApiRequestError, api } from '../../lib/api-client'
 import { tokens } from '../../lib/auth'
 import type { Page } from '../startups/api'
@@ -15,39 +22,17 @@ export interface ResumeContent {
   projects?: Array<{ name?: string; description?: string }>
 }
 
-export interface ResumeOut {
-  id: string
-  user_id: string
-  title: string
-  is_base: boolean
+export type ResumeOut = Omit<ResumeOutShared, 'content'> & {
   content: ResumeContent | null
-  created_at: string
-  updated_at: string
 }
 
-export interface ResumeVersionOut {
-  id: string
-  resume_id: string
-  application_id: string | null
+export type ResumeVersionOut = Omit<ResumeVersionOutShared, 'content'> & {
   content: ResumeContent | null
-  generated_by_model: string | null
-  reviewed_at: string | null
-  created_at: string
 }
 
-export interface GenerateAccepted {
-  job_id: string
-  status: string
-}
+export type GenerateAccepted = ResumeGenerateAccepted
 
-export interface JobStatus {
-  job_id: string
-  job_type: string
-  status: string
-  started_at: string | null
-  finished_at: string | null
-  error: string | null
-}
+export type JobStatus = EnrichmentJobOut
 
 export function listResumesRequest(): Promise<ResumeOut[]> {
   return api('/resumes')

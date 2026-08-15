@@ -11,10 +11,9 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from celery import shared_task
-
 from app.models import EnrichmentJob, Job, Startup, User
 from app.services import matching_service
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 

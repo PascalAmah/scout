@@ -79,9 +79,9 @@ def _embed_startup(db, startup) -> None:
 
 @shared_task(name="enrich_startup", bind=True, max_retries=3, default_retry_delay=60)
 def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
-    from adapters import get_adapter
     from app.models import EnrichmentJob, Startup
 
+    from adapters import get_adapter
     from tasks.enrich_cache import cache
     from tasks.extract import content_hash, extract_company
 

@@ -1,3 +1,11 @@
+import type {
+  ApplicationOut as ApplicationOutShared,
+  EnrichmentJobOut,
+  OutreachOut as OutreachOutShared,
+  ResumeVersionRef as ResumeVersionRefShared,
+  TimelineEvent as TimelineEventShared,
+} from '@scout/types'
+
 import { api } from '../../lib/api-client'
 import type { Page } from '../startups/api'
 
@@ -13,64 +21,28 @@ export const APPLICATION_STATUSES = [
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]
 
-export interface ApplicationStartup {
-  id: string
-  name: string
-  website: string | null
-}
-
-export interface ApplicationJob {
-  id: string
-  title: string
-}
-
-export interface ApplicationOut {
-  id: string
-  startup_id: string
-  job_id: string | null
+export type ApplicationOut = Omit<ApplicationOutShared, 'status'> & {
   status: ApplicationStatus
-  applied_at: string | null
-  created_at: string
-  updated_at: string
-  startup: ApplicationStartup | null
-  job: ApplicationJob | null
 }
 
-export interface TimelineEvent {
-  type: string
-  title: string
-  at: string
-}
+export type ApplicationStartup = ApplicationOut['startup'] extends infer S
+  ? NonNullable<S>
+  : never
+export type ApplicationJob = ApplicationOut['job'] extends infer J
+  ? NonNullable<J>
+  : never
 
-export interface OutreachOut {
-  id: string
-  application_id: string | null
-  channel: string
-  content: string | null
-  status: string
-  sent_at: string | null
-  reviewed_at: string | null
-  created_at: string
-  updated_at: string
-}
+export type TimelineEvent = TimelineEventShared
+export type OutreachOut = OutreachOutShared
 
-export interface ResumeVersionRef {
-  id: string
-  created_at: string
-  reviewed_at: string | null
-}
+export type ResumeVersionRef = ResumeVersionRefShared
 
-export interface JobStatus {
-  job_id: string
-  job_type: string
-  status: string
-  error: string | null
-}
+export type JobStatus = EnrichmentJobOut
 
 export const OUTREACH_CHANNELS = ['cover_letter', 'email', 'linkedin_dm'] as const
 export type OutreachChannel = (typeof OUTREACH_CHANNELS)[number]
 
-export interface ApplicationDetail extends ApplicationOut {
+export type ApplicationDetail = ApplicationOut & {
   timeline: TimelineEvent[]
   outreach: OutreachOut[]
   resume_version: ResumeVersionRef | null

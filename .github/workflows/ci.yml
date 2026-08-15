@@ -7,7 +7,7 @@ on:
 
 jobs:
   api:
-    name: API (lint + test)
+    name: API (lint + typecheck + test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,6 +27,30 @@ jobs:
         run: uv run mypy app
       - name: Test
         run: uv run pytest
+
+  worker:
+    name: Worker (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.3"
+      - name: Install Python
+        run: uv python install 3.12
+      # The worker tests import the API package (app.*), so they run against
+      # the API's venv, which now includes the worker deps (celery, openai)
+      # via the API's dev dependency group.
+      - name: Install deps (API env + worker deps)
+        working-directory: apps/api
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run --project ../api ruff check .
+      - name: Test
+        run: uv run --project ../api pytest
 
   web:
     name: Web (lint + typecheck + build)
@@ -48,3 +72,24 @@ jobs:
         run: pnpm --filter @scout/web typecheck
       - name: Build
         run: pnpm --filter @scout/web build
+
+  extension:
+    name: Extension (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @scout/extension lint
+      - name: Typecheck
+        run: pnpm --filter @scout/extension typecheck
+      - name: Build
+        run: pnpm --filter @scout/extension build

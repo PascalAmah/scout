@@ -10,13 +10,14 @@ generation to print.
 from io import BytesIO
 from typing import Any
 
+from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import ListFlowable, Paragraph, SimpleDocTemplate, Spacer
 
 _MARGIN = 0.9 * inch
-_ACCENT = "#18A058"
+_ACCENT = HexColor("#18A058")
 
 
 def _styles() -> dict[str, ParagraphStyle]:
@@ -34,7 +35,11 @@ def _styles() -> dict[str, ParagraphStyle]:
         ),
         "role": ParagraphStyle("resume-role", parent=base["Heading3"], fontSize=11, leading=14),
         "company": ParagraphStyle(
-            "resume-company", parent=base["Heading3"], fontSize=11, leading=14, textColor="#4B5563"
+            "resume-company",
+            parent=base["Heading3"],
+            fontSize=11,
+            leading=14,
+            textColor=HexColor("#4B5563"),
         ),
         "dates": ParagraphStyle("resume-dates", parent=base["Normal"], fontSize=9, leading=12),
         "bullet": ParagraphStyle(
@@ -52,7 +57,7 @@ def _bullets(items: list[str], story: list) -> None:
     if not items:
         return
     flow = ListFlowable(
-        [ListItem(Paragraph(item, _styles()["bullet"])) for item in items],
+        [Paragraph(item, _styles()["bullet"]) for item in items],
         bulletType="bullet",
         start="•",
         leftIndent=10,

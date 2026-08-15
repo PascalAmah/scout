@@ -1,3 +1,5 @@
+import type { CVProfileOut } from '@scout/types'
+
 import { api } from '../../lib/api-client'
 
 export interface StructuredData {
@@ -8,15 +10,8 @@ export interface StructuredData {
   summary: string | null
 }
 
-export interface CVProfile {
-  id: string
-  user_id: string
-  raw_text: string | null
+export type CVProfile = Omit<CVProfileOut, 'structured_data'> & {
   structured_data: StructuredData | null
-  source_file_key: string | null
-  last_embedded_at: string | null
-  created_at: string
-  updated_at: string
 }
 
 export function cvRequest(): Promise<CVProfile> {

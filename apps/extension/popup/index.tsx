@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
+import type { QuickSaveResponse } from '@scout/types'
+
 import {
+  WEB_BASE,
   api,
   clearTokens,
   getTokens,
@@ -117,12 +120,7 @@ function Popup() {
     setDetection({ status: 'saving', payload })
     try {
       const startup = { ...payload.startup, tags }
-      const saved = await api<{
-        startup_id: string
-        job_id: string | null
-        already_saved: boolean
-        enrichment_status: string
-      }>('/extension/quick-save', {
+      const saved = await api<QuickSaveResponse>('/extension/quick-save', {
         method: 'POST',
         body: JSON.stringify({
           source: payload.source,
@@ -191,7 +189,7 @@ function Popup() {
           </button>
           <p style={styles.hint}>
             Uses the same account as the Scout web app.{' '}
-            <a style={styles.link} href="http://localhost:5173/register" target="_blank" rel="noreferrer">
+            <a style={styles.link} href={`${WEB_BASE}/register`} target="_blank" rel="noreferrer">
               Create an account
             </a>
           </p>

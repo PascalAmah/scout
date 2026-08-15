@@ -1,5 +1,7 @@
 {
   "name": "@scout/extension",
+  "displayName": "Scout",
+  "description": "Save startups and jobs from around the web into your Scout workspace.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -18,10 +20,12 @@
       "https://api.scout.app/*"
     ],
     "action": {
-      "default_title": "Save to Scout"
+      "default_title": "Save to Scout",
+      "default_popup": "popup.html"
     }
   },
   "dependencies": {
+    "@scout/types": "workspace:*",
     "plasmo": "^0.90.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

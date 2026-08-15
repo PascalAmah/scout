@@ -117,7 +117,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 4 — Retention Loop
+## Phase 4 — Retention Loop — ✅ DONE (2026-08-15)
 **Goal:** the product starts working *for* the user between sessions, not just when they're actively in it.
 
 1. Add `resume PDF rendering` (R2 + a template/rendering service) — wire `file_key` on `resume_versions`.

@@ -1,3 +1,4 @@
+import { WEB_BASE } from '../../background/auth-sync'
 import type { DetectionState } from '../../background/state'
 
 export function Saved({ state }: { state: DetectionState }) {
@@ -19,7 +20,7 @@ export function Saved({ state }: { state: DetectionState }) {
         <strong style={{ color: '#1F2937' }}>{state.saved?.startup_name}</strong> is in your workspace.
       </p>
       <a
-        href="http://localhost:5173/startups"
+        href={`${WEB_BASE}/startups`}
         target="_blank"
         rel="noreferrer"
         style={{ display: 'inline-block', marginTop: 10, fontSize: 13, color: '#0F6E56', fontWeight: 600 }}

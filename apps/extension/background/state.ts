@@ -1,19 +1,10 @@
-export interface DetectedStartup {
-  name: string | null
-  website: string | null
-}
+import type { QuickSaveRequest } from '@scout/types'
 
-export interface DetectedJob {
-  title: string | null
-  url: string | null
-}
-
-export interface DetectedPayload {
-  source: string
-  source_url: string
-  startup: DetectedStartup
-  job?: DetectedJob | null
-}
+/**
+ * What the content scripts detect on a page — structurally identical to the
+ * /extension/quick-save request body, which is what it gets sent as.
+ */
+export type DetectedPayload = QuickSaveRequest
 
 export type DetectionStatus =
   | 'none'

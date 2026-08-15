@@ -2,21 +2,23 @@ const API_BASE =
   (typeof process !== 'undefined' && process.env.PLASMO_PUBLIC_API_BASE) ||
   'http://localhost:8000/v1'
 
-export interface User {
-  id: string
-  email: string
-  full_name: string | null
-  role: string
-  created_at: string
+/** Base URL of the Scout web app — used by the popup for register/open links. */
+export const WEB_BASE =
+  (typeof process !== 'undefined' && process.env.PLASMO_PUBLIC_WEB_BASE) ||
+  'http://localhost:5173'
+
+if (
+  typeof process !== 'undefined' &&
+  process.env.NODE_ENV === 'production' &&
+  (!process.env.PLASMO_PUBLIC_API_BASE || !process.env.PLASMO_PUBLIC_WEB_BASE)
+) {
+  console.error(
+    '[scout] Production build is missing PLASMO_PUBLIC_API_BASE / PLASMO_PUBLIC_WEB_BASE — ' +
+      'check apps/extension/.env.production. Falling back to localhost URLs.',
+  )
 }
 
-export interface TokenResponse {
-  access_token: string
-  refresh_token: string
-  token_type: string
-  expires_in: number
-  user: User
-}
+export type { TokenResponse, User } from '@scout/types'
 
 export class ApiRequestError extends Error {
   status: number

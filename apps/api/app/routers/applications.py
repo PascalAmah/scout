@@ -84,19 +84,24 @@ def needs_follow_up(
     """Active applications past the follow-up threshold — powers the Dashboard
     'needs follow-up' section (Phase 4 retention loop)."""
     rows = follow_up_service.due_applications(db, user.id, settings.follow_up_days)
-    return [
-        FollowUpOut(
-            application_id=row.id,
-            startup_name=row.startup.name if row.startup else None,
-            job_title=row.job.title if row.job else None,
-            applied_at=row.applied_at,
-            days_since=follow_up_service.days_since(row.applied_at),
-            last_outreach_status=application_service.last_outreach_ref(db, row.id).get("status")
-            if application_service.last_outreach_ref(db, row.id)
-            else None,
+    out: list[FollowUpOut] = []
+    for row in rows:
+        last_outreach = application_service.last_outreach_ref(db, row.id)
+        out.append(
+            FollowUpOut(
+                application_id=row.id,
+                startup_name=row.startup.name if row.startup else None,
+                job_title=row.job.title if row.job else None,
+                applied_at=row.applied_at,
+                days_since=(
+                    follow_up_service.days_since(row.applied_at)
+                    if row.applied_at is not None
+                    else 0
+                ),
+                last_outreach_status=last_outreach.get("status") if last_outreach else None,
+            )
         )
-        for row in rows
-    ]
+    return out
 
 
 @router.post("/{application_id}/follow-up", response_model=FollowUpAccepted, status_code=status.HTTP_202_ACCEPTED)

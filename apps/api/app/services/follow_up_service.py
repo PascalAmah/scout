@@ -62,6 +62,8 @@ def raise_follow_up_notice(db: Session, application: Application) -> Notificatio
     """Insert the ``follow_up_due`` notification for a due application."""
     company = application.startup.name if application.startup else "the company"
     role = application.job.title if application.job else "the role"
+    applied_at = application.applied_at
+    days = days_since(applied_at) if applied_at is not None else 0
     row = Notification(
         user_id=application.user_id,
         type=FOLLOW_UP_TYPE,
@@ -69,7 +71,7 @@ def raise_follow_up_notice(db: Session, application: Application) -> Notificatio
         entity_id=application.id,
         title=f"Follow up on {role} @ {company}",
         body=(
-            f"You applied {days_since(application.applied_at)} days ago. "
+            f"You applied {days} days ago. "
             "Consider sending a follow-up message."
         ),
     )

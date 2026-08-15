@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "api"))
 
 from celery import Celery
+
 from queues import QUEUE_ENRICHMENT, QUEUE_GENERATION, QUEUE_SCHEDULED
 
 BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

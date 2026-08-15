@@ -1,15 +1,9 @@
 import { queryOptions } from '@tanstack/react-query'
+import type { FollowUpOut } from '@scout/types'
 
 import { api } from '../../lib/api-client'
 
-export interface NeedsFollowUpItem {
-  application_id: string
-  startup_name: string | null
-  job_title: string | null
-  applied_at: string | null
-  days_since: number
-  last_outreach_status: string | null
-}
+export type NeedsFollowUpItem = FollowUpOut
 
 export const needsFollowUpQueryOptions = queryOptions({
   queryKey: ['applications', 'needs-follow-up'],
