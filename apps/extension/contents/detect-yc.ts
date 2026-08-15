@@ -22,15 +22,11 @@ function meta(name: string): string | undefined {
 }
 
 /** True only on a company detail page — not the directory or batch listing pages. */
-function isCompanyPage(): boolean {
-  if (/startup directory/i.test(meta('og:title') ?? document.title)) return false
-  const segment = location.pathname.split('/')[2] ?? ''
-  if (LISTING_SEGMENTS.has(segment)) return false
-  // Company pages render an "Active Founders" section; listing pages don't.
+function hasFounderMarker(): boolean {
   try {
     return document.body.innerText.includes('Active Founders')
   } catch {
-    return /^\/companies\/[^/]+$/.test(location.pathname)
+    return false
   }
 }
 
@@ -48,25 +44,87 @@ function findWebsite(): string | null {
   return null
 }
 
-function detect(): DetectedPayload | null {
-  if (!isCompanyPage()) return null
-
-  // Name: the hydrated <h1> is the clean company name; otherwise use the
-  // og:title ("<Company>: <tagline> | Y Combinator") before the colon.
+/** Company name on the company page: hydrated <h1>, else og:title before the colon. */
+function companyName(): string | null {
   const h1 = document.querySelector('h1')?.textContent?.trim()
-  let name = h1 && !GENERIC_TITLES.has(h1) ? h1 : null
-  if (!name) {
-    const ogTitle = cleanName(meta('og:title'))
-    name = ogTitle ? ogTitle.split(':')[0].trim() || ogTitle : null
+  if (h1 && !GENERIC_TITLES.has(h1)) return h1
+  const ogTitle = cleanName(meta('og:title'))
+  return ogTitle ? ogTitle.split(':')[0].trim() || ogTitle : null
+}
+
+/** Company name on a job detail page: "Machine Learning Engineer at Stripe" → "Stripe". */
+function companyFromJobDetail(): string | null {
+  const ogTitle = cleanName(meta('og:title'))
+  if (ogTitle) {
+    const at = ogTitle.split(/\s+at\s+/i)
+    if (at.length > 1) return at[at.length - 1].trim() || null
+  }
+  // Fall back to the company page link in the breadcrumb/nav.
+  const link = document.querySelector<HTMLAnchorElement>('a[href^="/companies/"]')
+  return link ? (link.pathname.split('/')[2] ?? null) : null
+}
+
+/** Company name on the jobs listing: "Jobs at Stripe" → "Stripe". */
+function companyFromJobsListing(): string | null {
+  const ogTitle = cleanName(meta('og:title'))
+  return ogTitle ? ogTitle.replace(/^jobs?\s+at\s+/i, '').trim() || null : null
+}
+
+/** The specific job shown on a job detail page. */
+function jobFromDetail(): { title: string; url: string } | null {
+  const h1 = document.querySelector('h1')?.textContent?.trim()
+  if (h1 && h1.length <= 120) return { title: h1, url: location.href }
+  const ogTitle = cleanName(meta('og:title'))
+  if (ogTitle) {
+    const title = ogTitle.split(/\s+at\s+/i)[0]?.trim()
+    if (title) return { title, url: location.href }
+  }
+  return null
+}
+
+/** First open role on the jobs listing page. */
+function firstJobFromListing(slug: string): { title: string; url: string } | null {
+  const link = document.querySelector<HTMLAnchorElement>(`a[href^="/companies/${slug}/jobs/"]`)
+  const title = link?.textContent?.trim()
+  if (!link || !title) return null
+  return { title, url: link.href }
+}
+
+function detect(): DetectedPayload | null {
+  const pathMatch = location.pathname.match(/^\/companies\/([^/]+)(?:\/(.*))?$/)
+  if (!pathMatch) return null
+  const slug = pathMatch[1]
+  const rest = pathMatch[2] ?? ''
+  if (LISTING_SEGMENTS.has(slug)) return null
+
+  const isJobDetail = /^jobs\/.+/.test(rest)
+  const isJobsListing = rest === 'jobs'
+
+  let name: string | null
+  if (isJobDetail) {
+    name = companyFromJobDetail()
+  } else if (isJobsListing) {
+    name = companyFromJobsListing()
+  } else {
+    // Company page — reject the directory and batch-listing pages.
+    if (/startup directory/i.test(meta('og:title') ?? document.title)) return null
+    if (!hasFounderMarker()) return null
+    name = companyName()
   }
   if (!name) return null
+
+  const job = isJobDetail
+    ? jobFromDetail()
+    : isJobsListing
+      ? firstJobFromListing(slug)
+      : null
 
   const website = findWebsite() ?? meta('og:url') ?? location.origin
   return {
     source: 'yc',
     source_url: location.href,
     startup: { name, website },
-    job: null,
+    job,
   }
 }
 
@@ -82,8 +140,9 @@ function run(): void {
 
 run()
 
-// YC is a Next.js SPA: navigating the companies list changes the URL without a
-// full page load, so re-detect when the route changes.
+// YC is a Next.js SPA: navigating between the company page, jobs tab, and job
+// details changes the URL without a full page load, so re-detect on route
+// changes.
 let lastPath = location.pathname
 setInterval(() => {
   if (location.pathname !== lastPath) {
