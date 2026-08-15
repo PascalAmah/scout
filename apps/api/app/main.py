@@ -1,4 +1,5 @@
 from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.core.errors import register_error_handlers
@@ -25,6 +26,16 @@ from app.routers import (
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version="0.1.0")
 
+    # The web app (Vite dev server / prod web origin) calls the API cross-origin,
+    # so CORS must be explicit. Origins come from CORS_ORIGINS in .env; the
+    # extension is exempt (host_permissions bypass CORS in MV3).
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.add_middleware(RateLimitMiddleware, limit=100, window_seconds=60)
     register_error_handlers(app)
 

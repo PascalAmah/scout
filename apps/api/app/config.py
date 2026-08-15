@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,6 +7,10 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     app_name: str = "Scout API"
+
+    # Browser origins allowed to call the API (JSON list in .env, e.g.
+    # CORS_ORIGINS=["http://localhost:5173","https://scout.app"]).
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
 
     database_url: str = "postgresql+psycopg://scout:scout@localhost:5432/scout"
     redis_url: str = "redis://localhost:6379/0"
