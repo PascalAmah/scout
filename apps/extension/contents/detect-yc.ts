@@ -9,7 +9,7 @@ export const config = {
 const LISTING_SEGMENTS = new Set(['active', 'top', 'new', 'library', 'apply'])
 // h1 values that are page chrome, not a company name.
 const GENERIC_TITLES = new Set(['Companies', 'Library', 'Apply', 'Jobs', 'Company'])
-const SOCIAL_HOSTS = new Set(['twitter.com', 'x.com', 'linkedin.com', 'facebook.com'])
+const SOCIAL_HOSTS = new Set(['twitter.com', 'x.com', 'linkedin.com', 'facebook.com', 'startupschool.org'])
 
 function cleanName(raw: string | null | undefined): string | null {
   if (!raw) return null
@@ -30,8 +30,15 @@ function hasFounderMarker(): boolean {
   }
 }
 
-/** The company's own website: first external link that isn't YC or a social profile. */
+/**
+ * The company's own website. YC renders a dedicated link with
+ * aria-label="Company website" on every page kind (company, jobs listing, job
+ * detail); fall back to the first external link that isn't YC or a social
+ * profile (header nav links like Startup School come first in DOM order).
+ */
 function findWebsite(): string | null {
+  const labelled = document.querySelector<HTMLAnchorElement>('a[aria-label="Company website"]')
+  if (labelled?.href) return labelled.href
   for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href^="http"]'))) {
     try {
       const host = new URL(a.href).hostname.replace(/^www\./, '')
@@ -130,13 +137,19 @@ function detect(): DetectedPayload | null {
 
 const KEY = 'scout_detected_yc'
 
-function run(): void {
+function run(force = false): void {
   const payload = detect()
   if (!payload) return
-  if (sessionStorage.getItem(KEY) === location.pathname) return // already detected this page
+  if (!force && sessionStorage.getItem(KEY) === location.pathname) return // already detected this page
   sessionStorage.setItem(KEY, location.pathname)
   void chrome.runtime.sendMessage({ type: 'scout:detected', payload }).catch(() => {})
 }
+
+// The popup asks the active tab to re-detect on open so it never shows stale
+// detection from another tab or an earlier navigation.
+chrome.runtime.onMessage.addListener((message: unknown) => {
+  if ((message as { type?: string } | null)?.type === 'scout:re-detect') run(true)
+})
 
 run()
 

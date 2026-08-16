@@ -85,6 +85,18 @@ function Popup() {
       const state = await getDetectionState()
       setDetection(state)
       setLoading(false)
+
+      // Re-sync with the current tab: the stored detection state is global and
+      // can be stale (from another tab or an earlier navigation). Ask the tab's
+      // content script to re-detect, then read the fresh state.
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+        if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: 'scout:re-detect' })
+        const fresh = await getDetectionState()
+        setDetection(fresh)
+      } catch {
+        // No Scout content script on this tab — keep the stored state.
+      }
     })()
   }, [])
 
