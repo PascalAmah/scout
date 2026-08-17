@@ -63,24 +63,25 @@ class TestTechstarsAdapter:
     def test_discover_parses_sitemap(self) -> None:
         sitemap = (
             '<?xml version="1.0"?><urlset>'
-            "<url><loc>https://www.techstars.com/companies/acme</loc></url>"
+            "<url><loc>https://www.techstars.com/companies/lumina</loc></url>"
             "<url><loc>https://www.techstars.com/companies/globex</loc></url>"
             "</urlset>"
         )
         with mock.patch("adapters.techstars.fetch_html", return_value=sitemap) as fetch:
             items = TechstarsAdapter().discover()
         assert fetch.call_args.args[0] == "https://www.techstars.com/sitemap.xml"
+        # The adapter returns URLs sorted alphabetically.
         assert items == [
-            {"url": "https://www.techstars.com/companies/acme"},
             {"url": "https://www.techstars.com/companies/globex"},
+            {"url": "https://www.techstars.com/companies/lumina"},
         ]
 
     def test_fetch_cleans_html(self) -> None:
-        html = "<html><head><title>Acme</title></head><body><h1>Acme</h1><p>Hello</p></body></html>"
+        html = "<html><head><title>Lumina</title></head><body><h1>Lumina</h1><p>Hello</p></body></html>"
         with mock.patch("adapters.techstars.fetch_html", return_value=html):
-            content = TechstarsAdapter().fetch("https://www.techstars.com/companies/acme")
+            content = TechstarsAdapter().fetch("https://www.techstars.com/companies/lumina")
         assert content.source == "techstars"
-        assert content.title == "Acme"
+        assert content.title == "Lumina"
         assert "Hello" in content.raw_text
 
 
@@ -90,7 +91,7 @@ class TestProductHuntAdapter:
             "os.environ", {"PRODUCTHUNT_API_TOKEN": ""}
         ):
             try:
-                ProductHuntAdapter().fetch("https://www.producthunt.com/posts/acme")
+                ProductHuntAdapter().fetch("https://www.producthunt.com/posts/lumina")
                 raise AssertionError("expected NotConfiguredError")
             except NotConfiguredError:
                 pass
@@ -99,11 +100,11 @@ class TestProductHuntAdapter:
         body = {
             "data": {
                 "post": {
-                    "name": "Acme",
+                    "name": "Lumina",
                     "tagline": "The best thing",
                     "description": "Long description",
-                    "website": "https://acme.example.com",
-                    "url": "https://www.producthunt.com/posts/acme",
+                    "website": "https://lumina.example.com",
+                    "url": "https://www.producthunt.com/posts/lumina",
                 }
             }
         }
@@ -113,8 +114,8 @@ class TestProductHuntAdapter:
             post.return_value = SimpleNamespace(
                 status_code=200, raise_for_status=lambda: None, json=lambda: body
             )
-            content = ProductHuntAdapter().fetch("https://www.producthunt.com/posts/acme")
-        assert content.title == "Acme"
+            content = ProductHuntAdapter().fetch("https://www.producthunt.com/posts/lumina")
+        assert content.title == "Lumina"
         assert "The best thing" in content.raw_text
 
     def test_discover_parses_edges(self) -> None:
@@ -122,7 +123,7 @@ class TestProductHuntAdapter:
             "data": {
                 "posts": {
                     "edges": [
-                        {"node": {"name": "Acme", "slug": "acme", "url": "https://www.producthunt.com/posts/acme"}},
+                        {"node": {"name": "Lumina", "slug": "lumina", "url": "https://www.producthunt.com/posts/lumina"}},
                         {"node": {"name": "Globex", "slug": "globex", "url": None}},
                         {"node": {}},
                     ]
@@ -136,7 +137,7 @@ class TestProductHuntAdapter:
                 status_code=200, raise_for_status=lambda: None, json=lambda: body
             )
             items = ProductHuntAdapter().discover()
-        assert items[0] == {"url": "https://www.producthunt.com/posts/acme", "name": "Acme"}
+        assert items[0] == {"url": "https://www.producthunt.com/posts/lumina", "name": "Lumina"}
         assert items[1]["url"] == "https://www.producthunt.com/posts/globex"  # built from slug
         assert len(items) == 2
 
@@ -166,14 +167,14 @@ class TestSyncCompanyTask:
         db.scalar.return_value = None  # no existing startup
         adapter = mock.MagicMock()
         adapter.compliance_tier = "direct_api"
-        adapter.fetch.return_value = SimpleNamespace(raw_text="company text", title="Acme")
+        adapter.fetch.return_value = SimpleNamespace(raw_text="company text", title="Lumina")
         with mock.patch("tasks.sync_company._session", return_value=db), mock.patch(
             "tasks.sync_gate.load_source_config",
             return_value=SimpleNamespace(compliance_tier="direct_api", source_status="active"),
         ), mock.patch("adapters.get_adapter", return_value=adapter), mock.patch(
             "app.services.job_queue.enqueue_enrich_startup"
         ) as enqueue:
-            result = sync_company.run(source="techstars", url="https://www.techstars.com/companies/acme")
+            result = sync_company.run(source="techstars", url="https://www.techstars.com/companies/lumina")
 
         assert result["status"] == "enqueued"
         enqueue.assert_called_once()

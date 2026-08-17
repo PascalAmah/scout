@@ -24,6 +24,7 @@ dependencies = [
     "pypdf>=4.0.0",
     "pgvector>=0.3.0",
     "reportlab>=4.2.0",
+    "openai>=1.40.0",
 ]
 
 [dependency-groups]
@@ -36,7 +37,6 @@ dev = [
     # API tests exercise worker tasks directly (e.g. send_reminder_emails),
     # so the worker's runtime deps must be present in the API dev env.
     "celery>=5.4.0",
-    "openai>=1.40.0",
 ]
 
 [tool.uv]

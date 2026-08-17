@@ -64,12 +64,20 @@ def _resume_from_cv(structured: dict) -> dict:
     summary_parts = [f"{roles[0]}"] if roles else []
     if years is not None:
         summary_parts.append(f"with {years} years of experience")
+    fallback_summary = (", ".join(summary_parts) + ".") if summary_parts else ""
+    education = []
+    for e in structured.get("education") or []:
+        # Heuristic parse stores labels as strings; keep dict entries as-is.
+        education.append(dict(e) if isinstance(e, dict) else {"degree": str(e)})
     return {
-        "summary": (", ".join(summary_parts) + ".") if summary_parts else "",
+        "summary": (structured.get("summary") or "").strip() or fallback_summary,
         "skills": [str(s) for s in structured.get("skills") or []],
-        "experience": [],
-        "education": [dict(e) for e in (structured.get("education") or [])],
+        "experience": [
+            dict(e) for e in (structured.get("experience") or []) if isinstance(e, dict)
+        ],
+        "education": education,
         "projects": [],
+        "name": (structured.get("name") or "").strip() or None,
     }
 
 
@@ -127,7 +135,23 @@ def generate_resume(
         )
 
         if resume.content:
-            base = resume.content
+            # deepcopy so the in-place merges below never dirty the stored row.
+            base = deepcopy(resume.content)
+            # Upgrade path: base resumes created before the CV parse extracted
+            # experience/education have empty sections. Backfill them from the
+            # CV so generation has real content to reshape — never overwrite
+            # non-empty sections (the base resume stays the source of truth).
+            if profile and profile.structured_data:
+                structured = profile.structured_data
+                if not base.get("experience") and structured.get("experience"):
+                    base["experience"] = [
+                        dict(e) for e in structured["experience"] if isinstance(e, dict)
+                    ]
+                if not base.get("education") and structured.get("education"):
+                    base["education"] = [
+                        dict(e) if isinstance(e, dict) else {"degree": str(e)}
+                        for e in structured["education"]
+                    ]
         elif profile and profile.structured_data:
             base = _resume_from_cv(profile.structured_data)
         else:
@@ -146,7 +170,7 @@ def generate_resume(
         content: dict | None = None
         model = "heuristic"
         try:
-            result = structured_call(load_prompt("generate_resume.v1"), grounding, GEN_MODEL)
+            result = structured_call(load_prompt("generate_resume"), grounding, GEN_MODEL)
             if isinstance(result, dict):
                 content = result
                 model = GEN_MODEL
@@ -155,6 +179,27 @@ def generate_resume(
             content = None
         if content is None:
             content = _heuristic_resume(base, match.explanation if match else None)
+
+        # Carry the candidate's name into every version so the rendered PDF
+        # shows it instead of a generic "Resume" header. Prefer the account
+        # name, then the base resume, then the CV parse directly (covers base
+        # resumes created before the parse extracted a name).
+        candidate_name = (user.full_name or "").strip() or (base.get("name") or "").strip()
+        if (
+            not candidate_name
+            and profile
+            and profile.structured_data
+            and profile.structured_data.get("name")
+        ):
+            candidate_name = str(profile.structured_data.get("name")).strip()
+        if candidate_name:
+            content.setdefault("name", candidate_name)
+
+        # Stamp the role label so the UI can name this version even when it was
+        # generated from a job (matches page) rather than an application — the
+        # version row has no application_id to derive a label from. "Engineer @
+        # Acme" style, used by Resume Studio's version list.
+        content.setdefault("role_label", f"{job.title} @ {startup.name}")
 
         version = ResumeVersion(
             resume_id=resume.id,

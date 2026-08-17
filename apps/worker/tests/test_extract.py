@@ -4,7 +4,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "api"))
 
+import pytest  # noqa: E402
+
 from tasks.extract import content_hash, extract_company  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_ai_key(monkeypatch) -> None:
+    """These tests assert deterministic heuristic behavior. Clear the AI key so
+    extract_company never hits the live provider (which is non-deterministic)."""
+    for var in ("AI_API_KEY", "AI_EMBEDDING_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
 
 
 class TestExtract:
@@ -14,7 +24,7 @@ class TestExtract:
 
     def test_heuristic_hiring_and_stage(self) -> None:
         text = (
-            "Acme Robotics builds industrial robots.\n"
+            "Lumina Health builds digital care tools.\n"
             "We are hiring engineers. Python, React, PostgreSQL.\n"
             "Raised a Series A round."
         )

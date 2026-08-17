@@ -6,6 +6,7 @@ from app.deps import get_current_user
 from app.models import User
 from app.schemas.auth import (
     LoginRequest,
+    OnboardingCompleteRequest,
     RefreshRequest,
     RegisterRequest,
     ResetRequest,
@@ -37,6 +38,22 @@ def refresh(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenRespons
 @router.post("/logout", status_code=204)
 def logout(body: RefreshRequest) -> None:
     auth_service.logout(body.refresh_token)
+
+
+@router.post("/onboarding/complete", response_model=UserOut)
+def complete_onboarding(
+    body: OnboardingCompleteRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    """Save the post-signup wizard answers and mark onboarding complete."""
+    return auth_service.complete_onboarding(
+        db,
+        user,
+        body.target_roles,
+        body.remote,
+        body.locations,
+    )
 
 
 @router.get("/me", response_model=UserOut)

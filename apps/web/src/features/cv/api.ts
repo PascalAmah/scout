@@ -2,12 +2,21 @@ import type { CVProfileOut } from '@scout/types'
 
 import { api } from '../../lib/api-client'
 
+export interface StructuredExperienceEntry {
+  company?: string | null
+  title?: string | null
+  dates?: string | null
+  bullets?: string[] | null
+}
+
 export interface StructuredData {
   skills: string[]
   roles: string[]
   years_of_experience: number | null
   education: string[]
   summary: string | null
+  name?: string | null
+  experience?: StructuredExperienceEntry[] | null
 }
 
 export type CVProfile = Omit<CVProfileOut, 'structured_data'> & {

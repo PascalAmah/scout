@@ -166,18 +166,25 @@ def quick_save(
         )
         job_id = job.id
 
-    founder_id: uuid.UUID | None = None
+    founder_ids: list[uuid.UUID] = []
+    founders = list(payload.founders or [])
     if payload.founder:
+        founders.insert(0, payload.founder)
+    for founder_data in founders:
         founder = startup_service.add_founder(
-            db, startup.id, FounderCreate(**payload.founder.model_dump(exclude_none=True))
+            db, startup.id, FounderCreate(**founder_data.model_dump(exclude_none=True))
         )
-        founder_id = founder.id
+        founder_ids.append(founder.id)
+    founder_id: uuid.UUID | None = founder_ids[0] if founder_ids else None
 
     # Auto-enrich only for sources that are not restricted-tier (per compliance).
+    # Re-saving an already-saved startup re-queues enrichment when the previous
+    # run finished, so a save is also a "refresh this" signal (e.g. after the
+    # worker gets a real AI key or the source page changed).
     enrichment_status = "none"
     if SOURCE_TIERS.get(source) != "restricted":
         existing_job: EnrichmentJob | None = startup_service.enrichment_status(db, startup.id)
-        if existing_job is None:
+        if existing_job is None or existing_job.status in ("succeeded", "failed"):
             enr_job = EnrichmentJob(
                 user_id=user.id,
                 entity_type="startup",
@@ -194,6 +201,7 @@ def quick_save(
         startup_id=startup.id,
         job_id=job_id,
         founder_id=founder_id,
+        founder_ids=founder_ids,
         already_saved=already,
         saved_via="extension",
         enrichment_status=enrichment_status,

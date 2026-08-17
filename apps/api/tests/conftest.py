@@ -10,6 +10,13 @@ from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("RATE_LIMIT_DISABLED", "1")
 os.environ.setdefault("FILE_STORE_DIR", str(Path(tempfile.gettempdir()) / "scout_test_files"))
+# Keep API tests offline and deterministic: even if a real AI key exists in the
+# root .env, tests must never hit the live provider (match re-rank, assistant,
+# query embedding all degrade to their deterministic fallbacks without a key).
+# These are set before `app.config` loads the root .env, and load_dotenv never
+# overrides already-set variables.
+for _var in ("AI_API_KEY", "AI_EMBEDDING_API_KEY", "AI_MODEL", "AI_BASE_URL", "OPENAI_API_KEY"):
+    os.environ.setdefault(_var, "")
 
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402

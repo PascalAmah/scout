@@ -346,13 +346,18 @@ def _decode_score_cursor(cursor: str) -> tuple[float, uuid.UUID]:
 
 
 def recommended(db: Session, user: User, cursor: str | None, limit: int) -> tuple[list[MatchOut], str | None]:
-    """Ranked jobs for the current user, straight from the cached match_scores."""
+    """Ranked unrated jobs for the current user, straight from the cached match_scores.
+
+    Matches the user has rated (good/poor) are retired from the list, so the
+    queue shrinks as the user works through it.
+    """
     stmt: Select = (
         select(MatchScore, Job, Startup)
         .join(Job, Job.id == MatchScore.job_id)
         .join(Startup, Startup.id == Job.startup_id)
         .where(
             MatchScore.user_id == user.id,
+            MatchScore.feedback.is_(None),
             Job.deleted_at.is_(None),
             Startup.deleted_at.is_(None),
         )

@@ -109,6 +109,161 @@ EDUCATION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bph\.?\s?d\b|\bphd\b|doctoral", re.I), "PhD"),
 ]
 
+# --- Name / experience extraction (heuristic, same spirit as skills/roles) ---
+_EXPERIENCE_HEADER_RE = re.compile(
+    r"^(professional|work|employment|relevant|career)?\s*(experience|work history|employment history)\s*$",
+    re.I,
+)
+_SKIP_SECTION_RE = re.compile(
+    r"^(education|projects?|skills|technical skills|summary|objective|profile|interests?|languages|certifications?|awards?|honors?|publications?|activities?|volunteer|leadership|contact|references|additional|extracurricular)",
+    re.I,
+)
+_MONTH = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
+_DATE_RANGE_RE = re.compile(
+    rf"^(?:\(?\)?)?(?:{_MONTH}\.?\s+)?(?:19|20)\d{{2}}\s*(?:[-–—/]|to)?\s*(?:(?:{_MONTH}\.?\s+)?(?:19|20)\d{{2}}|present|current|now)?\)?\s*$",
+    re.I,
+)
+_BULLET_RE = re.compile(r"^\s*(?:[•·◦▪●]|\*|-|–|—|\d+[.)])\s+")
+_NAME_SKIP_RE = re.compile(
+    r"^(resume|curriculum vitae|cv|profile|personal|contact|summary|objective|about|experience|education|skills?|portfolio|references)",
+    re.I,
+)
+# Split "Name — Role", "Name | Role", "Name, Role", "Name - Role",
+# "Name—Role" etc. off a header line. En/em dashes split even without spaces
+# (never part of a name); a plain hyphen only splits with surrounding space so
+# hyphenated names like "Jean-Luc" stay intact.
+_NAME_SEPARATOR_RE = re.compile(
+    r"\s*[–—]\s*" r"|\s+[-|/:]\s*" r"|,\s+"
+)
+_HONORIFIC_RE = re.compile(r"^(?:dr|mr|mrs|ms|prof|sir)\b\.?\s*", re.I)
+_LATIN = r"A-Za-zÀ-ÖØ-öø-ÿ"
+_NAME_TOKEN_RE = re.compile(rf"^[{_LATIN}][{_LATIN}'.\-]*$")
+_ROLE_WORD_RE = re.compile(
+    r"engineer|developer|manager|designer|analyst|scientist|founder|consultant|architect|director|lead|officer|specialist|strategist|writer|editor|intern",
+    re.I,
+)
+
+
+def _extract_name(lines: list[str]) -> str | None:
+    """Best-effort person-name from the CV header. Scans the first few non-empty
+    lines (the header zone) and accepts the first segment that looks like a
+    name — handles "Name — Role", "Name | Role", initials ("John Q. Public")
+    and accented characters."""
+    header_lines = 0
+    for ln in lines:
+        ln = ln.strip()
+        if not ln:
+            continue
+        header_lines += 1
+        if header_lines > 3:
+            break
+        if len(ln) > 80 or re.search(r"\d", ln) or "@" in ln or "http" in ln:
+            continue
+        if _NAME_SKIP_RE.match(ln):
+            continue
+        candidate = _NAME_SEPARATOR_RE.split(ln, maxsplit=1)[0].strip()
+        candidate = _HONORIFIC_RE.sub("", candidate).strip()
+        if not candidate or _ROLE_WORD_RE.search(candidate):
+            continue
+        words = candidate.split()
+        if not (2 <= len(words) <= 5):
+            continue
+        if not all(_NAME_TOKEN_RE.match(w) for w in words):
+            continue
+        if any(w[:1].isupper() for w in words if w[:1].isalpha()):
+            return candidate
+    return None
+
+
+def _extract_experience(text: str) -> list[dict[str, Any]]:
+    """Section-based experience extraction: header → entries of
+    {title, company, dates, bullets}. Conservative — never invents text, and
+    returns [] when the CV has no recognizable experience section."""
+    lines = [ln.strip() for ln in (text or "").splitlines()]
+    start = None
+    for idx, ln in enumerate(lines):
+        if ln and len(ln) <= 40 and _EXPERIENCE_HEADER_RE.match(ln):
+            start = idx + 1
+            break
+    if start is None:
+        return []
+
+    entries: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    bullets: list[str] = []
+    for ln in lines[start:]:
+        if not ln:
+            continue
+        if len(ln) <= 40 and _SKIP_SECTION_RE.match(ln):
+            break
+        if _BULLET_RE.match(ln):
+            if current is None:
+                current = {"title": "", "company": "", "dates": "", "bullets": []}
+                entries.append(current)
+            text_line = _BULLET_RE.sub("", ln).strip()
+            if text_line:
+                bullets.append(text_line[:400])
+            continue
+        # Non-bullet line: ends the previous entry's bullets, then starts a new
+        # entry (or fills the current one's dates/continuation).
+        if bullets:
+            current["bullets"] = bullets  # type: ignore[index]
+            bullets = []
+            current = None
+        if current is None:
+            is_dates = bool(_DATE_RANGE_RE.match(ln))
+            current = {
+                "title": "" if is_dates else ln,
+                "company": "",
+                "dates": ln if is_dates else "",
+                "bullets": [],
+            }
+            entries.append(current)
+        elif _DATE_RANGE_RE.match(ln) and not current["dates"]:
+            current["dates"] = ln
+        # Common layout "Title / Company on the next line": treat a short
+        # non-date continuation as the company when the title already looks
+        # like a role.
+        elif (
+            current["title"]
+            and not current["company"]
+            and len(ln) <= 50
+            and "," not in ln
+            and _ROLE_WORD_RE.search(current["title"])
+        ):
+            current["company"] = ln
+        else:
+            current["title"] = f"{current['title']} {ln}".strip()
+    if bullets and current is not None:
+        current["bullets"] = bullets
+
+    out: list[dict[str, Any]] = []
+    for e in entries:
+        title = e["title"].strip()
+        company = e["company"].strip()
+        # "Title at Company" / "Title @ Company"
+        m = re.search(r"\s+(?:at|@)\s+", title)
+        if m and not company:
+            company = title[m.end() :].strip()
+            title = title[: m.start()].strip()
+        # "Company — Title" / "Company - Title"
+        if not company:
+            m2 = re.search(r"\s+[-–—]\s+", title)
+            if m2:
+                company = title[: m2.start()].strip()
+                title = title[m2.end() :].strip()
+        if not title and not company:
+            continue
+        out.append(
+            {
+                "title": title[:200],
+                "company": company[:200],
+                "dates": e["dates"][:80],
+                "bullets": e["bullets"][:20],
+            }
+        )
+    return out[:15]
+
 def extract_text(filename: str | None, data: bytes) -> str:
     """Parse an uploaded CV into plain text. PDFs go through pypdf; anything
     else is treated as plain text (doc/docx arrive via the extension paste path
@@ -142,6 +297,8 @@ def parse_cv_text(raw_text: str) -> dict[str, Any]:
             "years_of_experience": None,
             "education": [],
             "summary": None,
+            "name": None,
+            "experience": [],
         }
 
     lower = text.lower()
@@ -169,6 +326,8 @@ def parse_cv_text(raw_text: str) -> dict[str, Any]:
         "years_of_experience": years,
         "education": education,
         "summary": summary,
+        "name": _extract_name(lines),
+        "experience": _extract_experience(text),
     }
 
 

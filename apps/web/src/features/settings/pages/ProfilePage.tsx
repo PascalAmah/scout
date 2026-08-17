@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
 import { Button } from '../../../components/ui/Button'
+import { useSession } from '../../auth/hooks'
 import {
   useCreateCVProfile,
   useCV,
@@ -12,6 +13,7 @@ import {
 } from '../../cv/hooks'
 
 export function ProfilePage() {
+  const { user } = useSession()
   const cvQuery = useCV()
   const profilesQuery = useCVProfiles()
   const upload = useUploadCV()
@@ -49,8 +51,33 @@ export function ProfilePage() {
     setNewName('')
   }
 
+  const setupDone = Boolean(user?.onboarding_completed_at)
+
   return (
     <div className="max-w-2xl space-y-8">
+      {/* Setup status — reflects users.onboarding_completed_at */}
+      <section className="flex items-center justify-between gap-4 rounded-xl border border-[#E5E3DC] bg-white p-6">
+        <div>
+          <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Setup</h2>
+          <p className="mt-1 text-sm text-[#6B7280]">
+            {setupDone ? (
+              <>
+                Completed{' '}
+                {new Date(user!.onboarding_completed_at!).toLocaleDateString()} — roles, resume,
+                and location preferences saved.
+              </>
+            ) : (
+              'You skipped the intro wizard — you can run it whenever you like.'
+            )}
+          </p>
+        </div>
+        <Link to="/onboarding">
+          <Button variant={setupDone ? 'ghost' : 'primary'}>
+            {setupDone ? 'Edit preferences' : 'Finish setup'}
+          </Button>
+        </Link>
+      </section>
+
       <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
         <h2 className="font-serif text-lg font-semibold text-[#1F2937]">CV / Portfolio</h2>
         <p className="mt-1 text-sm text-[#6B7280]">

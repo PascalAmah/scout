@@ -79,3 +79,47 @@ def test_reset_with_invalid_token(client: TestClient) -> None:
         json={"token": "garbage", "password": "newpassword123"},
     )
     assert r.status_code == 400
+
+
+def test_complete_onboarding_saves_preferences_and_stamps_completion(
+    client: TestClient,
+) -> None:
+    r = client.post(
+        "/v1/auth/register",
+        json={"email": "ob@example.com", "password": "supersecret123"},
+    )
+    assert r.status_code == 201
+    access = r.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access}"}
+
+    # Fresh account: onboarding not done yet.
+    me = client.get("/v1/auth/me", headers=headers).json()
+    assert me["onboarding_completed_at"] is None
+    assert me["preferences"] is None
+
+    r = client.post(
+        "/v1/auth/onboarding/complete",
+        json={
+            "target_roles": ["Software Engineer", "Backend"],
+            "remote": True,
+            "locations": ["San Francisco"],
+        },
+        headers=headers,
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["onboarding_completed_at"] is not None
+    assert data["preferences"] == {
+        "target_roles": ["Software Engineer", "Backend"],
+        "remote": True,
+        "locations": ["San Francisco"],
+    }
+
+    # Idempotent: completing again refreshes, never errors.
+    r = client.post("/v1/auth/onboarding/complete", json={}, headers=headers)
+    assert r.status_code == 200
+    assert r.json()["preferences"] == {
+        "target_roles": [],
+        "remote": False,
+        "locations": [],
+    }

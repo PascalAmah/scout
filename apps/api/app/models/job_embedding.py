@@ -21,7 +21,7 @@ class JobEmbedding(Base):
         unique=True,
         index=True,
     )
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=False)
     model: Mapped[str] = mapped_column(
         String(100), nullable=False, server_default="text-embedding-3-large"
     )

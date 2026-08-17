@@ -37,7 +37,7 @@ def _save_startup_and_job(
 def test_match_compute_and_recommended(client: TestClient) -> None:
     token = _register(client)
     _startup1, job_backend = _save_startup_and_job(
-        client, token, "Acme Robotics", "Backend Engineer", "Python FastAPI PostgreSQL open roles"
+        client, token, "Lumina Health", "Backend Engineer", "Python FastAPI PostgreSQL open roles"
     )
     _startup2, job_design = _save_startup_and_job(
         client, token, "Bloom Studio", "Brand Designer", "Figma branding illustrations"
@@ -68,13 +68,13 @@ def test_match_compute_and_recommended(client: TestClient) -> None:
     assert first["explanation"]["matched_skills"]
     assert first["explanation"]["gaps"]
     assert isinstance(first["explanation"]["summary"], str) and first["explanation"]["summary"]
-    assert first["startup_name"] == "Acme Robotics"
+    assert first["startup_name"] == "Lumina Health"
 
 
 def test_match_detail_after_compute(client: TestClient) -> None:
     token = _register(client)
     _startup, job_id = _save_startup_and_job(
-        client, token, "Acme Robotics", "Backend Engineer", "Python PostgreSQL Go"
+        client, token, "Lumina Health", "Backend Engineer", "Python PostgreSQL Go"
     )
     client.post(
         "/v1/cv",
@@ -99,9 +99,55 @@ def test_match_detail_after_compute(client: TestClient) -> None:
     assert r.status_code == 404
 
 
+def test_recommended_drops_rated_matches(client: TestClient) -> None:
+    token = _register(client)
+    _startup1, job_backend = _save_startup_and_job(
+        client, token, "Lumina Health", "Backend Engineer", "Python FastAPI PostgreSQL open roles"
+    )
+    _startup2, job_design = _save_startup_and_job(
+        client, token, "Bloom Studio", "Brand Designer", "Figma branding illustrations"
+    )
+
+    client.post(
+        "/v1/cv",
+        data={"text": "Backend engineer Python FastAPI PostgreSQL five years of experience"},
+        headers=_auth(token),
+    )
+    client.post("/v1/match/compute", headers=_auth(token))
+
+    r = client.get("/v1/jobs/recommended", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    assert len(r.json()["data"]) == 2
+
+    # Rate the backend role — it should retire from the recommended queue.
+    r = client.post(
+        f"/v1/match/{job_backend}/feedback",
+        json={"feedback": "good"},
+        headers=_auth(token),
+    )
+    assert r.status_code == 200, r.text
+
+    r = client.get("/v1/jobs/recommended", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    payload = r.json()
+    assert len(payload["data"]) == 1
+    assert payload["data"][0]["job_id"] == str(job_design)
+
+    # Rating the last one empties the queue.
+    r = client.post(
+        f"/v1/match/{job_design}/feedback",
+        json={"feedback": "poor"},
+        headers=_auth(token),
+    )
+    assert r.status_code == 200, r.text
+    r = client.get("/v1/jobs/recommended", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    assert r.json()["data"] == []
+
+
 def test_recommended_empty_before_compute(client: TestClient) -> None:
     token = _register(client)
-    _save_startup_and_job(client, token, "Acme", "Backend Engineer", "Python")
+    _save_startup_and_job(client, token, "Lumina", "Backend Engineer", "Python")
     r = client.get("/v1/jobs/recommended", headers=_auth(token))
     assert r.status_code == 200
     assert r.json()["data"] == []

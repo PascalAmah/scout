@@ -5,8 +5,8 @@ import { createRoot } from 'react-dom/client'
 
 import { queryClient } from './lib/query-client'
 import { router } from './lib/router'
-import './styles/globals.css'
 import './styles/tokens.css'
+import './styles/globals.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

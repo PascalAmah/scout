@@ -44,6 +44,20 @@ docker ps --format "{{.Names}}: {{.Status}}"
 # scout_postgres: Up (healthy)   scout_redis: Up (healthy)
 ```
 
+### Step 0 — Configuration (one `.env`)
+
+Copy `.env.example` → `.env` in the repo root and fill in the AI key. Both the
+API and the worker load this file — it's the single source of truth for AI,
+DB, Redis, and auth settings.
+
+```bash
+cp .env.example .env
+# edit .env → set AI_PROVIDER + AI_API_KEY (e.g. gemini + your key)
+```
+
+Without an AI key everything still runs, but enrichment/outreach/assistant
+degrade to deterministic fallbacks (generic templates, keyword search).
+
 ### Step 2 — API (FastAPI)
 
 ```bash

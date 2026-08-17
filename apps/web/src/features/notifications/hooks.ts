@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { markAllReadRequest, markReadRequest, notificationsRequest, unreadCountRequest } from './api'
 
@@ -6,6 +11,16 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsRequest(),
+  })
+}
+
+/** Full-page feed — cursor-paginated, accumulates pages for "load earlier". */
+export function useNotificationsInfinite() {
+  return useInfiniteQuery({
+    queryKey: ['notifications', 'page'],
+    queryFn: ({ pageParam }) => notificationsRequest(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   })
 }
 

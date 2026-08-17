@@ -59,12 +59,14 @@ class QuickSaveRequest(BaseModel):
     startup: QuickSaveStartup
     job: QuickSaveJob | None = None
     founder: QuickSaveFounder | None = None
+    founders: list[QuickSaveFounder] = Field(default_factory=list)
 
 
 class QuickSaveResponse(BaseModel):
     startup_id: uuid.UUID
     job_id: uuid.UUID | None = None
     founder_id: uuid.UUID | None = None
+    founder_ids: list[uuid.UUID] = Field(default_factory=list)
     already_saved: bool
     saved_via: str
     enrichment_status: str

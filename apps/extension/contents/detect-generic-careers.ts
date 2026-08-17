@@ -59,3 +59,12 @@ if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('scout_dete
     void chrome.runtime.sendMessage({ type: 'scout:detected', payload }).catch(() => {})
   }
 }
+
+// The background asks the active tab to re-detect on popup open and expects
+// the fresh payload back, so the popup never shows stale detection from
+// another tab or an earlier navigation.
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if ((message as { type?: string } | null)?.type === 'scout:re-detect') {
+    sendResponse({ payload: detect() })
+  }
+})

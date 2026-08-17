@@ -6,7 +6,16 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ScoutError
 from app.core.pagination import cursor_page
-from app.models import EnrichmentJob, Founder, Job, Note, SavedStartup, Startup, User
+from app.models import (
+    EnrichmentJob,
+    Founder,
+    Job,
+    Note,
+    SavedStartup,
+    Startup,
+    StartupEmbedding,
+    User,
+)
 from app.schemas.startup import (
     FounderCreate,
     FounderPatch,
@@ -16,6 +25,7 @@ from app.schemas.startup import (
     StartupPatch,
 )
 from app.services import job_queue
+from app.services.embedding import embed_query
 
 
 def _get_startup(db: Session, startup_id: uuid.UUID) -> Startup:
@@ -147,6 +157,94 @@ def list_saved(
             or_(Startup.name.ilike(f"%{q}%"), Startup.summary.ilike(f"%{q}%"))
         )
     return cursor_page(db, stmt, SavedStartup.created_at, SavedStartup.id, cursor, limit)
+
+
+def _keyword_score(startup: Startup, tokens: list[str]) -> float:
+    """Relevance from exact term hits in name / summary / tags. 0..1."""
+    if not tokens:
+        return 0.0
+    name_l = (startup.name or "").lower()
+    summary_l = (startup.summary or "").lower()
+    tags_l = " ".join(startup.tags or []).lower()
+    hits = 0.0
+    for token in tokens:
+        if token in name_l:
+            hits += 2
+        elif token in tags_l:
+            hits += 1.5
+        elif token in summary_l:
+            hits += 1
+    return min(1.0, hits / (2 * len(tokens)))
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    if not a or not b:
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
+    na = sum(x * x for x in a) ** 0.5 or 1.0
+    nb = sum(x * x for x in b) ** 0.5 or 1.0
+    return dot / (na * nb)
+
+
+def hybrid_search(
+    db: Session,
+    user: User,
+    q: str,
+    cursor: str | None,
+    limit: int,
+) -> tuple[list[SavedStartup], str | None]:
+    """Blend keyword and semantic relevance across the user's saved startups.
+
+    Returns rows sorted by a combined score (desc), with score-based cursor
+    pagination. Semantic leg uses the query embedding against
+    ``startup_embeddings``; when no embedding exists (not enriched / fallback
+    dims mismatch) the row ranks on keyword only. Safe with sqlite in tests
+    (no pgvector operator used)."""
+    tokens = [t for t in q.lower().split() if t]
+    query_vec, _model = embed_query(q)
+    embed_map: dict[uuid.UUID, list[float]] = {}
+    for row in db.scalars(select(StartupEmbedding)).all():
+        embed_map[row.startup_id] = row.embedding
+
+    rows = list(
+        db.scalars(
+            select(SavedStartup)
+            .join(Startup, Startup.id == SavedStartup.startup_id)
+            .where(
+                SavedStartup.user_id == user.id,
+                SavedStartup.status != "archived",
+                Startup.deleted_at.is_(None),
+            )
+            .options(selectinload(SavedStartup.startup))
+            .order_by(SavedStartup.created_at.desc())
+        ).all()
+    )
+
+    scored: list[tuple[float, datetime, SavedStartup]] = []
+    for saved in rows:
+        startup = saved.startup
+        keyword = _keyword_score(startup, tokens)
+        vec = embed_map.get(startup.id)
+        semantic = _cosine(query_vec, vec) if vec else 0.0
+        score = 0.6 * keyword + 0.4 * semantic
+        # Keyword hits always surface; pure-semantic ties are ordered by recency.
+        if score > 0:
+            scored.append((score, saved.created_at, saved))
+    scored.sort(key=lambda item: (-item[0], -item[1].timestamp(), str(item[2].id)))
+
+    # Small personal dataset — cursor is an opaque page offset.
+    offset = 0
+    if cursor:
+        try:
+            offset = int(cursor)
+        except ValueError:
+            offset = 0
+    start = offset * limit
+    page = scored[start : start + limit + 1]
+    has_more = len(page) > limit
+    result = [item[2] for item in page[:limit]]
+    next_cursor = str(offset + 1) if has_more else None
+    return result, next_cursor
 
 
 def get_detail(db: Session, user: User, startup_id: uuid.UUID) -> Startup:

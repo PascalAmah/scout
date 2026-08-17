@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { PrefilledCard } from '../components/PrefilledCard'
-import { TagInput } from '../components/TagInput'
+import { COLORS, RADII, btnAccent, btnAccentDisabled, btnGhost } from '../theme'
 import type { DetectedPayload } from '../../background/state'
 
 export function Detected({
@@ -13,16 +13,27 @@ export function Detected({
   onSave: (payload: DetectedPayload, tags: string[]) => Promise<void>
   onManual: () => void
 }) {
-  const [tags, setTags] = useState('')
+  const [includeCompany, setIncludeCompany] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const entityLabel = payload.job
+    ? 'Job posting'
+    : payload.founders?.length || payload.founder
+      ? 'Founder profile'
+      : 'Company'
+  const companyName = payload.startup?.name ?? 'this company'
+  const actionLabel = payload.job ? 'Save job' : payload.founders?.length || payload.founder ? 'Save founder' : 'Save startup'
 
   const submit = async () => {
     if (saving) return
     setSaving(true)
     setError(null)
     try {
-      await onSave(payload, tags.split(',').map((t) => t.trim()).filter(Boolean))
+      // quick-save always persists the company row (the job/founder attaches
+      // to it), so the checkbox is checked by default and the full payload is
+      // sent either way.
+      await onSave(payload, [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
       setSaving(false)
@@ -31,32 +42,81 @@ export function Detected({
 
   return (
     <div>
-      <PrefilledCard startup={payload.startup} jobTitle={payload.job?.title} />
-      <div style={{ marginTop: 12 }}>
-        <TagInput value={tags} onChange={setTags} />
-      </div>
-      {error ? <p style={{ margin: '6px 0 0', fontSize: 12, color: '#A23B2A' }}>{error}</p> : null}
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10.5,
+          fontWeight: 700,
+          color: COLORS.emeraldDark,
+          background: COLORS.emeraldTint,
+          padding: '4px 10px',
+          borderRadius: RADII.pill,
+          marginBottom: 12,
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: COLORS.emeraldDark,
+          }}
+        />
+        Detected: {entityLabel}
+      </span>
+
+      <PrefilledCard startup={payload.startup} job={payload.job} founders={payload.founders} source={payload.source} />
+
+      {payload.job ? (
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            marginBottom: 12,
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={includeCompany}
+            onChange={(e) => setIncludeCompany(e.target.checked)}
+            style={{ width: 13, height: 13, accentColor: COLORS.emerald, margin: 0 }}
+          />
+          <span style={{ fontSize: 11.5, color: COLORS.muted }}>
+            Also save {companyName} as a company
+          </span>
+        </label>
+      ) : null}
+
+      {error ? (
+        <p style={{ margin: '0 0 8px', fontSize: 11.5, color: COLORS.brick }}>{error}</p>
+      ) : null}
+
       <button
         onClick={() => void submit()}
         disabled={saving}
-        style={{
-          width: '100%',
-          marginTop: 12,
-          border: 'none',
-          borderRadius: 999,
-          background: saving ? '#9AA1AB' : '#18A058',
-          color: '#fff',
-          padding: '9px 0',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
+        style={saving ? btnAccentDisabled : btnAccent}
       >
-        {saving ? 'Saving…' : 'Save to workspace'}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width={13} height={13} aria-hidden>
+          <path d="M6 3h12v18l-6-4-6 4z" />
+        </svg>
+        {saving ? 'Saving…' : actionLabel}
       </button>
+
       <button
         onClick={onManual}
-        style={{ width: '100%', marginTop: 6, background: 'none', border: 'none', padding: '6px', fontSize: 12, color: '#6B7280', cursor: 'pointer' }}
+        style={{
+          ...btnGhost,
+          marginTop: 4,
+          padding: '6px',
+          fontSize: 12,
+          width: '100%',
+          background: 'none',
+          border: 'none',
+        }}
       >
         Edit details
       </button>

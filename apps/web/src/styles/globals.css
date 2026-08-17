@@ -1,4 +1,49 @@
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-paper);
+  color: var(--color-charcoal);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-emerald-tint-strong);
+}
+
+/* Thin, on-brand scrollbar for internal scroll containers (e.g. the auth
+   form column). Falls back to a styled thumb in Firefox via scrollbar-width. */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-2);
+}
+
+/* Motion in Scout explains state changes; it never performs. All
+   transitions collapse to instant changes for reduced-motion users. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

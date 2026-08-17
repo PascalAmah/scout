@@ -48,7 +48,7 @@ These are the most direct competitors. They manage the application pipeline and 
 - **What they do**: General-purpose LLM chat that candidates already use for resume feedback, cover letter drafting, and outreach.
 - **Strengths**: Free (or very cheap). Improving rapidly. Zero switching cost. Already in the user's workflow for other tasks.
 - **Weaknesses**: No context injection — the user must manually paste the job description, their resume, and any company research. No persistence or tracking. Output quality depends entirely on prompt quality, which varies wildly between users.
-- **Scout's edge**: Scout injects structured context (company facts, matched skills, enrichment data) into every generation call, without the user having to assemble it. The difference is "ChatGPT, write me a cover letter for a fintech startup" vs. "Scout, generate a cover letter for Acme (seed stage, $4.2M raised, hiring backend engineers, founders from Stripe)." The latter is more personal with less user effort.
+- **Scout's edge**: Scout injects structured context (company facts, matched skills, enrichment data) into every generation call, without the user having to assemble it. The difference is "ChatGPT, write me a cover letter for a fintech startup" vs. "Scout, generate a cover letter for Lumina (seed stage, $4.2M raised, hiring backend engineers, founders from Stripe)." The latter is more personal with less user effort.
 
 **Risk**: This is the most dangerous category. As LLM context windows grow and prompt quality improves, the gap between "paste everything into ChatGPT" and "use Scout" narrows. Scout's moat must be the *automatic assembly* of context, not the generation quality alone — enrichment is the defense.
 

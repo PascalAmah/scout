@@ -19,7 +19,7 @@ from tasks.ai_config import embedding_config
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "")
-EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1536"))
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "3072"))
 
 _MAX_INPUT_CHARS = 8000
 

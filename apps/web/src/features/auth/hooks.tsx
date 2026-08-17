@@ -5,12 +5,14 @@ import { tokens } from '../../lib/auth'
 import { clearExtensionSession, pushSessionToExtension } from '../../lib/extension-auth'
 import { type TokenResponse, type User } from '../../lib/api-client'
 import {
+  completeOnboardingRequest,
   loginRequest,
   logoutRequest,
   patchUser,
   registerRequest,
   sessionQueryOptions,
   type LoginBody,
+  type OnboardingBody,
   type RegisterBody,
   type UserPatchBody,
 } from './api'
@@ -118,6 +120,16 @@ export function useUpdateUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: UserPatchBody) => patchUser(body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['me'], updated)
+    },
+  })
+}
+
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: OnboardingBody) => completeOnboardingRequest(body),
     onSuccess: (updated) => {
       queryClient.setQueryData(['me'], updated)
     },

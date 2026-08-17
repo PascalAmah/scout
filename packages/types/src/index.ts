@@ -19,6 +19,7 @@ type Schema = components['schemas']
 export type User = Schema['UserOut']
 export type TokenResponse = Schema['TokenResponse']
 export type UserPatch = Schema['UserPatch']
+export type OnboardingCompleteRequest = Schema['OnboardingCompleteRequest']
 
 // --- startups ---
 export type StartupListItem = Schema['StartupListItem']
@@ -83,6 +84,13 @@ export type RatePoint = Schema['RatePoint']
 export type FunnelStage = Schema['FunnelStageOut']
 export type FunnelConversion = Schema['FunnelConversionOut']
 export type Funnel = Schema['FunnelOut']
+
+// --- assistant ---
+export type AssistantChatRequest = Schema['AssistantChatRequest']
+export type AssistantChatResponse = Schema['AssistantChatResponse']
+export type AssistantHistoryMessage = Schema['AssistantHistoryMessage']
+export type AssistantReference = Schema['AssistantReference']
+export type AssistantToolCall = Schema['AssistantToolCall']
 
 // --- pagination ---
 export type PageStartupList = Schema['Page_StartupListItem_']

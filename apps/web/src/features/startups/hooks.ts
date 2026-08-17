@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { createApplicationRequest } from '../crm/api'
 import {
   addFounderRequest,
   addNoteRequest,
@@ -51,8 +52,10 @@ export function useDeleteStartup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteStartupRequest,
-    onSuccess: () => {
+    onSuccess: (_data, startupId) => {
       void queryClient.invalidateQueries({ queryKey: ['startups'] })
+      void queryClient.invalidateQueries({ queryKey: ['startups', startupId] })
+      void queryClient.invalidateQueries({ queryKey: ['startups', startupId, 'enrichment'] })
     },
   })
 }
@@ -64,6 +67,18 @@ export function useTriggerEnrich() {
     onSuccess: (_data, startupId) => {
       void queryClient.invalidateQueries({ queryKey: ['startups', startupId] })
       void queryClient.invalidateQueries({ queryKey: ['startups', startupId, 'enrichment'] })
+    },
+  })
+}
+
+export function useMoveToPipeline() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ startupId, jobId }: { startupId: string; jobId?: string | null }) =>
+      createApplicationRequest({ startup_id: startupId, job_id: jobId ?? null, status: 'saved' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['crm', 'pipeline'] })
+      void queryClient.invalidateQueries({ queryKey: ['analytics'] })
     },
   })
 }

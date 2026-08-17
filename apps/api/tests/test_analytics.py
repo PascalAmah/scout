@@ -22,7 +22,7 @@ def _auth(token: str) -> dict[str, str]:
 
 def _seed_startup(db: Session, user_id: uuid.UUID, source: str = "yc") -> Startup:
     row = Startup(
-        name=f"Acme {source}",
+        name=f"Lumina {source}",
         website=f"https://{source}.example.com",
         source=source,
         created_by=user_id,

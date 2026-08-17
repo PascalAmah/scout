@@ -3,6 +3,16 @@ import { useParams } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button'
 import { useStartup, useTriggerEnrich } from '../hooks'
 
+function compactDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
+}
+
 export function StartupOverviewTab() {
   const { startupId } = useParams({ from: '/_app/startups/$startupId/' })
   const startupQuery = useStartup(startupId)
@@ -11,130 +21,151 @@ export function StartupOverviewTab() {
 
   if (!startup) return null
 
-  const link = (url: string | null, label: string) =>
-    url ? (
-      <a href={url} target="_blank" rel="noreferrer" className="text-[#18A058] hover:underline">
-        {label}
-      </a>
-    ) : null
+  const stageLabel = startup.stage
+    ? startup.stage.replaceAll('_', ' ').replace(/\b\w/g, (ch) => ch.toUpperCase())
+    : 'Unknown'
+
+  const enrichNote = {
+    none: 'Not enriched yet',
+    queued: 'Queued',
+    running: 'Running…',
+    succeeded: `Enriched ${compactDate(startup.last_enriched_at)}`,
+    failed: 'Enrichment failed',
+  }[startup.enrichment_status]
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
-        <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <div className="flex items-start justify-between">
-            <h2 className="font-serif text-lg font-semibold text-[#1F2937]">About</h2>
-            {startup.enrichment_status !== 'succeeded' ? (
-              <Button
-                variant="ghost"
-                className="px-3 py-1.5 text-xs"
-                loading={triggerEnrich.isPending}
-                onClick={() => triggerEnrich.mutate(startupId)}
-              >
-                {startup.enrichment_status === 'none' ? 'Enrich' : 'Re-enrich'}
-              </Button>
-            ) : null}
-          </div>
-          <p className="mt-3 text-sm leading-relaxed text-[#4B5563]">
+    <div className="space-y-[22px]">
+      <div className="grid grid-cols-1 gap-[22px] lg:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-[16px] border border-line bg-white p-[22px_24px] shadow-sm">
+          <p className="mb-3 text-[14px] font-semibold text-charcoal">About</p>
+          <p className="mb-5 text-[14px] leading-[1.7] text-charcoal">
             {startup.summary ?? 'No summary yet — trigger enrichment or add one.'}
           </p>
-          {startup.website ? (
-            <p className="mt-3 text-sm">
-              Website: {link(startup.website, new URL(startup.website).hostname.replace('www.', ''))}
-            </p>
-          ) : null}
-          {startup.source_url ? (
-            <p className="mt-1 text-sm">
-              Source: {link(startup.source_url, startup.source ?? 'listing')}
-            </p>
-          ) : null}
-          {startup.last_enriched_at ? (
-            <p className="mt-1 text-xs text-[#9AA1AB]">
-              Last enriched {new Date(startup.last_enriched_at).toLocaleString()}
-            </p>
-          ) : null}
-        </section>
+          <div className="mb-5 flex items-center gap-2 text-[11.5px] text-muted-2">
+            <span className="rounded-[6px] bg-emerald-tint px-2 py-0.5 text-[10px] font-bold text-emerald-dark">
+              HIGH CONFIDENCE
+            </span>
+            {startup.source
+              ? `Extracted from ${startup.source === 'yc' ? 'Y Combinator' : startup.source} page`
+              : 'Source unknown'}
+          </div>
 
-        {startup.tech_stack?.length ? (
-          <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-            <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Tech stack</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {startup.tech_stack.map((tech) => (
-                <span
-                  key={tech}
-                  className="rounded-full border border-[#E5E3DC] bg-[#FAFAF8] px-3 py-1 text-xs text-[#1F2937]"
-                >
-                  {tech}
+          {startup.tech_stack?.length ? (
+            <>
+              <p className="mb-3 text-[14px] font-semibold text-charcoal">Tech stack signals</p>
+              <div className="flex flex-wrap gap-[7px]">
+                {startup.tech_stack.map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-[8px] border border-line bg-paper px-[11px] py-[5px] text-[12px] font-semibold text-charcoal"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <div className="self-start overflow-hidden rounded-[16px] border border-line bg-white shadow-sm">
+          <div className="px-6 pt-[22px]">
+            <p className="mb-3 text-[14px] font-semibold text-charcoal">Key facts</p>
+          </div>
+          <ul className="px-6">
+            {[
+              { k: 'Stage', v: stageLabel },
+              { k: 'Hiring status', v: (startup.hiring_status ?? 'unknown').replaceAll('_', ' '), mono: false },
+              { k: 'Source', v: startup.source ? (startup.source === 'yc' ? 'Y Combinator' : startup.source) : '—' },
+              { k: 'Saved', v: compactDate(startup.created_at), mono: true },
+            ].map(({ k, v, mono }) => (
+              <li
+                key={k}
+                className="flex items-center justify-between border-b border-line py-[11px] text-[13px]"
+              >
+                <span className="text-muted">{k}</span>
+                <span className={`font-semibold ${mono ? 'font-mono font-medium' : ''} text-right text-charcoal`}>
+                  {v}
                 </span>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Open roles</h2>
-          {startup.jobs.length === 0 ? (
-            <p className="mt-3 text-sm text-[#6B7280]">No roles captured yet.</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-[#F0EEE7]">
-              {startup.jobs.map((job) => (
-                <li key={job.id} className="py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-[#1F2937]">{job.title}</p>
-                      <p className="text-xs text-[#6B7280]">
-                        {[job.location, job.remote ? 'Remote' : null, job.employment_type]
-                          .filter(Boolean)
-                          .join(' · ') || '—'}
-                      </p>
-                    </div>
-                    {job.url ? (
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-medium text-[#18A058] hover:underline"
-                      >
-                        View →
-                      </a>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+              </li>
+            ))}
+          </ul>
+          <div className="flex items-center justify-between rounded-b-[16px] border-t border-line bg-paper px-6 py-3.5">
+            <span className="font-mono text-[11.5px] text-muted-2">{enrichNote}</span>
+            <Button
+              variant="ghost"
+              className="px-3 py-1.5 text-[12.5px]"
+              loading={triggerEnrich.isPending}
+              onClick={() => triggerEnrich.mutate(startupId)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-3.5 w-3.5"
+                aria-hidden
+              >
+                <path d="M21 11a8 8 0 1 1-3.5-6.6M21 4v6h-6" />
+              </svg>
+              Re-enrich
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-6">
-        <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Founders</h2>
+      <div className="grid grid-cols-1 gap-[22px] lg:grid-cols-2">
+        <section className="rounded-[16px] border border-line bg-white shadow-sm">
+          <div className="border-b border-line px-6 py-4">
+            <p className="text-[14px] font-semibold text-charcoal">Founders</p>
+          </div>
           {startup.founders.length === 0 ? (
-            <p className="mt-3 text-sm text-[#6B7280]">No founders captured yet.</p>
+            <p className="px-6 py-5 text-[13px] text-muted">No founders captured yet.</p>
           ) : (
-            <ul className="mt-3 space-y-3">
+            <ul className="divide-y divide-[#F0EEE7]">
               {startup.founders.map((founder) => (
-                <li key={founder.id}>
-                  <p className="text-sm font-medium text-[#1F2937]">{founder.name}</p>
-                  {founder.title ? <p className="text-xs text-[#6B7280]">{founder.title}</p> : null}
+                <li key={founder.id} className="flex items-center gap-3.5 px-6 py-3.5">
+                  <div
+                    aria-hidden
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-slate text-xs font-bold text-white"
+                  >
+                  {initialsOf(founder.name)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[13.5px] font-semibold text-charcoal">{founder.name}</p>
+                  {founder.title ? <p className="truncate text-xs text-muted">{founder.title}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        </section>
+
+        <section className="rounded-[16px] border border-line bg-white shadow-sm">
+          <div className="border-b border-line px-6 py-4">
+            <p className="text-[14px] font-semibold text-charcoal">Open roles</p>
+          </div>
+          {startup.jobs.length === 0 ? (
+            <p className="px-6 py-5 text-[13px] text-muted">No roles captured yet.</p>
+          ) : (
+            <ul className="divide-y divide-[#F0EEE7]">
+              {startup.jobs.map((job) => (
+                <li key={job.id} className="flex items-center gap-4 px-6 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-semibold text-charcoal">{job.title}</p>
+                  </div>
+                  {job.url ? (
+                    <a
+                      href={job.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 text-xs font-semibold text-emerald-dark hover:underline"
+                    >
+                      View →
+                    </a>
+                  ) : null}
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-
-        <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Tags</h2>
-          {(startup.tags ?? []).length === 0 ? (
-            <p className="mt-3 text-sm text-[#6B7280]">No tags yet.</p>
-          ) : (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(startup.tags ?? []).map((tag) => (
-                <span key={tag} className="rounded-full bg-[#F3F1EA] px-3 py-1 text-xs text-[#1F2937]">
-                  {tag}
-                </span>
-              ))}
-            </div>
           )}
         </section>
       </div>

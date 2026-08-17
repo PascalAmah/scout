@@ -143,9 +143,9 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 1. ✅ **DONE (2026-08-15)** — Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`. (Wellfound seeded `user_capture` — login-walled/anti-scraping terms — so it correctly gets no server-side sync; flip the tier if a data agreement ever exists.)
 2. ✅ **DONE (2026-08-15)** — Add multiple CV/resume profiles (e.g. "backend" vs "product" positioning).
 3. ✅ **DONE (2026-08-15)** — Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
-4. Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
-5. Build hybrid (keyword + semantic) search across saved startups.
-6. Build the AI Assistant (v3): tool-use agent per `AI_DESIGN.md`'s RAG architecture — typed SQL query tools for structured questions, pgvector semantic search for fuzzy ones, read-only in this scope (no write actions), strict per-user scoping enforced server-side on every tool call.
+4. ✅ **DONE (2026-08-16)** — Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
+5. ✅ **DONE (2026-08-16)** — Build hybrid (keyword + semantic) search across saved startups.
+6. ✅ **DONE (2026-08-16)** — Build the AI Assistant (v3): tool-use agent per `AI_DESIGN.md`'s RAG architecture — typed SQL query tools for structured questions, pgvector semantic search for fuzzy ones, read-only in this scope (no write actions), strict per-user scoping enforced server-side on every tool call.
 7. Consider the microservice split (AI/Search/Notification/Analytics services) only if load actually demands it — this is explicitly a "later, if needed" item in `ARCHITECTURE.md`, not a default.
 
 ---
@@ -181,7 +181,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 | Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
 | Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
 | Phase 5 — Insight Layer | ✅ **DONE** (2026-08-15) | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
-| Phase 6 — Expansion | in progress (6.1 + 6.2 + 6.3 done) | Assistant chat UI (tool traces), Matches feedback thumbs |
+| Phase 6 — Expansion | ✅ **DONE** (2026-08-16) | Assistant chat UI (tool traces), Matches feedback thumbs |
 
 ### Verified (2026-08-12) — Phase 1
 - API: 7 pytest pass; ruff + mypy clean (59 files). Worker: 6 pytest pass; ruff clean.
@@ -236,6 +236,22 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - Web: Pipeline kanban reworked — native HTML5 drag-and-drop between columns (drop-target highlight, `saved→interested→…` via the same status mutation), select mode with checkbox cards, and a bulk bar (tag input + archive + clear). Status shortcut buttons retained under cards for keyboard/accessibility parity. Typecheck + lint + build clean.
 - Note: the full API suite runs ~5 min (per-test DB fixture spin-up dominates); runs were split per file group rather than one pass.
 
+### Verified (2026-08-16) — Phase 6.4
+- Extension: new `contents/detect-linkedin.ts` content script — detects LinkedIn job posts (`/jobs/view/*`) and founder profiles (`/in/*`) via og: meta + DOM heuristics, builds a `quick-save` payload (startup + job, or startup + founder with `linkedin_url`). SPA route-change re-detection mirrors `detect-yc.ts`. Clean build confirms `https://www.linkedin.com/*` in the manifest.
+- API: `detect_url` already returned `entity_type=founder|job` with `compliance_tier=restricted` for LinkedIn; verified + expanded tests (`TestDetectLinkedIn`). `quick_save` persists founders with socials; LinkedIn saves correctly return `enrichment_status: none` (restricted-tier → no server-side enrichment, per ARCHITECTURE.md).
+- API: 58 pytest pass (5 new detect + founder-profile save tests); ruff + mypy clean (80 files).
+
+### Verified (2026-08-16) — Phase 6.5
+- API: hybrid search — `GET /startups?q=` now blends keyword relevance (name/summary/tags) with cosine similarity over `startup_embeddings` when a query is present; no query → recency-ordered list unchanged. New `app/services/embedding.py` mirrors the worker's `embed_text` (same provider/model/dim + deterministic pseudo-vector fallback) so the API can embed queries at request time; the API now loads `apps/worker/.env` too (single AI-key location). `openai` moved to API runtime deps.
+- Hybrid ranking verified headlessly: name hit outranks summary-only hit; no-match returns empty; no-query returns all. 3 new tests (61 total); ruff + mypy clean (80 files).
+- Web: the Workspace search box already fed `q` — no UI change needed. Typecheck + lint + build clean.
+
+### Verified (2026-08-16) — Phase 6.6
+- Assistant (v3), per AI_DESIGN.md RAG: `POST /assistant/chat` runs a tool-use agent loop — the LLM (OpenAI-compatible, `assistant.v1.txt` prompt in `packages/prompts`) chooses tools, each executed with the authenticated user's ID injected server-side. Tools: `query_saved_startups` (SQL), `semantic_search` (pgvector, startup/job), `get_application_status`, `get_match_explanation` — all read-only. Response returns the grounded answer + tool traces for the UI.
+- Hard guards: no write actions; `ASSISTANT_NOT_CONFIGURED` (503) when no `AI_API_KEY`; unknown tools return an error result to the model; iteration cap prevents runaway tool loops.
+- Web: `_app.assistant` route + `features/assistant/` (AssistantPage, ChatThread, suggestion chips, tool-trace chips), nav "Assistant" enabled. Route tree regenerated via `tsr generate`.
+- Tests: 4 new (tool call → execution → answer; tool error surfaces; unknown tool; no-key 503). API 65, worker 34, ruff + mypy clean (82 files). Web typecheck + lint + build clean.
+
 ## Frontend Implementation Map
 
 Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that builds it, its mockup in `docs/mockups/`, and current status. Route files are the target locations from the tree; screen-level details come from the referenced mockup + `UI_UX.md`.
@@ -254,7 +270,7 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop + bulk) | `scout_crm.html` | done (P6 drag-drop + bulk tag/archive) |
 | `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (timeline + attached materials + outreach UI) |
 | `_app.analytics` | 5 | `scout_analytics.html` | done |
-| `_app.assistant` | 6 | `scout_assistant.html` | pending |
+| `_app.assistant` | 6 | `scout_assistant.html` | done |
 | `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | done (Profile/CV full; Account/Integrations read-only stubs) |
 | Extension popup (Detected / Saving / Saved / Unsupported / ManualFallback / AuthExpired / login) | 0 (auth) → 1 (save flow) | `scout_extension.html` | done |
 | Email templates (welcome, password reset) | 0 | `scout_email_welcome.html`, `scout_email_reset_password.html` | done (React Email) |

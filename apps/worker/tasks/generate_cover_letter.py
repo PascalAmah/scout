@@ -135,7 +135,7 @@ def generate_cover_letter(
         content: str | None = None
         model = "heuristic"
         try:
-            prompt = load_prompt("generate_linkedin_dm.v1" if is_dm else "generate_outreach.v1")
+            prompt = load_prompt("generate_linkedin_dm" if is_dm else "generate_outreach")
             generated = text_call(prompt, grounding, GEN_MODEL)
             if generated:
                 content = generated

@@ -13,3 +13,9 @@ ignore = ["E501", "B008"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "../api"]
+
+# Pylance/Pyright: resolve `app.*` imports the way celery_app.py does at runtime
+# (sys.path.insert of ../api). Without this, editors flag worker imports of the
+# API package as unresolvable even though the worker runs fine.
+[tool.pyright]
+extraPaths = ["../api"]

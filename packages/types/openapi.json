@@ -162,6 +162,53 @@
         }
       }
     },
+    "/v1/auth/onboarding/complete": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Complete Onboarding",
+        "description": "Save the post-signup wizard answers and mark onboarding complete.",
+        "operationId": "complete_onboarding_v1_auth_onboarding_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/auth/me": {
       "get": {
         "tags": [
@@ -2990,6 +3037,53 @@
         }
       }
     },
+    "/v1/assistant/chat": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Chat",
+        "description": "Read-only conversational agent over the user's own saved data.\n\nThe model decides which tools to call; every tool is executed with the\nauthenticated user's ID injected server-side, so retrieval can never cross\nuser boundaries. No write actions in v3 scope.",
+        "operationId": "chat_v1_assistant_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/jobs-status/{job_id}": {
       "get": {
         "tags": [
@@ -3750,6 +3844,122 @@
           "name"
         ],
         "title": "ApplicationStartup"
+      },
+      "AssistantChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/AssistantHistoryMessage"
+            },
+            "type": "array",
+            "title": "History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AssistantChatRequest"
+      },
+      "AssistantChatResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/AssistantReference"
+            },
+            "type": "array",
+            "title": "References"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/AssistantToolCall"
+            },
+            "type": "array",
+            "title": "Tools"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "AssistantChatResponse"
+      },
+      "AssistantHistoryMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "user | assistant"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "AssistantHistoryMessage"
+      },
+      "AssistantReference": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "startup | job | application"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "name"
+        ],
+        "title": "AssistantReference",
+        "description": "An entity (startup / job / application) the assistant's answer names,\nfor the frontend to render as a link."
+      },
+      "AssistantToolCall": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments"
+          },
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AssistantToolCall"
       },
       "Body_create_profile_v1_cv_profiles_post": {
         "properties": {
@@ -5348,6 +5558,32 @@
         ],
         "title": "NotificationOut"
       },
+      "OnboardingCompleteRequest": {
+        "properties": {
+          "target_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Target Roles"
+          },
+          "remote": {
+            "type": "boolean",
+            "title": "Remote",
+            "default": false
+          },
+          "locations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Locations"
+          }
+        },
+        "type": "object",
+        "title": "OnboardingCompleteRequest",
+        "description": "Answers from the post-signup onboarding wizard.\n\nPersisted to ``users.preferences``; also stamps ``onboarding_completed_at``\nserver-side so a client can never backdate the marker."
+      },
       "OutreachGenerate": {
         "properties": {
           "application_id": {
@@ -5779,6 +6015,13 @@
                 "type": "null"
               }
             ]
+          },
+          "founders": {
+            "items": {
+              "$ref": "#/components/schemas/QuickSaveFounder"
+            },
+            "type": "array",
+            "title": "Founders"
           }
         },
         "type": "object",
@@ -5819,6 +6062,14 @@
               }
             ],
             "title": "Founder Id"
+          },
+          "founder_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Founder Ids"
           },
           "already_saved": {
             "type": "boolean",
@@ -6664,6 +6915,11 @@
               }
             ],
             "title": "Created By"
+          },
+          "open_roles_count": {
+            "type": "integer",
+            "title": "Open Roles Count",
+            "default": 0
           }
         },
         "type": "object",
@@ -7026,6 +7282,30 @@
             "type": "boolean",
             "title": "Email Reminders Enabled",
             "default": false
+          },
+          "onboarding_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Completed At"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferences"
           },
           "created_at": {
             "type": "string",

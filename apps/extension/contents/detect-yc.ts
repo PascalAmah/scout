@@ -1,3 +1,4 @@
+import type { QuickSaveFounder } from '@scout/types'
 import type { DetectedPayload } from '../background/state'
 
 export const config = {
@@ -97,6 +98,52 @@ function firstJobFromListing(slug: string): { title: string; url: string } | nul
   return { title, url: link.href }
 }
 
+/** The page heading that begins the founder list, if present. */
+function foundersHeading(): Element | null {
+  const heading = Array.from(document.querySelectorAll<HTMLElement>('div')).find(
+    (el) => el.children.length === 0 && el.textContent?.trim() === 'Active Founders',
+  )
+  if (!heading) return null
+  // The founder list is the sibling that follows the heading.
+  return heading.nextElementSibling
+}
+
+/**
+ * Parse the "Active Founders" section into founder records with their social
+ * profiles. YC renders each founder twice (desktop + mobile markup) inside one
+ * card, so we collect per-card and dedupe by name.
+ */
+function parseFounders(): QuickSaveFounder[] {
+  const container = foundersHeading()
+  if (!container) return []
+
+  const cards = Array.from(container.querySelectorAll<HTMLElement>('div')).filter((el) =>
+    el.className?.includes('border-b border-gray-100'),
+  )
+
+  const byName = new Map<string, QuickSaveFounder>()
+  for (const card of cards) {
+    const nameEl = card.querySelector<HTMLElement>('div.font-bold')
+    const name = nameEl?.textContent?.trim()
+    if (!name) continue
+
+    const titleEl = card.querySelector<HTMLElement>('div.text-gray-600')
+    const bioEl = card.querySelector<HTMLElement>('div.whitespace-pre-line')
+    const socials = Array.from(card.querySelectorAll<HTMLAnchorElement>('a[aria-label]'))
+    const twitter = socials.find((a) => a.getAttribute('aria-label') === 'Twitter account')?.href ?? null
+    const linkedin = socials.find((a) => a.getAttribute('aria-label') === 'LinkedIn profile')?.href ?? null
+
+    byName.set(name, {
+      name,
+      title: titleEl?.textContent?.trim() || null,
+      bio: bioEl?.textContent?.trim() || null,
+      twitter_url: twitter,
+      linkedin_url: linkedin,
+    })
+  }
+  return Array.from(byName.values())
+}
+
 function detect(): DetectedPayload | null {
   const pathMatch = location.pathname.match(/^\/companies\/([^/]+)(?:\/(.*))?$/)
   if (!pathMatch) return null
@@ -120,11 +167,11 @@ function detect(): DetectedPayload | null {
   }
   if (!name) return null
 
+  // Job detail pages parse their own role; the /jobs listing AND the company
+  // page both embed the open-role cards, so the first role link works for both.
   const job = isJobDetail
     ? jobFromDetail()
-    : isJobsListing
-      ? firstJobFromListing(slug)
-      : null
+    : firstJobFromListing(slug)
 
   const website = findWebsite() ?? meta('og:url') ?? location.origin
   return {
@@ -132,6 +179,7 @@ function detect(): DetectedPayload | null {
     source_url: location.href,
     startup: { name, website },
     job,
+    founders: parseFounders(),
   }
 }
 
@@ -145,10 +193,13 @@ function run(force = false): void {
   void chrome.runtime.sendMessage({ type: 'scout:detected', payload }).catch(() => {})
 }
 
-// The popup asks the active tab to re-detect on open so it never shows stale
-// detection from another tab or an earlier navigation.
-chrome.runtime.onMessage.addListener((message: unknown) => {
-  if ((message as { type?: string } | null)?.type === 'scout:re-detect') run(true)
+// The background asks the active tab to re-detect on popup open and expects
+// the fresh payload back, so the popup never shows stale detection from
+// another tab or an earlier navigation.
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if ((message as { type?: string } | null)?.type === 'scout:re-detect') {
+    sendResponse({ payload: detect() })
+  }
 })
 
 run()

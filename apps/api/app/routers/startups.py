@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.idempotency import idempotency_store
@@ -40,10 +40,28 @@ def list_startups(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    saved_rows, next_cursor = startup_service.list_saved(
-        db, user, stage, hiring_status, tags, q, cursor, limit
-    )
+    # With a query term, use hybrid (keyword + semantic) ranking. Without one,
+    # fall back to the plain filtered list (recency-ordered) for browsing.
+    if q:
+        saved_rows, next_cursor = startup_service.hybrid_search(db, user, q, cursor, limit)
+    else:
+        saved_rows, next_cursor = startup_service.list_saved(
+            db, user, stage, hiring_status, tags, q, cursor, limit
+        )
     data = []
+    startup_ids = [saved.startup_id for saved in saved_rows]
+    open_roles: dict[uuid.UUID, int] = {}
+    if startup_ids:
+        rows = db.execute(
+            select(Job.startup_id, func.count(Job.id))
+            .where(
+                Job.startup_id.in_(startup_ids),
+                Job.deleted_at.is_(None),
+                Job.status != "closed",
+            )
+            .group_by(Job.startup_id)
+        ).all()
+        open_roles = {startup_id: count for startup_id, count in rows}
     for saved in saved_rows:
         startup = saved.startup
         data.append(
@@ -53,6 +71,7 @@ def list_startups(
                 saved_via=saved.saved_via,
                 enrichment_status=startup_service._enrichment_status(db, startup),
                 created_by=startup.created_by,
+                open_roles_count=open_roles.get(startup.id, 0),
             )
         )
     return {"data": data, "next_cursor": next_cursor}

@@ -57,7 +57,7 @@ def llm_scorer(cv_ctx: dict, job: Job, startup: Startup, stage1_score: float) ->
             "stage1_score": stage1_score,
         }
     )
-    result = structured_call(load_prompt("match_score.v1"), payload, RERANK_MODEL)
+    result = structured_call(load_prompt("match_score"), payload, RERANK_MODEL)
     if result is None:
         return matching_service.heuristic_explanation(cv_ctx, job, startup, stage1_score)
     return _coerce_explanation(result, cv_ctx, job, startup, stage1_score)

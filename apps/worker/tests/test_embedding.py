@@ -23,8 +23,14 @@ class TestEmbedding:
         assert a != b
 
     def test_embed_text_falls_back_without_api_key(self) -> None:
-        with mock.patch.dict("os.environ", {}, clear=False), mock.patch.dict(
-            "os.environ", {"OPENAI_API_KEY": ""}
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "AI_API_KEY": "",
+                "AI_EMBEDDING_API_KEY": "",
+                "OPENAI_API_KEY": "",
+            },
+            clear=False,
         ):
             vec, label = embed_text("hello world")
         assert len(vec) == EMBEDDING_DIM

@@ -9,7 +9,7 @@ import uuid
 from datetime import UTC, datetime
 
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 logger = logging.getLogger(__name__)
 
@@ -122,8 +122,17 @@ def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
             raise ValueError(f"empty content fetched from {source_url}")
 
         text_hash = content_hash(content.raw_text)
-        if cache.last_hash(str(startup.id)) == text_hash and startup.last_enriched_at is not None:
-            # Unchanged source — nothing new to extract.
+        same_content = cache.last_hash(str(startup.id)) == text_hash and startup.last_enriched_at is not None
+        if same_content and not _job_is_newer_than_last_enrich(job, startup.last_enriched_at):
+            # Unchanged source and no fresh re-enrich request — nothing new to
+            # extract. Jobs and founders are cheap and idempotent to persist,
+            # so backfill them for startups enriched before structured parsing
+            # existed. A job queued after the last run (a deliberate re-save)
+            # falls through and re-extracts, so fixing the AI key or a changed
+            # page is picked up without touching Redis.
+            _persist_jobs(db, startup.id, content.jobs)
+            _persist_founders(db, startup.id, content.founders)
+            db.commit()
             _finish(db, job, "succeeded")
             return {"status": "succeeded", "skipped": True}
 
@@ -139,17 +148,11 @@ def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
         startup.last_enriched_at = datetime.now(UTC)
 
         # Persist any jobs the adapter surfaced.
-        from app.models import Job
+        _persist_jobs(db, startup.id, content.jobs)
 
-        for job_data in content.jobs:
-            title = job_data.get("title")
-            if not title:
-                continue
-            existing = db.scalar(
-                select(Job).where(Job.startup_id == startup.id, Job.title == title).limit(1)
-            )
-            if existing is None:
-                db.add(Job(startup_id=startup.id, title=title, url=source_url))
+        # Persist founders the adapter surfaced (YC parses them structurally so
+        # socials are preserved for outreach).
+        _persist_founders(db, startup.id, content.founders)
         db.commit()
 
         # Phase 2: embed the enrichment output (summary + job descriptions).
@@ -166,6 +169,17 @@ def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
         return {"status": "succeeded", "skipped": False}
     except Exception as exc:
         logger.exception("enrich_startup failed for %s", startup_id)
+        db.rollback()
+        job = db.scalar(
+            select(EnrichmentJob)
+            .where(
+                EnrichmentJob.entity_type == "startup",
+                EnrichmentJob.entity_id == startup_uuid,
+                EnrichmentJob.job_type == "enrich_startup",
+            )
+            .order_by(EnrichmentJob.created_at.desc())
+            .limit(1)
+        )
         if job is not None and job.status in ("queued", "running"):
             job.status = "failed"
             job.error = str(exc)[:500]
@@ -178,6 +192,77 @@ def enrich_startup(self, startup_id: str, user_id: str | None = None) -> dict:
     finally:
         db.close()
     return {"status": "failed"}
+
+
+def _job_is_newer_than_last_enrich(job, last_enriched_at) -> bool:
+    """True when this enrichment job was queued after the last completed run —
+    a deliberate re-enrich (re-save) rather than a celery retry of the job that
+    produced the current data. Naive DB timestamps are normalized to UTC."""
+    if job is None or job.created_at is None or last_enriched_at is None:
+        return False
+    created = job.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
+    last = last_enriched_at
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=UTC)
+    return created >= last
+
+
+def _persist_founders(db, startup_id: uuid.UUID, founders: list[dict]) -> None:
+    """Upsert founders by name (case-insensitive). Enrichment can re-run on the
+    same source; never duplicate an existing founder."""
+    from app.models import Founder
+
+    for founder_data in founders:
+        name = (founder_data.get("name") or "").strip()
+        if not name:
+            continue
+        existing = db.scalar(
+            select(Founder)
+            .where(Founder.startup_id == startup_id, func.lower(Founder.name) == name.lower())
+            .limit(1)
+        )
+        if existing is None:
+            db.add(
+                Founder(
+                    startup_id=startup_id,
+                    name=name,
+                    title=founder_data.get("title"),
+                    bio=founder_data.get("bio"),
+                    twitter_url=founder_data.get("twitter_url"),
+                    linkedin_url=founder_data.get("linkedin_url"),
+                )
+            )
+
+
+def _persist_jobs(db, startup_id: uuid.UUID, jobs: list[dict]) -> None:
+    """Upsert jobs by title, filling in the fields the adapter surfaced (the YC
+    adapter parses the embedded jobPostings blob, so location/type/salary etc.
+    are available even when the user saved the company page rather than a job)."""
+    from app.models import Job
+
+    for job_data in jobs:
+        title = (job_data.get("title") or "").strip()
+        if not title:
+            continue
+        existing = db.scalar(
+            select(Job).where(Job.startup_id == startup_id, Job.title == title).limit(1)
+        )
+        if existing is None:
+            db.add(
+                Job(
+                    startup_id=startup_id,
+                    title=title,
+                    description=job_data.get("description"),
+                    location=job_data.get("location"),
+                    employment_type=job_data.get("employment_type"),
+                    salary_min=job_data.get("salary_min"),
+                    salary_max=job_data.get("salary_max"),
+                    url=job_data.get("url"),
+                    status="open",
+                )
+            )
 
 
 def _finish(db, job, status: str) -> None:

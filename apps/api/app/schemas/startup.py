@@ -45,6 +45,7 @@ class StartupListItem(StartupOut):
     saved_via: str
     enrichment_status: str
     created_by: uuid.UUID | None
+    open_roles_count: int = 0
 
 
 class FounderCreate(BaseModel):

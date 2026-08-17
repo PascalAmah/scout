@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "api"))
 def test_prompt_loader_resolves_repo_root_prompts() -> None:
     from tasks.prompts import load_prompt
 
-    for name in ("match_score.v1", "generate_resume.v1", "generate_outreach.v1", "enrich_startup.v1"):
+    for name in ("match_score", "generate_resume", "generate_outreach", "enrich_startup", "generate_follow_up", "generate_linkedin_dm"):
         text = load_prompt(name)
         assert text.strip(), f"{name} prompt is empty"
 
@@ -18,11 +18,12 @@ def test_llm_scorer_falls_back_to_heuristic_without_key(monkeypatch) -> None:
 
     from tasks import compute_match
 
-    # No OPENAI_API_KEY in the environment → structured_call returns None → heuristic.
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    # No AI key in the environment → structured_call returns None → heuristic.
+    for var in ("AI_API_KEY", "AI_EMBEDDING_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
 
     job = type("Job", (), {"title": "Backend Engineer", "description": "Python FastAPI PostgreSQL"})
-    startup = type("Startup", (), {"summary": "Builds robotics software.", "name": "Acme"})
+    startup = type("Startup", (), {"summary": "Builds digital health software.", "name": "Lumina"})
 
     cv_ctx = {
         "raw_text": "Backend engineer with Python and PostgreSQL",
@@ -46,7 +47,7 @@ def test_heuristic_resume_never_fabricates() -> None:
     base = {
         "summary": "Backend engineer",
         "skills": ["Docker", "Python", "Go"],
-        "experience": [{"company": "Acme", "title": "Engineer", "dates": "2020-", "bullets": ["Built APIs"]}],
+        "experience": [{"company": "Lumina", "title": "Engineer", "dates": "2020-", "bullets": ["Built APIs"]}],
         "education": [],
         "projects": [],
     }
@@ -61,10 +62,10 @@ def test_heuristic_outreach_copy_has_no_placeholders() -> None:
 
     application = type("App", (), {"job": None})
     job = type("Job", (), {"title": "Backend Engineer"})
-    startup = type("Startup", (), {"name": "Acme", "summary": "Builds robotics software for warehouses."})
+    startup = type("Startup", (), {"name": "Lumina", "summary": "Builds digital health software for clinics."})
     match = type("Match", (), {"explanation": {"matched_skills": ["Python"], "gaps": ["K8s"], "summary": "ok"}})
     text = _heuristic_copy(application, job, startup, match, "Ada Lovelace")
-    assert "Acme" in text
+    assert "Lumina" in text
     assert "Ada Lovelace" in text
     assert "Python" in text
     assert "[" not in text and "]" not in text

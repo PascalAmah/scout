@@ -105,7 +105,7 @@ def download_version(
     if version.file_key is None:
         from app.services import file_store, resume_renderer
 
-        pdf = resume_renderer.render_pdf(version.content)
+        pdf = resume_renderer.render_pdf(version.content, candidate_name=user.full_name)
         key = f"resume-versions/{version.id}.pdf"
         file_store.write_bytes(key, pdf)
         version.file_key = key

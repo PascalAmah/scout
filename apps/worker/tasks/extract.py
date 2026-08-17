@@ -73,7 +73,7 @@ def content_hash(text: str) -> str:
 def load_prompt() -> str:
     from tasks.prompts import load_prompt as _load
 
-    return _load("enrich_startup.v1")
+    return _load("enrich_startup")
 
 
 def _heuristic_extract(text: str) -> dict[str, Any]:

@@ -10,6 +10,8 @@ import { tokens } from '../../lib/auth'
 import type { Page } from '../startups/api'
 
 export interface ResumeContent {
+  name?: string
+  role_label?: string
   summary?: string
   skills?: string[]
   experience?: Array<{
@@ -24,6 +26,15 @@ export interface ResumeContent {
 
 export type ResumeOut = Omit<ResumeOutShared, 'content'> & {
   content: ResumeContent | null
+}
+
+/**
+ * Pick the base resume consistently everywhere (matches "Generate resume",
+ * Resume Studio, etc.). Prefer the marked base; fall back to the newest row
+ * (legacy data may predate is_base). Never silently pick a random duplicate.
+ */
+export function selectBaseResume(resumes: ResumeOut[]): ResumeOut | null {
+  return resumes.find((r) => r.is_base) ?? resumes[0] ?? null
 }
 
 export type ResumeVersionOut = Omit<ResumeVersionOutShared, 'content'> & {

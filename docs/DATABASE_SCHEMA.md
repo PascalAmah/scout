@@ -52,6 +52,7 @@ erDiagram
 | avatar_url | text | R2 key or external URL |
 | role | text | `user` \| `admin`, default `user` |
 | onboarding_completed_at | timestamptz | nullable |
+| preferences | jsonb | nullable — onboarding wizard answers `{target_roles, remote, locations}` |
 | created_at | timestamptz | not null, default now() |
 | updated_at | timestamptz | not null, default now() |
 | deleted_at | timestamptz | nullable |

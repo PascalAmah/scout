@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,6 +28,8 @@ def user_out(user: User) -> UserOut:
         full_name=user.full_name,
         role=user.role,
         email_reminders_enabled=user.email_reminders_enabled,
+        onboarding_completed_at=user.onboarding_completed_at,
+        preferences=user.preferences,
         created_at=user.created_at,
     )
 
@@ -51,6 +54,26 @@ def register(db: Session, email: str, password: str, full_name: str | None) -> T
     db.refresh(user)
     send_email(user.email, "Welcome to Scout", welcome_email_html(user.full_name))
     return _token_response(user)
+
+
+def complete_onboarding(
+    db: Session,
+    user: User,
+    target_roles: list[str],
+    remote: bool,
+    locations: list[str],
+) -> UserOut:
+    """Persist the wizard answers and stamp onboarding completion (idempotent)."""
+    user.preferences = {
+        "target_roles": target_roles,
+        "remote": remote,
+        "locations": locations,
+    }
+    user.onboarding_completed_at = datetime.now(timezone.utc)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user_out(user)
 
 
 def login(db: Session, email: str, password: str) -> TokenResponse:

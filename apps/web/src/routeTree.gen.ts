@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppAssistantRouteImport } from './routes/_app.assistant'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppMatchesRouteImport } from './routes/_app.matches'
+import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app.settings.route'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
@@ -48,9 +51,19 @@ const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAssistantRoute = AppAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -61,6 +74,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppMatchesRoute = AppMatchesRouteImport.update({
   id: '/matches',
   path: '/matches',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
@@ -168,10 +186,13 @@ const AppStartupsStartupIdNotesRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/settings': typeof AppSettingsRouteRouteWithChildren
   '/analytics': typeof AppAnalyticsRoute
+  '/assistant': typeof AppAssistantRoute
   '/dashboard': typeof AppDashboardRoute
   '/matches': typeof AppMatchesRoute
+  '/notifications': typeof AppNotificationsRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
@@ -193,9 +214,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/analytics': typeof AppAnalyticsRoute
+  '/assistant': typeof AppAssistantRoute
   '/dashboard': typeof AppDashboardRoute
   '/matches': typeof AppMatchesRoute
+  '/notifications': typeof AppNotificationsRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
@@ -219,10 +243,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_app/settings': typeof AppSettingsRouteRouteWithChildren
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/assistant': typeof AppAssistantRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/matches': typeof AppMatchesRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/password-reset/confirm': typeof PasswordResetConfirmRoute
@@ -246,10 +273,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/onboarding'
     | '/settings'
     | '/analytics'
+    | '/assistant'
     | '/dashboard'
     | '/matches'
+    | '/notifications'
     | '/login'
     | '/register'
     | '/password-reset/confirm'
@@ -271,9 +301,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/onboarding'
     | '/analytics'
+    | '/assistant'
     | '/dashboard'
     | '/matches'
+    | '/notifications'
     | '/login'
     | '/register'
     | '/password-reset/confirm'
@@ -296,10 +329,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/_auth'
+    | '/onboarding'
     | '/_app/settings'
     | '/_app/analytics'
+    | '/_app/assistant'
     | '/_app/dashboard'
     | '/_app/matches'
+    | '/_app/notifications'
     | '/_auth/login'
     | '/_auth/register'
     | '/password-reset/confirm'
@@ -324,6 +360,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   PasswordResetConfirmRoute: typeof PasswordResetConfirmRoute
   PasswordResetIndexRoute: typeof PasswordResetIndexRoute
 }
@@ -351,11 +388,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/analytics': {
       id: '/_app/analytics'
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/assistant': {
+      id: '/_app/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AppAssistantRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -370,6 +421,13 @@ declare module '@tanstack/react-router' {
       path: '/matches'
       fullPath: '/matches'
       preLoaderRoute: typeof AppMatchesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -548,8 +606,10 @@ const AppStartupsStartupIdRouteRouteWithChildren =
 interface AppRouteChildren {
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAssistantRoute: typeof AppAssistantRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppMatchesRoute: typeof AppMatchesRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppStartupsStartupIdRouteRoute: typeof AppStartupsStartupIdRouteRouteWithChildren
   AppResumeStudioVersionIdRoute: typeof AppResumeStudioVersionIdRoute
   AppCrmIndexRoute: typeof AppCrmIndexRoute
@@ -561,8 +621,10 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAssistantRoute: AppAssistantRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppMatchesRoute: AppMatchesRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppStartupsStartupIdRouteRoute: AppStartupsStartupIdRouteRouteWithChildren,
   AppResumeStudioVersionIdRoute: AppResumeStudioVersionIdRoute,
   AppCrmIndexRoute: AppCrmIndexRoute,
@@ -589,6 +651,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   PasswordResetConfirmRoute: PasswordResetConfirmRoute,
   PasswordResetIndexRoute: PasswordResetIndexRoute,
 }

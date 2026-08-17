@@ -161,7 +161,7 @@ def generate_follow_up(
         content: str | None = None
         model = "heuristic"
         try:
-            generated = text_call(load_prompt("generate_follow_up.v1"), grounding, GEN_MODEL)
+            generated = text_call(load_prompt("generate_follow_up"), grounding, GEN_MODEL)
             if generated:
                 content = generated
                 model = GEN_MODEL

@@ -72,6 +72,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/onboarding/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Onboarding
+         * @description Save the post-signup wizard answers and mark onboarding complete.
+         */
+        post: operations["complete_onboarding_v1_auth_onboarding_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/me": {
         parameters: {
             query?: never;
@@ -815,6 +835,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat
+         * @description Read-only conversational agent over the user's own saved data.
+         *
+         *     The model decides which tools to call; every tool is executed with the
+         *     authenticated user's ID injected server-side, so retrieval can never cross
+         *     user boundaries. No write actions in v3 scope.
+         */
+        post: operations["chat_v1_assistant_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs-status/{job_id}": {
         parameters: {
             query?: never;
@@ -1102,6 +1146,62 @@ export interface components {
             name: string;
             /** Website */
             website?: string | null;
+        };
+        /** AssistantChatRequest */
+        AssistantChatRequest: {
+            /** Message */
+            message: string;
+            /** History */
+            history?: components["schemas"]["AssistantHistoryMessage"][];
+        };
+        /** AssistantChatResponse */
+        AssistantChatResponse: {
+            /** Answer */
+            answer: string;
+            /** References */
+            references?: components["schemas"]["AssistantReference"][];
+            /** Tools */
+            tools?: components["schemas"]["AssistantToolCall"][];
+        };
+        /** AssistantHistoryMessage */
+        AssistantHistoryMessage: {
+            /**
+             * Role
+             * @description user | assistant
+             */
+            role: string;
+            /** Content */
+            content: string;
+        };
+        /**
+         * AssistantReference
+         * @description An entity (startup / job / application) the assistant's answer names,
+         *     for the frontend to render as a link.
+         */
+        AssistantReference: {
+            /**
+             * Type
+             * @description startup | job | application
+             */
+            type: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** AssistantToolCall */
+        AssistantToolCall: {
+            /** Name */
+            name: string;
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Result
+             * @default
+             */
+            result: string;
         };
         /** Body_create_profile_v1_cv_profiles_post */
         Body_create_profile_v1_cv_profiles_post: {
@@ -1575,6 +1675,24 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * OnboardingCompleteRequest
+         * @description Answers from the post-signup onboarding wizard.
+         *
+         *     Persisted to ``users.preferences``; also stamps ``onboarding_completed_at``
+         *     server-side so a client can never backdate the marker.
+         */
+        OnboardingCompleteRequest: {
+            /** Target Roles */
+            target_roles?: string[];
+            /**
+             * Remote
+             * @default false
+             */
+            remote: boolean;
+            /** Locations */
+            locations?: string[];
+        };
         /** OutreachGenerate */
         OutreachGenerate: {
             /**
@@ -1702,6 +1820,8 @@ export interface components {
             startup: components["schemas"]["QuickSaveStartup"];
             job?: components["schemas"]["QuickSaveJob"] | null;
             founder?: components["schemas"]["QuickSaveFounder"] | null;
+            /** Founders */
+            founders?: components["schemas"]["QuickSaveFounder"][];
         };
         /** QuickSaveResponse */
         QuickSaveResponse: {
@@ -1714,6 +1834,8 @@ export interface components {
             job_id?: string | null;
             /** Founder Id */
             founder_id?: string | null;
+            /** Founder Ids */
+            founder_ids?: string[];
             /** Already Saved */
             already_saved: boolean;
             /** Saved Via */
@@ -2003,6 +2125,11 @@ export interface components {
             enrichment_status: string;
             /** Created By */
             created_by: string | null;
+            /**
+             * Open Roles Count
+             * @default 0
+             */
+            open_roles_count: number;
         };
         /** StartupOut */
         StartupOut: {
@@ -2112,6 +2239,12 @@ export interface components {
              * @default false
              */
             email_reminders_enabled: boolean;
+            /** Onboarding Completed At */
+            onboarding_completed_at?: string | null;
+            /** Preferences */
+            preferences?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -2263,6 +2396,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_onboarding_v1_auth_onboarding_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -3999,6 +4165,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuickSaveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_v1_assistant_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssistantChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssistantChatResponse"];
                 };
             };
             /** @description Validation Error */

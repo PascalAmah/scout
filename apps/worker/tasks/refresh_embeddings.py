@@ -20,7 +20,7 @@ from app.models import (
     StartupEmbedding,
 )
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from tasks.embedding import embed_text
@@ -34,38 +34,47 @@ def _session():
     return SessionLocal()
 
 
-def upsert_cv_embedding(db: Session, profile: CVProfile, vector: list[float], model: str) -> None:
-    row = db.scalar(
-        select(CVEmbedding).where(CVEmbedding.cv_profile_id == profile.id).limit(1)
+def _atomic_upsert(db: Session, model, key_column, values: dict) -> None:
+    """Insert-or-update an embedding row in one statement.
+
+    The embeddings tables have a unique index on the entity FK, so a
+    SELECT-then-INSERT upsert races when two tasks enrich the same entity
+    concurrently (e.g. duplicate queued enrich_startup jobs). ``ON CONFLICT``
+    makes it atomic — the loser updates instead of raising UniqueViolation."""
+    stmt = pg_insert(model).values(**values)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[key_column],
+        set_={k: stmt.excluded[k] for k in ("embedding", "model")},
     )
-    if row is None:
-        db.add(CVEmbedding(cv_profile_id=profile.id, embedding=vector, model=model))
-    else:
-        row.embedding = vector
-        row.model = model
+    db.execute(stmt)
+
+
+def upsert_cv_embedding(db: Session, profile: CVProfile, vector: list[float], model: str) -> None:
+    _atomic_upsert(
+        db,
+        CVEmbedding,
+        CVEmbedding.cv_profile_id,
+        {"cv_profile_id": profile.id, "embedding": vector, "model": model},
+    )
     profile.last_embedded_at = datetime.now(UTC)
 
 
 def upsert_startup_embedding(db: Session, startup: Startup, vector: list[float], model: str) -> None:
-    row = db.scalar(
-        select(StartupEmbedding).where(StartupEmbedding.startup_id == startup.id).limit(1)
+    _atomic_upsert(
+        db,
+        StartupEmbedding,
+        StartupEmbedding.startup_id,
+        {"startup_id": startup.id, "embedding": vector, "model": model},
     )
-    if row is None:
-        db.add(StartupEmbedding(startup_id=startup.id, embedding=vector, model=model))
-    else:
-        row.embedding = vector
-        row.model = model
 
 
 def upsert_job_embedding(db: Session, job: Job, vector: list[float], model: str) -> None:
-    row = db.scalar(
-        select(JobEmbedding).where(JobEmbedding.job_id == job.id).limit(1)
+    _atomic_upsert(
+        db,
+        JobEmbedding,
+        JobEmbedding.job_id,
+        {"job_id": job.id, "embedding": vector, "model": model},
     )
-    if row is None:
-        db.add(JobEmbedding(job_id=job.id, embedding=vector, model=model))
-    else:
-        row.embedding = vector
-        row.model = model
 
 
 def _job_text(job: Job, startup: Startup | None) -> str:

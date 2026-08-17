@@ -65,7 +65,7 @@ def _bullets(items: list[str], story: list) -> None:
     story.append(flow)
 
 
-def render_pdf(content: dict[str, Any] | None) -> bytes:
+def render_pdf(content: dict[str, Any] | None, candidate_name: str | None = None) -> bytes:
     content = content or {}
     buf = BytesIO()
     doc = SimpleDocTemplate(
@@ -81,7 +81,12 @@ def render_pdf(content: dict[str, Any] | None) -> bytes:
     s = _styles()
     story: list = []
 
-    story.append(Paragraph("Resume", s["title"]))
+    # Header shows the candidate's name. Prefer the name stamped into content at
+    # generation time; fall back to the caller's candidate_name (e.g. the
+    # account's full_name) for versions generated before name stamping existed;
+    # last resort is a neutral title.
+    name = (content.get("name") or "").strip() or (candidate_name or "").strip()
+    story.append(Paragraph(name or "Resume", s["title"]))
     story.append(Spacer(1, 4))
 
     summary = (content.get("summary") or "").strip()
@@ -103,11 +108,11 @@ def render_pdf(content: dict[str, Any] | None) -> bytes:
             story.append(Paragraph(dates, s["dates"]))
         _bullets([str(b) for b in (exp.get("bullets") or [])], story)
 
-    for edu in content.get("education") or []:
-        if not edu:
-            continue
+    education = [edu for edu in content.get("education") or [] if edu]
+    if education:
         _section("Education", story)
-        story.append(Paragraph(str(edu.get("school") or edu.get("degree") or edu), s["meta"]))
+        for edu in education:
+            story.append(Paragraph(str(edu.get("school") or edu.get("degree") or edu), s["meta"]))
 
     projects = content.get("projects") or []
     if projects:
