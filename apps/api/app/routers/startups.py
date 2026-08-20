@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.idempotency import idempotency_store
 from app.db.session import get_db
 from app.deps import get_current_user
-from app.models import Founder, Job, Note, SavedStartup, Startup, User
+from app.models import Founder, Job, MatchScore, Note, SavedStartup, Startup, User
 from app.schemas.common import Page
 from app.schemas.startup import (
     EnrichmentJobOut,
@@ -34,8 +34,9 @@ def list_startups(
     stage: str | None = Query(default=None),
     hiring_status: str | None = Query(default=None),
     tags: list[str] | None = Query(default=None),
+    source: str | None = Query(default=None),
     q: str | None = Query(default=None),
-    cursor: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
     limit: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -43,10 +44,10 @@ def list_startups(
     # With a query term, use hybrid (keyword + semantic) ranking. Without one,
     # fall back to the plain filtered list (recency-ordered) for browsing.
     if q:
-        saved_rows, next_cursor = startup_service.hybrid_search(db, user, q, cursor, limit)
+        saved_rows, total, next_page = startup_service.hybrid_search(db, user, q, page, limit)
     else:
-        saved_rows, next_cursor = startup_service.list_saved(
-            db, user, stage, hiring_status, tags, q, cursor, limit
+        saved_rows, total, next_page = startup_service.list_saved(
+            db, user, stage, hiring_status, tags, source, q, page, limit
         )
     data = []
     startup_ids = [saved.startup_id for saved in saved_rows]
@@ -74,7 +75,11 @@ def list_startups(
                 open_roles_count=open_roles.get(startup.id, 0),
             )
         )
-    return {"data": data, "next_cursor": next_cursor}
+    return {
+    "data": data,
+    "next_cursor": str(next_page) if next_page else None,
+    "total": total,
+}
 
 
 def startup_service_startup_fields(startup) -> dict:
@@ -126,6 +131,19 @@ def get_startup(
             SavedStartup.user_id == user.id, SavedStartup.startup_id == startup_id
         )
     )
+    job_ids = [job.id for job in startup.jobs]
+    score_map: dict[uuid.UUID, float] = {}
+    if job_ids:
+        score_map = {
+            row[0]: float(row[1])
+            for row in db.execute(
+                select(MatchScore.job_id, MatchScore.score).where(
+                    MatchScore.user_id == user.id, MatchScore.job_id.in_(job_ids)
+                )
+            ).all()
+        }
+    for job in startup.jobs:
+        job.match_score = score_map.get(job.id)
     return {
         **startup_service_startup_fields(startup),
         "status": saved.status if saved else "saved",

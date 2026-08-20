@@ -112,3 +112,12 @@ def download_version(
         db.add(version)
         db.commit()
     return {"url": f"/v1/files/{version.file_key}"}
+
+
+@versions_router.delete("/{version_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_version(
+    version_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> None:
+    resume_service.delete_version(db, user, version_id)

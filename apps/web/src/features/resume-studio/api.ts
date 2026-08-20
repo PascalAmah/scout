@@ -79,6 +79,10 @@ export function reviewVersionRequest(versionId: string): Promise<ResumeVersionOu
   return api(`/resume-versions/${versionId}/review`, { method: 'POST' })
 }
 
+export function deleteVersionRequest(versionId: string): Promise<void> {
+  return api(`/resume-versions/${versionId}`, { method: 'DELETE' })
+}
+
 export function jobStatusRequest(jobId: string): Promise<JobStatus> {
   return api(`/jobs-status/${jobId}`)
 }

@@ -84,6 +84,7 @@ export type RatePoint = Schema['RatePoint']
 export type FunnelStage = Schema['FunnelStageOut']
 export type FunnelConversion = Schema['FunnelConversionOut']
 export type Funnel = Schema['FunnelOut']
+export type StageResponseTime = Schema['StageResponseTime']
 
 // --- assistant ---
 export type AssistantChatRequest = Schema['AssistantChatRequest']
@@ -102,4 +103,5 @@ export type PageNotificationOut = Schema['Page_NotificationOut_']
 export interface Page<T> {
   data: T[]
   next_cursor: string | null
+  total: number
 }

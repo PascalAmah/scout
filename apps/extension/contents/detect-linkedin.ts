@@ -1,5 +1,6 @@
-import type { QuickSaveFounder } from '@scout/types'
+import type { QuickSaveFounder, QuickSaveJob } from '@scout/types'
 import type { DetectedPayload } from '../background/state'
+import { isRemoteLocation, locationFromCard } from './job-meta'
 
 export const config = {
   matches: ['https://www.linkedin.com/*', 'https://linkedin.com/*'],
@@ -37,16 +38,23 @@ function companyFromJob(): string | null {
   return ogSite && !/linkedin/i.test(ogSite) ? ogSite.split('|')[0].trim() : null
 }
 
-function jobFromPost(): { title: string; url: string } | null {
+function jobFromPost(): QuickSaveJob | null {
   // Job title: h1 (class-stable enough) or og:title before " at ".
   const h1 = document.querySelector('h1')?.textContent?.trim()
-  if (h1 && h1.length <= 120) return { title: h1, url: location.href }
-  const ogTitle = metaContent('og:title')
-  if (ogTitle) {
-    const title = ogTitle.split(/\s+at\s+/i)[0]?.trim()
-    if (title) return { title, url: location.href }
+  const title = (h1 && h1.length <= 120 ? h1 : null) ?? metaContent('og:title')?.split(/\s+at\s+/i)[0]?.trim()
+  if (!title) return null
+  const job: QuickSaveJob = { title, url: location.href }
+
+  // LinkedIn shows the location as short text near the job title ("Remote",
+  // "San Francisco, CA", "United States · Remote"). Scan the title's vicinity.
+  const h1El = document.querySelector('h1')
+  const scope = (h1El?.parentElement?.parentElement ?? document.body) as HTMLElement
+  const loc = locationFromCard(scope)
+  if (loc) {
+    job.location = loc
+    job.remote = isRemoteLocation(loc)
   }
-  return null
+  return job
 }
 
 /** Extract the founder's name, title, and company from a profile page. */

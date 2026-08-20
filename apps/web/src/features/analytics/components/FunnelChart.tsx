@@ -34,23 +34,32 @@ export function FunnelChart({
         return (
           <div key={stage.stage}>
             {conversion ? (
-              <div className="my-2 flex items-center justify-center gap-1.5 text-[11px] text-[#9CA3AF]">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3">
+              <div className="my-[6px] flex items-center justify-center gap-1.5 text-[11px] text-muted-2">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-[11px] w-[11px]"
+                  aria-hidden
+                >
                   <path d="M12 5v14M5 12l7 7 7-7" />
                 </svg>
-                <b className="font-mono text-[#1F2937]">{conversion.rate ?? 0}%</b>
-                moved to {STAGE_LABELS[stage.stage] ?? stage.stage}
+                <b className="font-mono text-charcoal">{conversion.rate ?? 0}%</b>
+                <span>moved to {STAGE_LABELS[stage.stage] ?? stage.stage}</span>
               </div>
             ) : null}
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <div className="mb-1.5 flex justify-between text-[12.5px]">
-                  <b className="font-semibold text-[#1F2937]">{STAGE_LABELS[stage.stage] ?? stage.stage}</b>
-                  <span className="font-mono text-[#6B7280]">{stage.count}</span>
+                  <b className="font-semibold text-charcoal">
+                    {STAGE_LABELS[stage.stage] ?? stage.stage}
+                  </b>
+                  <span className="font-mono text-muted">{stage.count}</span>
                 </div>
-                <div className="h-8 overflow-hidden rounded-lg border border-[#E5E3DC] bg-[#FAFAF8]">
+                <div className="h-[34px] overflow-hidden rounded-[8px] border border-line bg-paper">
                   <div
-                    className="flex h-full items-center rounded-l-lg"
+                    className="h-full rounded-l-[8px]"
                     style={{ width: `${width}%`, background: STAGE_COLORS[stage.stage] ?? '#9CA3AF' }}
                   />
                 </div>

@@ -35,6 +35,26 @@ function Popup() {
   const [detection, setDetection] = useState<DetectionState | null>(null)
   const [manual, setManual] = useState(false)
   const [tabInfo, setTabInfo] = useState<{ url?: string; title?: string } | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  /** Re-detect the active tab via the background (fresh payload round-trip). */
+  async function refreshDetection(): Promise<DetectionState | null> {
+    setRefreshing(true)
+    try {
+      const fresh = (await chrome.runtime.sendMessage({ type: 'scout:re-detect-tab' })) as
+        | DetectionState
+        | undefined
+      if (fresh) {
+        setDetection(fresh)
+        return fresh
+      }
+      const stored = await getDetectionState()
+      if (stored) setDetection(stored)
+      return stored
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     void (async () => {
@@ -56,9 +76,7 @@ function Popup() {
       // popup can never show another tab's saved/detected state.
       let state = await getDetectionState()
       try {
-        const fresh = (await chrome.runtime.sendMessage({ type: 'scout:re-detect-tab' })) as
-          | DetectionState
-          | undefined
+        const fresh = await refreshDetection()
         if (fresh) state = fresh
       } catch {
         // No background handler (or no content script) — keep the stored state.
@@ -219,27 +237,59 @@ function Popup() {
               Scout
             </span>
           </span>
-          <button
-            onClick={() => window.close()}
-            aria-label="Close"
-            style={{
-              marginLeft: 'auto',
-              width: 20,
-              height: 20,
-              color: COLORS.muted2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" width={12} height={12} style={{ stroke: 'currentColor' }} aria-hidden>
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => void refreshDetection()}
+              aria-label="Refresh page content"
+              title="Refetch this page"
+              disabled={refreshing}
+              style={{
+                width: 20,
+                height: 20,
+                color: refreshing ? COLORS.muted2 : COLORS.muted,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: refreshing ? 'default' : 'pointer',
+                padding: 0,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="2"
+                width={12}
+                height={12}
+                style={{ stroke: 'currentColor', ...(refreshing ? { animation: 'scout-spin 0.8s linear infinite' } : {}) }}
+                aria-hidden
+              >
+                <path d="M21 12a9 9 0 1 1-3-6.7" />
+                <path d="M21 3v6h-6" />
+              </svg>
+            </button>
+            <button
+              onClick={() => window.close()}
+              aria-label="Close"
+              style={{
+                width: 20,
+                height: 20,
+                color: COLORS.muted2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" width={12} height={12} style={{ stroke: 'currentColor' }} aria-hidden>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </span>
         </div>
 
         <div style={{ padding: '18px 16px', maxHeight: 540, overflowY: 'auto' }}>

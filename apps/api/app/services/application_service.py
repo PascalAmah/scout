@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ScoutError
@@ -24,10 +24,10 @@ from app.schemas.application import (
 
 STATE_MACHINE: dict[str, frozenset[str]] = {
     "saved": frozenset({"interested", "applied", "archived"}),
-    "interested": frozenset({"applied", "archived"}),
-    "applied": frozenset({"interview", "archived"}),
+    "interested": frozenset({"applied", "rejected", "archived"}),
+    "applied": frozenset({"interview", "offer", "rejected", "archived"}),
     "interview": frozenset({"offer", "rejected", "archived"}),
-    "offer": frozenset({"archived"}),
+    "offer": frozenset({"rejected", "archived"}),
     "rejected": frozenset({"archived"}),
     "archived": frozenset(),
 }
@@ -114,11 +114,23 @@ def resume_version_ref(db: Session, resume_version_id: uuid.UUID | None) -> dict
     rv = db.get(ResumeVersion, resume_version_id)
     if rv is None:
         return None
+    # "v{n}" — 1-based position within the resume's version history so the
+    # pipeline can surface which iteration was sent for this application.
+    seq = (
+        db.scalar(
+            select(func.count(ResumeVersion.id)).where(
+                ResumeVersion.resume_id == rv.resume_id,
+                ResumeVersion.created_at <= rv.created_at,
+            )
+        )
+        or 0
+    )
     return {
         "id": rv.id,
         "created_at": rv.created_at,
         "reviewed_at": rv.reviewed_at,
         "content": rv.content,
+        "label": f"v{seq}",
     }
 
 
@@ -171,14 +183,22 @@ def pipeline(db: Session, user: User) -> dict[str, list[Application]]:
     rows = list(
         db.scalars(
             select(Application)
-            .where(Application.user_id == user.id, Application.status != "archived")
+            .where(Application.user_id == user.id)
             .options(selectinload(Application.startup), selectinload(Application.job))
             .order_by(Application.created_at.desc())
         ).all()
     )
     grouped: dict[str, list[Application]] = {
         status: [row for row in rows if row.status == status]
-        for status in ("saved", "interested", "applied", "interview", "offer", "rejected")
+        for status in (
+            "saved",
+            "interested",
+            "applied",
+            "interview",
+            "offer",
+            "rejected",
+            "archived",
+        )
     }
     return grouped
 

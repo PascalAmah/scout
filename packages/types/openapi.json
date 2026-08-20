@@ -412,6 +412,22 @@
             }
           },
           {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
             "name": "q",
             "in": "query",
             "required": false,
@@ -428,19 +444,14 @@
             }
           },
           {
-            "name": "cursor",
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
             }
           },
           {
@@ -2030,6 +2041,45 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "resumes"
+        ],
+        "summary": "Delete Version",
+        "operationId": "delete_version_v1_resume_versions__version_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/resume-versions/{version_id}/review": {
@@ -2932,6 +2982,99 @@
         }
       }
     },
+    "/v1/analytics/response-times": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Response Times",
+        "description": "Average time to first reply by company stage \u2014 mockup \"Time to first\nresponse\". Only stages with at least one recorded reply are returned.",
+        "operationId": "response_times_v1_analytics_response_times_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StageResponseTime"
+                  },
+                  "title": "Response Response Times V1 Analytics Response Times Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/extension/detect": {
       "post": {
         "tags": [
@@ -3597,6 +3740,17 @@
               }
             ]
           },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
+          },
           "timeline": {
             "items": {
               "$ref": "#/components/schemas/TimelineEvent"
@@ -3758,6 +3912,17 @@
                 "type": "null"
               }
             ]
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
           }
         },
         "type": "object",
@@ -5022,6 +5187,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
           }
         },
         "type": "object",
@@ -5752,6 +5928,11 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
           }
         },
         "type": "object",
@@ -5779,6 +5960,11 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
           }
         },
         "type": "object",
@@ -5806,6 +5992,11 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
           }
         },
         "type": "object",
@@ -5833,6 +6024,11 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
           }
         },
         "type": "object",
@@ -6006,6 +6202,13 @@
               }
             ]
           },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/QuickSaveJob"
+            },
+            "type": "array",
+            "title": "Jobs"
+          },
           "founder": {
             "anyOf": [
               {
@@ -6050,6 +6253,14 @@
               }
             ],
             "title": "Job Id"
+          },
+          "job_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Job Ids"
           },
           "founder_id": {
             "anyOf": [
@@ -6518,6 +6729,17 @@
               }
             ],
             "title": "Reviewed At"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
           }
         },
         "type": "object",
@@ -6526,6 +6748,30 @@
           "created_at"
         ],
         "title": "ResumeVersionRef"
+      },
+      "StageResponseTime": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "avg_days": {
+            "type": "number",
+            "title": "Avg Days"
+          },
+          "sample": {
+            "type": "integer",
+            "title": "Sample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "avg_days",
+          "sample"
+        ],
+        "title": "StageResponseTime",
+        "description": "Average days from first outreach to a recorded reply, by company stage\n(mockup \"Time to first response\" panel)."
       },
       "StartupCreate": {
         "properties": {

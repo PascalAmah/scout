@@ -51,7 +51,11 @@ export function Saved({ state }: { state: DetectionState }) {
           </svg>
         </div>
         <b style={CENTERED_TITLE}>Saved to Scout</b>
-        <p style={CENTERED_BODY}>{startupName} is in your workspace.</p>
+        <p style={CENTERED_BODY}>
+          {state.saved_count && state.saved_count > 1
+            ? `${state.saved_count} companies are in your workspace.`
+            : `${startupName} is in your workspace.`}
+        </p>
       </div>
 
       <a

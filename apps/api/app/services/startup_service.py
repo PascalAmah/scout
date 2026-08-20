@@ -5,7 +5,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ScoutError
-from app.core.pagination import cursor_page
+from app.core.pagination import cursor_page, page_page
 from app.models import (
     EnrichmentJob,
     Founder,
@@ -132,10 +132,11 @@ def list_saved(
     stage: str | None,
     hiring_status: str | None,
     tags: list[str] | None,
+    source: str | None,
     q: str | None,
-    cursor: str | None,
+    page: int,
     limit: int,
-) -> tuple[list[SavedStartup], str | None]:
+) -> tuple[list[SavedStartup], int, str | None]:
     stmt: Select = (
         select(SavedStartup)
         .join(Startup, Startup.id == SavedStartup.startup_id)
@@ -151,12 +152,14 @@ def list_saved(
     if hiring_status:
         stmt = stmt.where(Startup.hiring_status == hiring_status)
     if tags and db.get_bind().dialect.name == "postgresql":
-        stmt = stmt.where(Startup.tags.overlap(tags))
+        stmt = stmt.where(Startup.tags.op("&&")(tags))
+    if source:
+        stmt = stmt.where(Startup.source == source)
     if q:
         stmt = stmt.where(
             or_(Startup.name.ilike(f"%{q}%"), Startup.summary.ilike(f"%{q}%"))
         )
-    return cursor_page(db, stmt, SavedStartup.created_at, SavedStartup.id, cursor, limit)
+    return page_page(db, stmt, SavedStartup.created_at, SavedStartup.id, page, limit)
 
 
 def _keyword_score(startup: Startup, tokens: list[str]) -> float:
@@ -190,13 +193,13 @@ def hybrid_search(
     db: Session,
     user: User,
     q: str,
-    cursor: str | None,
+    page: int,
     limit: int,
-) -> tuple[list[SavedStartup], str | None]:
+) -> tuple[list[SavedStartup], int, str | None]:
     """Blend keyword and semantic relevance across the user's saved startups.
 
-    Returns rows sorted by a combined score (desc), with score-based cursor
-    pagination. Semantic leg uses the query embedding against
+    Returns (rows, total, next_page) sorted by combined score (desc), with
+    offset-based page pagination. Semantic leg uses the query embedding against
     ``startup_embeddings``; when no embedding exists (not enriched / fallback
     dims mismatch) the row ranks on keyword only. Safe with sqlite in tests
     (no pgvector operator used)."""
@@ -232,19 +235,11 @@ def hybrid_search(
             scored.append((score, saved.created_at, saved))
     scored.sort(key=lambda item: (-item[0], -item[1].timestamp(), str(item[2].id)))
 
-    # Small personal dataset — cursor is an opaque page offset.
-    offset = 0
-    if cursor:
-        try:
-            offset = int(cursor)
-        except ValueError:
-            offset = 0
-    start = offset * limit
-    page = scored[start : start + limit + 1]
-    has_more = len(page) > limit
-    result = [item[2] for item in page[:limit]]
-    next_cursor = str(offset + 1) if has_more else None
-    return result, next_cursor
+    total = len(scored)
+    start = (page - 1) * limit
+    page_rows = [item[2] for item in scored[start : start + limit]]
+    next_page = page + 1 if start + limit < total else None
+    return page_rows, total, next_page
 
 
 def get_detail(db: Session, user: User, startup_id: uuid.UUID) -> Startup:
@@ -369,9 +364,19 @@ def list_jobs(db: Session, startup_id: uuid.UUID) -> list[Job]:
 
 def add_job(db: Session, startup_id: uuid.UUID, data: JobCreate) -> Job:
     _get_startup(db, startup_id)
-    existing = db.scalar(
-        select(Job).where(Job.startup_id == startup_id, Job.url == data.url).limit(1)
-    ) if data.url else None
+    # Dedupe by URL when present (roles link to distinct pages); otherwise fall
+    # back to title so re-saving a listing never stacks duplicate roles.
+    existing = None
+    if data.url:
+        existing = db.scalar(
+            select(Job).where(Job.startup_id == startup_id, Job.url == data.url).limit(1)
+        )
+    if existing is None and data.title:
+        existing = db.scalar(
+            select(Job)
+            .where(Job.startup_id == startup_id, func.lower(Job.title) == data.title.lower())
+            .limit(1)
+        )
     if existing is not None:
         return existing
     job = Job(startup_id=startup_id, **data.model_dump(exclude_none=True))

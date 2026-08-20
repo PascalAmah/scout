@@ -6,6 +6,7 @@ import { useAuth } from "../../auth/hooks";
 import { useMatches } from "../../matches/hooks";
 import { NotificationFeed } from "../../notifications/components/NotificationFeed";
 import { useUnreadCount } from "../../notifications/hooks";
+import { useExtensionInstalled } from "../hooks";
 
 const ICON = { fill: "none", stroke: "currentColor", strokeWidth: 2 } as const;
 
@@ -116,6 +117,7 @@ export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const extensionInstalled = useExtensionInstalled();
 
   useEffect(() => {
     if (!feedOpen && !menuOpen) return;
@@ -185,20 +187,22 @@ export function AppLayout() {
         </Link>
 
         <div className="mt-auto flex flex-col gap-2 pt-2">
-          <div className="rounded-xl border border-[#232B36] bg-[#141A22] p-3.5 min-[900px]:block max-[900px]:hidden">
-            <b className="mb-1 block text-[12.5px] text-white">
-              Extension not installed
-            </b>
-            <p className="mb-2.5 text-[11px] leading-relaxed text-[#8B96A4]">
-              Save startups from any page in one click.
-            </p>
-            <a
-              href="#"
-              className="block rounded-lg bg-emerald py-2 text-center text-xs font-semibold text-white hover:bg-emerald-dark"
-            >
-              Get the extension
-            </a>
-          </div>
+          {!extensionInstalled ? (
+            <div className="rounded-xl border border-[#232B36] bg-[#141A22] p-3.5 min-[900px]:block max-[900px]:hidden">
+              <b className="mb-1 block text-[12.5px] text-white">
+                Extension not installed
+              </b>
+              <p className="mb-2.5 text-[11px] leading-relaxed text-[#8B96A4]">
+                Save startups from any page in one click.
+              </p>
+              <a
+                href="#"
+                className="block rounded-lg bg-emerald py-2 text-center text-xs font-semibold text-white hover:bg-emerald-dark"
+              >
+                Get the extension
+              </a>
+            </div>
+          ) : null}
         </div>
       </aside>
 

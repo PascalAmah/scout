@@ -58,6 +58,7 @@ class QuickSaveRequest(BaseModel):
     source_url: str = Field(min_length=1)
     startup: QuickSaveStartup
     job: QuickSaveJob | None = None
+    jobs: list[QuickSaveJob] = Field(default_factory=list)
     founder: QuickSaveFounder | None = None
     founders: list[QuickSaveFounder] = Field(default_factory=list)
 
@@ -65,6 +66,7 @@ class QuickSaveRequest(BaseModel):
 class QuickSaveResponse(BaseModel):
     startup_id: uuid.UUID
     job_id: uuid.UUID | None = None
+    job_ids: list[uuid.UUID] = Field(default_factory=list)
     founder_id: uuid.UUID | None = None
     founder_ids: list[uuid.UUID] = Field(default_factory=list)
     already_saved: bool

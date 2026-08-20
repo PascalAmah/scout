@@ -1,9 +1,9 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { AnalyticsSummary, Funnel } from '@scout/types'
+import type { AnalyticsSummary, Funnel, StageResponseTime } from '@scout/types'
 
 import { api } from '../../lib/api-client'
 
-export type { AnalyticsSummary, Funnel }
+export type { AnalyticsSummary, Funnel, StageResponseTime }
 
 export interface AnalyticsFilters {
   from?: string
@@ -30,4 +30,11 @@ export const funnelQueryOptions = (filters: AnalyticsFilters = {}) =>
   queryOptions({
     queryKey: ['analytics', 'funnel', filters],
     queryFn: () => api<Funnel>(`/analytics/funnel${analyticsQueryString(filters)}`),
+  })
+
+export const responseTimesQueryOptions = (filters: AnalyticsFilters = {}) =>
+  queryOptions({
+    queryKey: ['analytics', 'response-times', filters],
+    queryFn: () =>
+      api<StageResponseTime[]>(`/analytics/response-times${analyticsQueryString(filters)}`),
   })

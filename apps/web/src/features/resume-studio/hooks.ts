@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   createResumeRequest,
+  deleteVersionRequest,
   generateResumeRequest,
   jobStatusRequest,
   listApplicationsOptionsRequest,
@@ -68,7 +69,7 @@ export function useJobStatus(jobId: string | null, enabled = false) {
     refetchInterval: (query) => {
       const status = query.state.data?.status
       if (status === 'succeeded' || status === 'failed') return false
-      return 1500
+      return 3000
     },
   })
 }
@@ -86,6 +87,16 @@ export function useReviewVersion() {
     mutationFn: reviewVersionRequest,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['resume-studio'] })
+    },
+  })
+}
+
+export function useDeleteVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteVersionRequest,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['resume-studio', 'versions'] })
     },
   })
 }

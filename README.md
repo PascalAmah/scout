@@ -71,7 +71,20 @@ Confirm it's up:
 curl http://localhost:8000/healthz        # -> {"status":"ok"}
 ```
 
-### Step 3 — Web app (Vite)
+### Step 3 — Worker (Celery)
+
+Required for background jobs: startup enrichment, match scoring, and
+resume/cover-letter generation. Runs against the API's venv (the API declares
+`celery` as a dev dependency and the worker imports the API package).
+
+```bash
+cd apps/worker
+../api/.venv/Scripts/python.exe -m celery -A celery_app:celery_app worker --loglevel=info --pool=threads --concurrency=4
+```
+
+Consumes the enrichment, generation, and scheduled queues.
+
+### Step 4 — Web app (Vite)
 
 ```bash
 cd apps/web
@@ -80,7 +93,7 @@ pnpm dev
 
 Open **http://localhost:5173** — the dev server proxies `/v1` to the API on `:8000`.
 
-### Step 4 — Extension (Plasmo, optional)
+### Step 5 — Extension (Plasmo, optional)
 
 ```bash
 cd apps/extension

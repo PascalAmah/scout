@@ -6,6 +6,7 @@ import { ApiRequestError } from '../../../lib/api-client'
 import type { ApplicationOption } from '../api'
 import { downloadVersionPdf } from '../api'
 import { useJobStatus, useReviewVersion, useVersions } from '../hooks'
+import { useDeleteVersion } from '../hooks'
 import type { ResumeOut } from '../api'
 import { DiffView } from './DiffView'
 
@@ -73,7 +74,9 @@ function VersionItem({
   const review = useReviewVersion()
   const [open, setOpen] = useState(isNewest)
   const [copied, setCopied] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const del = useDeleteVersion()
 
   const isReviewed = version.reviewed_at != null
   const versionContent = version.content ?? {}
@@ -101,6 +104,15 @@ function VersionItem({
     } catch {
       setError('Could not copy to clipboard.')
     }
+  }
+
+  function deleteVersion() {
+    setError(null)
+    del.mutate(version.id, {
+      onError: (err) => {
+        setError(err instanceof ApiRequestError ? err.message : 'Delete failed.')
+      },
+    })
   }
 
   return (
@@ -187,6 +199,22 @@ function VersionItem({
               onClick={() => void copyText()}
             >
               {copied ? 'Copied' : 'Copy as text'}
+            </Button>
+            <Button
+              variant={confirming ? 'destructive' : 'secondary'}
+              className="px-3.5 py-1.5 text-[12.5px]"
+              disabled={del.isPending}
+              onClick={() => {
+                if (!confirming) {
+                  setConfirming(true)
+                  setTimeout(() => setConfirming(false), 4000)
+                  return
+                }
+                setConfirming(false)
+                deleteVersion()
+              }}
+            >
+              {del.isPending ? 'Deleting…' : confirming ? 'Confirm delete' : 'Delete'}
             </Button>
           </div>
         </div>

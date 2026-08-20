@@ -545,7 +545,8 @@ export interface paths {
         get: operations["get_version_v1_resume_versions__version_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Version */
+        delete: operations["delete_version_v1_resume_versions__version_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -793,6 +794,27 @@ export interface paths {
          * @description Conversion funnel across CRM statuses (cumulative "reached stage").
          */
         get: operations["funnel_v1_analytics_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/response-times": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Response Times
+         * @description Average time to first reply by company stage — mockup "Time to first
+         *     response". Only stages with at least one recorded reply are returned.
+         */
+        get: operations["response_times_v1_analytics_response_times_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1072,6 +1094,8 @@ export interface components {
             job?: components["schemas"]["ApplicationJob"] | null;
             resume_version?: components["schemas"]["ResumeVersionRef"] | null;
             last_outreach?: components["schemas"]["LastOutreachRef"] | null;
+            /** Match Score */
+            match_score?: number | null;
             /** Timeline */
             timeline?: components["schemas"]["TimelineEvent"][];
             /** Outreach */
@@ -1125,6 +1149,8 @@ export interface components {
             job?: components["schemas"]["ApplicationJob"] | null;
             resume_version?: components["schemas"]["ResumeVersionRef"] | null;
             last_outreach?: components["schemas"]["LastOutreachRef"] | null;
+            /** Match Score */
+            match_score?: number | null;
         };
         /** ApplicationPatch */
         ApplicationPatch: {
@@ -1511,6 +1537,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Match Score */
+            match_score?: number | null;
         };
         /** JobPatch */
         JobPatch: {
@@ -1759,6 +1787,11 @@ export interface components {
             data: components["schemas"]["ApplicationOut"][];
             /** Next Cursor */
             next_cursor?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
         };
         /** Page[MatchOut] */
         Page_MatchOut_: {
@@ -1766,6 +1799,11 @@ export interface components {
             data: components["schemas"]["MatchOut"][];
             /** Next Cursor */
             next_cursor?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
         };
         /** Page[NotificationOut] */
         Page_NotificationOut_: {
@@ -1773,6 +1811,11 @@ export interface components {
             data: components["schemas"]["NotificationOut"][];
             /** Next Cursor */
             next_cursor?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
         };
         /** Page[StartupListItem] */
         Page_StartupListItem_: {
@@ -1780,6 +1823,11 @@ export interface components {
             data: components["schemas"]["StartupListItem"][];
             /** Next Cursor */
             next_cursor?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
         };
         /** QuickSaveFounder */
         QuickSaveFounder: {
@@ -1819,6 +1867,8 @@ export interface components {
             source_url: string;
             startup: components["schemas"]["QuickSaveStartup"];
             job?: components["schemas"]["QuickSaveJob"] | null;
+            /** Jobs */
+            jobs?: components["schemas"]["QuickSaveJob"][];
             founder?: components["schemas"]["QuickSaveFounder"] | null;
             /** Founders */
             founders?: components["schemas"]["QuickSaveFounder"][];
@@ -1832,6 +1882,8 @@ export interface components {
             startup_id: string;
             /** Job Id */
             job_id?: string | null;
+            /** Job Ids */
+            job_ids?: string[];
             /** Founder Id */
             founder_id?: string | null;
             /** Founder Ids */
@@ -2018,6 +2070,21 @@ export interface components {
             created_at: string;
             /** Reviewed At */
             reviewed_at?: string | null;
+            /** Label */
+            label?: string | null;
+        };
+        /**
+         * StageResponseTime
+         * @description Average days from first outreach to a recorded reply, by company stage
+         *     (mockup "Time to first response" panel).
+         */
+        StageResponseTime: {
+            /** Stage */
+            stage: string;
+            /** Avg Days */
+            avg_days: number;
+            /** Sample */
+            sample: number;
         };
         /** StartupCreate */
         StartupCreate: {
@@ -2562,8 +2629,9 @@ export interface operations {
                 stage?: string | null;
                 hiring_status?: string | null;
                 tags?: string[] | null;
+                source?: string | null;
                 q?: string | null;
-                cursor?: string | null;
+                page?: number;
                 limit?: number;
             };
             header?: never;
@@ -3583,6 +3651,35 @@ export interface operations {
             };
         };
     };
+    delete_version_v1_resume_versions__version_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     review_version_v1_resume_versions__version_id__review_post: {
         parameters: {
             query?: never;
@@ -4097,6 +4194,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FunnelOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    response_times_v1_analytics_response_times_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                source?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageResponseTime"][];
                 };
             };
             /** @description Validation Error */

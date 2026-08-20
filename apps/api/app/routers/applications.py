@@ -1,12 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Response, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.session import get_db
 from app.deps import get_current_user
-from app.models import EnrichmentJob, User
+from app.models import EnrichmentJob, MatchScore, User
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationDetail,
@@ -28,9 +29,16 @@ from app.services.job_queue import enqueue_generate_follow_up
 router = APIRouter(prefix="/applications", tags=["crm"])
 
 
-def _to_out(app, db: Session) -> ApplicationOut:
+def _to_out(app, db: Session, user: User) -> ApplicationOut:
     resume_version = application_service.resume_version_ref(db, app.resume_version_id)
     last_outreach = application_service.last_outreach_ref(db, app.id)
+    match_score: float | None = None
+    if app.job_id is not None:
+        match_score = db.scalar(
+            select(MatchScore.score).where(
+                MatchScore.user_id == user.id, MatchScore.job_id == app.job_id
+            )
+        )
     return ApplicationOut(
         id=app.id,
         startup_id=app.startup_id,
@@ -46,6 +54,7 @@ def _to_out(app, db: Session) -> ApplicationOut:
         job={"id": app.job.id, "title": app.job.title} if app.job else None,
         resume_version=ResumeVersionRef(**resume_version) if resume_version else None,
         last_outreach=LastOutreachRef(**last_outreach) if last_outreach else None,
+        match_score=float(match_score) if match_score is not None else None,
     )
 
 
@@ -58,7 +67,7 @@ def list_applications(
     user: User = Depends(get_current_user),
 ) -> dict:
     rows, next_cursor = application_service.list_applications(db, user, app_status, cursor, limit)
-    return {"data": [_to_out(app, db) for app in rows], "next_cursor": next_cursor}
+    return {"data": [_to_out(app, db, user) for app in rows], "next_cursor": next_cursor}
 
 
 @router.post("", response_model=ApplicationOut, status_code=status.HTTP_201_CREATED)
@@ -67,7 +76,7 @@ def create_application(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ApplicationOut:
-    return _to_out(application_service.create_application(db, user, body), db)
+    return _to_out(application_service.create_application(db, user, body), db, user)
 
 
 @router.get("/pipeline")
@@ -76,7 +85,7 @@ def pipeline(
     user: User = Depends(get_current_user),
 ) -> dict:
     grouped = application_service.pipeline(db, user)
-    return {"data": {k: [_to_out(app, db) for app in v] for k, v in grouped.items()}}
+    return {"data": {k: [_to_out(app, db, user) for app in v] for k, v in grouped.items()}}
 
 
 @router.get("/needs-follow-up", response_model=list[FollowUpOut])
@@ -154,7 +163,7 @@ def get_application(
     app = application_service.get_application(db, user, application_id)
     outreach = application_service.outreach_for(db, app.id)
     resume_version = application_service.resume_version_ref(db, app.resume_version_id)
-    base = _to_out(app, db).model_dump()
+    base = _to_out(app, db, user).model_dump()
     base.pop("resume_version", None)
     return ApplicationDetail(
         **base,
@@ -181,7 +190,7 @@ def patch_application(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ApplicationOut:
-    return _to_out(application_service.update_application(db, user, application_id, body), db)
+    return _to_out(application_service.update_application(db, user, application_id, body), db, user)
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)

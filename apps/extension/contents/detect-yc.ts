@@ -1,5 +1,6 @@
-import type { QuickSaveFounder } from '@scout/types'
+import type { QuickSaveFounder, QuickSaveJob } from '@scout/types'
 import type { DetectedPayload } from '../background/state'
+import { isRemoteLocation, locationFromCard, normalizeSeniority } from './job-meta'
 
 export const config = {
   matches: ['https://www.ycombinator.com/companies/*'],
@@ -79,30 +80,70 @@ function companyFromJobsListing(): string | null {
 }
 
 /** The specific job shown on a job detail page. */
-function jobFromDetail(): { title: string; url: string } | null {
+function jobFromDetail(): QuickSaveJob | null {
   const h1 = document.querySelector('h1')?.textContent?.trim()
-  if (h1 && h1.length <= 120) return { title: h1, url: location.href }
-  const ogTitle = cleanName(meta('og:title'))
-  if (ogTitle) {
-    const title = ogTitle.split(/\s+at\s+/i)[0]?.trim()
-    if (title) return { title, url: location.href }
+  const title =
+    h1 && h1.length <= 120
+      ? h1
+      : cleanName(meta('og:title'))?.split(/\s+at\s+/i)[0]?.trim() ?? null
+  if (!title) return null
+  const job: QuickSaveJob = { title, url: location.href }
+
+  // YC job details render the location line inside a section near the heading.
+  const h1El = document.querySelector('h1')
+  const scope = h1El?.closest('div')?.parentElement ?? document.body
+  const loc = locationFromCard(scope as HTMLElement)
+  if (loc) {
+    job.location = loc
+    job.remote = isRemoteLocation(loc)
   }
-  return null
+  return job
 }
 
-/** First open role on the jobs listing page. */
-function firstJobFromListing(slug: string): { title: string; url: string } | null {
+/** Walk up from the role link to a container that holds the location line. */
+function jobCardScope(link: HTMLAnchorElement): HTMLElement {
+  const hinted =
+    link.closest('li, article, [class*="job"], [class*="card"], [class*="border-b"]')
+  if (hinted) return hinted as HTMLElement
+  let el = link.parentElement
+  for (let depth = 0; el && depth < 3; el = el.parentElement, depth += 1) {
+    if (locationFromCard(el)) return el
+  }
+  return link
+}
+
+/**
+ * First open role on the jobs listing page (also used for the company page,
+ * which embeds the same role cards). YC renders the location and seniority as
+ * short text inside the role card.
+ */
+function firstJobFromListing(slug: string): QuickSaveJob | null {
   const link = document.querySelector<HTMLAnchorElement>(`a[href^="/companies/${slug}/jobs/"]`)
   const title = link?.textContent?.trim()
   if (!link || !title) return null
-  return { title, url: link.href }
+  const card = jobCardScope(link)
+  const location = locationFromCard(card)
+  const seniority = normalizeSeniority(
+    Array.from(card.querySelectorAll('span,div,p,small')).map((el) => el.textContent ?? '').join(' '),
+  )
+  return {
+    title,
+    url: link.href,
+    location,
+    remote: isRemoteLocation(location),
+    seniority,
+  }
 }
 
 /** The page heading that begins the founder list, if present. */
 function foundersHeading(): Element | null {
-  const heading = Array.from(document.querySelectorAll<HTMLElement>('div')).find(
-    (el) => el.children.length === 0 && el.textContent?.trim() === 'Active Founders',
-  )
+  const heading = Array.from(document.querySelectorAll<HTMLElement>('div')).find((el) => {
+    if (el.children.length !== 0) return false
+    const text = el.textContent?.trim()
+    // Company page labels the section "Active Founders"; the job detail page
+    // renders a "Founders" section with the same per-founder markup.
+    return text === 'Active Founders' || text === 'Founders'
+  })
   if (!heading) return null
   // The founder list is the sibling that follows the heading.
   return heading.nextElementSibling

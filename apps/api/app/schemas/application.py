@@ -52,6 +52,7 @@ class ResumeVersionRef(BaseModel):
     id: uuid.UUID
     created_at: datetime
     reviewed_at: datetime | None = None
+    label: str | None = None
 
 
 class LastOutreachRef(BaseModel):
@@ -76,6 +77,7 @@ class ApplicationOut(BaseModel):
     job: ApplicationJob | None = None
     resume_version: ResumeVersionRef | None = None
     last_outreach: LastOutreachRef | None = None
+    match_score: float | None = None
 
 
 class TimelineEvent(BaseModel):

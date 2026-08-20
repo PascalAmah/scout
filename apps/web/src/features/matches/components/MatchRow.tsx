@@ -64,8 +64,9 @@ export function MatchRow({
             </div>
             <div className="flex shrink-0 gap-2">
               <Link
-                to="/startups/$startupId"
+                to="/startups/$startupId/jobs"
                 params={{ startupId: match.startup_id }}
+                search={{ focus: match.job_id }}
                 className="inline-flex items-center justify-center gap-1.5 rounded-pill border border-line-strong bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-charcoal hover:border-charcoal"
               >
                 View match

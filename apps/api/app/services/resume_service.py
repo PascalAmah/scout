@@ -24,7 +24,7 @@ from app.models import (
     User,
 )
 from app.schemas.resume import ResumeCreate, ResumeGenerateRequest, ResumePatch
-from app.services import job_queue, review_gate
+from app.services import file_store, job_queue, review_gate
 
 
 def _owned_resume(db: Session, user: User, resume_id: uuid.UUID) -> Resume:
@@ -175,3 +175,16 @@ def get_version(db: Session, user: User, version_id: uuid.UUID) -> ResumeVersion
 def review_version(db: Session, user: User, version_id: uuid.UUID) -> ResumeVersion:
     version = _owned_version(db, user, version_id)
     return review_gate.mark_reviewed(db, version)
+
+
+def delete_version(db: Session, user: User, version_id: uuid.UUID) -> None:
+    """Delete one generated version (and its stored PDF, best-effort). The base
+    resume is untouched; pruning is how users control version pile-up."""
+    version = _owned_version(db, user, version_id)
+    if version.file_key:
+        try:
+            file_store.delete_bytes(version.file_key)
+        except Exception:
+            pass
+    db.delete(version)
+    db.commit()

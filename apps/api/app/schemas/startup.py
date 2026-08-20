@@ -118,6 +118,7 @@ class JobOut(BaseModel):
     url: str | None
     status: str
     created_at: datetime
+    match_score: float | None = None
 
 
 class NoteCreate(BaseModel):

@@ -17,6 +17,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from celery import Celery  # noqa: E402
 
+from beat_schedule import beat_schedule  # noqa: E402
 from queues import QUEUE_ENRICHMENT, QUEUE_GENERATION, QUEUE_SCHEDULED  # noqa: E402
 
 BROKER_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
@@ -31,6 +32,9 @@ celery_app = Celery(
         "tasks.compute_match",
         "tasks.generate_resume",
         "tasks.generate_cover_letter",
+        "tasks.follow_up",
+        "tasks.reminder_email",
+        "tasks.sync_company",
     ],
 )
 
@@ -49,6 +53,7 @@ celery_app.conf.update(
         "sync_company": {"queue": QUEUE_SCHEDULED},
     },
     worker_queues=[QUEUE_ENRICHMENT, QUEUE_GENERATION, QUEUE_SCHEDULED],
+    beat_schedule=beat_schedule,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     broker_connection_retry_on_startup=True,

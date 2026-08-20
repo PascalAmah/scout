@@ -89,23 +89,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   void (async () => {
     try {
-      const saved = await api<QuickSaveResponse>('/extension/quick-save', {
-        method: 'POST',
-        body: JSON.stringify({
-          source: payload.source,
-          source_url: payload.source_url,
-          startup: { ...payload.startup, tags: tags ?? [] },
-          job: payload.job ?? null,
-          founder: payload.founder ?? null,
-          founders: payload.founders ?? [],
-        }),
-      })
+      // A listing page may span multiple companies (payload.groups). Save one
+      // quick-save per group; a single-company payload saves as-is.
+      const requests: DetectedPayload[] = payload.groups?.length
+        ? payload.groups.map((group) => ({
+            source: payload.source,
+            source_url: payload.source_url,
+            startup: { ...group.startup, tags: tags ?? [] },
+            jobs: group.jobs,
+          }))
+        : [{ ...payload, startup: { ...payload.startup, tags: tags ?? [] } }]
+
+      const savedItems: { startup_id: string; startup_name: string }[] = []
+      for (const req of requests) {
+        const saved = await api<QuickSaveResponse>('/extension/quick-save', {
+          method: 'POST',
+          body: JSON.stringify(req),
+        })
+        savedItems.push({ startup_id: saved.startup_id, startup_name: req.startup?.name ?? 'Startup' })
+      }
+
       const state = await updateDetectionState({
         status: 'saved',
-        saved: {
-          startup_id: saved.startup_id,
-          startup_name: payload.startup?.name ?? 'Startup',
-        },
+        saved: savedItems[0],
+        saved_count: savedItems.length,
       })
       sendResponse({ ok: true, state })
     } catch (err) {

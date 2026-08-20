@@ -230,3 +230,59 @@ def test_application_patch_attaches_resume_version(
     )
     assert r.status_code == 200, r.text
     assert r.json()["resume_version"]["id"] == str(version.id)
+
+def test_delete_version_prunes_versions_but_keeps_base(
+    client: TestClient, db_session: Session
+) -> None:
+    token = _register(client)
+    r = client.post(
+        "/v1/resumes",
+        json={"title": "Base", "content": {"skills": ["Python"]}},
+        headers=_auth(token),
+    )
+    resume_id = r.json()["id"]
+    user = db_session.query(User).filter(User.email == "gen@example.com").one()
+    resume = db_session.get(Resume, uuid.UUID(resume_id))
+    version_a = ResumeVersion(resume_id=resume.id, content={"summary": "A"})
+    version_b = ResumeVersion(resume_id=resume.id, content={"summary": "B"})
+    db_session.add_all([version_a, version_b])
+    db_session.commit()
+    db_session.refresh(version_a)
+    db_session.refresh(version_b)
+
+    r = client.delete(f"/v1/resume-versions/{version_a.id}", headers=_auth(token))
+    assert r.status_code == 204, r.text
+
+    remaining = client.get(f"/v1/resumes/{resume_id}/versions", headers=_auth(token)).json()
+    assert [v["id"] for v in remaining] == [str(version_b.id)]
+
+    # Base resume survives version pruning.
+    r = client.get("/v1/resumes", headers=_auth(token))
+    assert r.status_code == 200
+    assert [res["id"] for res in r.json()] == [resume_id]
+
+    # Deleting a second time (or someone else's version) 404s.
+    r = client.delete(f"/v1/resume-versions/{version_a.id}", headers=_auth(token))
+    assert r.status_code == 404
+
+
+def test_delete_version_rejects_other_users_version(
+    client: TestClient, db_session: Session
+) -> None:
+    token = _register(client, email="gen-a@example.com")
+    token2 = _register(client, email="gen-b@example.com")
+    r = client.post("/v1/resumes", json={"title": "A"}, headers=_auth(token))
+    resume_id = r.json()["id"]
+    user = db_session.query(User).filter(User.email == "gen-a@example.com").one()
+    resume = db_session.get(Resume, uuid.UUID(resume_id))
+    version = ResumeVersion(resume_id=resume.id, content={"summary": "A"})
+    db_session.add(version)
+    db_session.commit()
+    db_session.refresh(version)
+
+    r = client.delete(f"/v1/resume-versions/{version.id}", headers=_auth(token2))
+    assert r.status_code == 404
+
+    # Owner still sees it untouched.
+    remaining = client.get(f"/v1/resumes/{resume_id}/versions", headers=_auth(token)).json()
+    assert [v["id"] for v in remaining] == [str(version.id)]

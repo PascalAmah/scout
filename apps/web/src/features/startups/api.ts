@@ -42,22 +42,27 @@ export interface StartupFilters {
   stage?: string
   hiring_status?: string
   tags?: string[]
+  source?: string
   q?: string
-  cursor?: string
+  page?: number
   limit?: number
 }
 
 export const startupsQueryOptions = (filters: StartupFilters = {}) =>
   queryOptions({
     queryKey: ['startups', filters],
-    queryFn: () =>
-      api<Page<StartupListItem>>(
-        `/startups?${new URLSearchParams(
-          ['stage', 'hiring_status', 'q', 'cursor', 'limit']
-            .filter((key) => filters[key as keyof StartupFilters] != null)
-            .map((key) => [key, String(filters[key as keyof StartupFilters])]),
-        ).toString()}`,
-      ),
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (filters.stage) params.set('stage', filters.stage)
+      if (filters.hiring_status) params.set('hiring_status', filters.hiring_status)
+      if (filters.source) params.set('source', filters.source)
+      if (filters.q) params.set('q', filters.q)
+      if (filters.page != null) params.set('page', String(filters.page))
+      if (filters.limit != null) params.set('limit', String(filters.limit))
+      for (const tag of filters.tags ?? []) params.append('tags', tag)
+      const qs = params.toString()
+      return api<Page<StartupListItem>>(`/startups${qs ? `?${qs}` : ''}`)
+    },
   })
 
 export function startupQueryOptions(startupId: string) {

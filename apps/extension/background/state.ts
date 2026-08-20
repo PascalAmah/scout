@@ -1,10 +1,24 @@
 import type { QuickSaveRequest } from '@scout/types'
 
 /**
- * What the content scripts detect on a page — structurally identical to the
- * /extension/quick-save request body, which is what it gets sent as.
+ * One candidate save on a listing page: a startup plus the roles found for it.
+ * A multi-company job board yields several of these (grouped by company); a
+ * single-company careers page yields one (with jobs[]).
  */
-export type DetectedPayload = QuickSaveRequest
+export interface DetectedGroup {
+  startup: QuickSaveRequest['startup']
+  jobs: NonNullable<QuickSaveRequest['jobs']>
+}
+
+/**
+ * What the content scripts detect on a page — structurally identical to the
+ * /extension/quick-save request body, which is what it gets sent as. The
+ * optional `groups` field is extension-only (never sent to the API): it holds
+ * one entry per distinct company when a listing spans multiple startups.
+ */
+export type DetectedPayload = QuickSaveRequest & {
+  groups?: DetectedGroup[]
+}
 
 export type DetectionStatus =
   | 'none'
@@ -18,6 +32,7 @@ export interface DetectionState {
   status: DetectionStatus
   payload?: DetectedPayload
   saved?: { startup_id: string; startup_name: string }
+  saved_count?: number
   error?: string
   detected_at?: number
 }

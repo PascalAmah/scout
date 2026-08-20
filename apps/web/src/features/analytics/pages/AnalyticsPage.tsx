@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { type AnalyticsFilters } from '../api'
@@ -9,8 +9,9 @@ import {
 } from '../components/FilterBar'
 import { FunnelChart } from '../components/FunnelChart'
 import { ResponseRateChart } from '../components/ResponseRateChart'
+import { ResponseTimePanel } from '../components/ResponseTimePanel'
 import { StatCard, type StatDelta } from '../components/StatCard'
-import { useAnalyticsFunnel, useAnalyticsSummary } from '../hooks'
+import { useAnalyticsFunnel, useAnalyticsResponseTimes, useAnalyticsSummary } from '../hooks'
 
 const DAY = 86_400_000
 
@@ -26,10 +27,24 @@ function rangeToFilters(range: AnalyticsRange, source: AnalyticsSource): Analyti
 function delta(current: number, previous: number, suffix: string, isRate = false): StatDelta | null {
   if (previous === 0 && current === 0) return null
   const diff = current - previous
-  const text = isRate
-    ? `${Math.abs(Math.round(diff * 10) / 10)}pt${suffix}`
-    : `${diff >= 0 ? '+' : '−'}${Math.abs(diff)}${suffix}`
-  return { text, direction: diff >= 0 ? 'up' : 'down' }
+  const sign = diff >= 0 ? '+' : '−'
+  const magnitude = isRate ? Math.abs(Math.round(diff * 10) / 10) : Math.abs(diff)
+  return {
+    text: `${sign}${magnitude}${isRate ? 'pt' : ''}${suffix}`,
+    direction: diff >= 0 ? 'up' : 'down',
+  }
+}
+
+function Panel({ title, sub, children }: { title: string; sub: string; children: ReactNode }) {
+  return (
+    <div className="mb-[22px] overflow-hidden rounded-[18px] border border-line bg-white shadow-sm">
+      <div className="border-b border-line px-[22px] py-[18px]">
+        <h2 className="mb-[3px] text-[15px] font-semibold text-charcoal">{title}</h2>
+        <p className="text-xs text-muted">{sub}</p>
+      </div>
+      <div className="p-[22px]">{children}</div>
+    </div>
+  )
 }
 
 export function AnalyticsPage() {
@@ -39,14 +54,15 @@ export function AnalyticsPage() {
   const filters = useMemo(() => rangeToFilters(range, source), [range, source])
   const summaryQuery = useAnalyticsSummary(filters)
   const funnelQuery = useAnalyticsFunnel(filters)
+  const responseTimesQuery = useAnalyticsResponseTimes(filters)
 
-  if (summaryQuery.isLoading || funnelQuery.isLoading) {
-    return <p className="py-12 text-center text-sm text-[#6B7280]">Crunching the numbers…</p>
+  if (summaryQuery.isLoading || funnelQuery.isLoading || responseTimesQuery.isLoading) {
+    return <p className="py-12 text-center text-sm text-muted">Crunching the numbers…</p>
   }
 
-  if (summaryQuery.isError || funnelQuery.isError) {
+  if (summaryQuery.isError || funnelQuery.isError || responseTimesQuery.isError) {
     return (
-      <p className="py-12 text-center text-sm text-[#B3261E]">
+      <p className="py-12 text-center text-sm text-brick">
         Failed to load analytics:{' '}
         {summaryQuery.error?.message ?? funnelQuery.error?.message ?? 'unknown error'}
       </p>
@@ -64,8 +80,10 @@ export function AnalyticsPage() {
 
   return (
     <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-semibold text-[#1F2937]">Analytics</h1>
+      <div className="mb-[6px] flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-serif text-[28px] font-semibold tracking-[-0.4px] text-charcoal">
+          Analytics
+        </h1>
         <FilterBar
           range={range}
           source={source}
@@ -73,7 +91,7 @@ export function AnalyticsPage() {
           onSourceChange={setSource}
         />
       </div>
-      <p className="mb-6 text-sm text-[#6B7280]">
+      <p className="mb-[26px] text-[13px] text-muted">
         Is this working? A read on the pipeline, not just a list of applications.
       </p>
 
@@ -84,7 +102,7 @@ export function AnalyticsPage() {
         />
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <div className="mb-[30px] grid grid-cols-2 gap-[14px] lg:grid-cols-4">
             <StatCard
               label="Applications sent"
               value={String(summary.applications_sent)}
@@ -93,12 +111,7 @@ export function AnalyticsPage() {
             <StatCard
               label="Response rate"
               value={summary.response_rate === null ? '—' : `${summary.response_rate}%`}
-              delta={delta(
-                summary.response_rate ?? 0,
-                summary.response_rate_prev ?? 0,
-                '',
-                true,
-              )}
+              delta={delta(summary.response_rate ?? 0, summary.response_rate_prev ?? 0, '', true)}
             />
             <StatCard
               label="Applied → Interview"
@@ -117,28 +130,29 @@ export function AnalyticsPage() {
             />
           </div>
 
-          <div className="mb-5 rounded-xl border border-[#E5E3DC] bg-white shadow-sm">
-            <div className="border-b border-[#E5E3DC] px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-[#1F2937]">Conversion funnel</h2>
-              <p className="text-xs text-[#6B7280]">
-                Saved → Applied → Interview → Offer, over the selected period
-              </p>
-            </div>
-            <div className="px-5 py-5">
-              <FunnelChart stages={funnel.stages} conversions={funnel.conversions} />
-            </div>
-          </div>
+          <Panel
+            title="Conversion funnel"
+            sub="Saved → Applied → Interview → Offer, over the selected period"
+          >
+            <FunnelChart stages={funnel.stages} conversions={funnel.conversions} />
+          </Panel>
 
-          <div className="rounded-xl border border-[#E5E3DC] bg-white shadow-sm">
-            <div className="border-b border-[#E5E3DC] px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-[#1F2937]">Response rate over time</h2>
-              <p className="text-xs text-[#6B7280]">
-                Share of applications that got any reply, by week
-              </p>
-            </div>
-            <div className="px-5 py-5">
-              <ResponseRateChart points={summary.response_rate_series} />
-            </div>
+          <div className="grid gap-[22px] lg:grid-cols-[1.4fr_1fr]">
+            <Panel
+              title="Response rate over time"
+              sub="Share of applications that got any reply"
+            >
+              <ResponseRateChart
+                points={summary.response_rate_series}
+                delta={delta(summary.response_rate ?? 0, summary.response_rate_prev ?? 0, '', true)}
+              />
+            </Panel>
+            <Panel
+              title="Time to first response"
+              sub="By company stage — does earlier-stage move faster?"
+            >
+              <ResponseTimePanel rows={responseTimesQuery.data ?? []} />
+            </Panel>
           </div>
         </>
       )}

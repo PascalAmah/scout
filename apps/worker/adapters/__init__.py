@@ -2,6 +2,7 @@ from adapters.base import BaseAdapter, SourceContent
 from adapters.generic_careers_page import GenericCareersPageAdapter
 from adapters.producthunt import ProductHuntAdapter
 from adapters.techstars import TechstarsAdapter
+from adapters.workatastartup import WorkAtAStartupAdapter
 from adapters.yc import YCAdapter
 
 ADAPTERS: dict[str, BaseAdapter] = {
@@ -9,6 +10,7 @@ ADAPTERS: dict[str, BaseAdapter] = {
     GenericCareersPageAdapter.source: GenericCareersPageAdapter(),
     TechstarsAdapter.source: TechstarsAdapter(),
     ProductHuntAdapter.source: ProductHuntAdapter(),
+    WorkAtAStartupAdapter.source: WorkAtAStartupAdapter(),
 }
 
 

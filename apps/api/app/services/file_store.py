@@ -40,3 +40,13 @@ def write_bytes(key: str, data: bytes) -> None:
 
 def read_bytes(key: str) -> bytes:
     return resolve_path(key).read_bytes()
+
+
+def delete_bytes(key: str) -> None:
+    """Best-effort remove of an object by key. Missing files are not an error —
+    the DB row is the source of truth, this only reclaims the disk object."""
+    target = resolve_path(key)
+    try:
+        target.unlink()
+    except FileNotFoundError:
+        pass

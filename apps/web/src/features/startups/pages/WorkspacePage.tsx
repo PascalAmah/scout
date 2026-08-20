@@ -5,7 +5,10 @@ import { Button } from '../../../components/ui/Button'
 import type { StartupFilters } from '../api'
 import { FilterBar } from '../components/FilterBar'
 import { StartupCard } from '../components/StartupCard'
+import { StartupListRow } from '../components/StartupListRow'
 import { useCreateStartup, useStartups } from '../hooks'
+
+const PAGE_SIZE = 9
 
 const EMPTY_STEPS = [
   {
@@ -19,12 +22,15 @@ const EMPTY_STEPS = [
   },
 ]
 
+type ViewMode = 'grid' | 'list'
+
 export function WorkspacePage() {
   const search = useSearch({ from: '/_app/startups/' })
   // The topbar search deep-links with ?q=; seed the filter so the query runs.
   const [filters, setFilters] = useState<StartupFilters>(() =>
-    search.q ? { q: search.q } : {},
+    search.q ? { q: search.q, limit: PAGE_SIZE } : { limit: PAGE_SIZE },
   )
+  const [view, setView] = useState<ViewMode>('grid')
   const startupsQuery = useStartups(filters)
   const createStartup = useCreateStartup()
 
@@ -35,7 +41,18 @@ export function WorkspacePage() {
     createStartup.mutate({ name: name.trim(), website: website?.trim() || null })
   }
 
+  const updateFilters = (next: StartupFilters) => {
+    // Any filter change returns to the first page.
+    setFilters({ ...next, page: undefined, limit: PAGE_SIZE })
+  }
+
+  const goToPage = (page: number) => setFilters({ ...filters, page })
+
   const startups = startupsQuery.data?.data ?? []
+  const total = startupsQuery.data?.total ?? 0
+  const currentPage = filters.page ?? 1
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const showing = startups.length
 
   return (
     <div>
@@ -61,7 +78,7 @@ export function WorkspacePage() {
         Every company you've saved, enriched, and structured into one place.
       </p>
 
-      <FilterBar filters={filters} onChange={setFilters} />
+      <FilterBar filters={filters} onChange={updateFilters} />
 
       {filters.q ? (
         <div className="mb-5 mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-2">
@@ -142,26 +159,125 @@ export function WorkspacePage() {
         </div>
       ) : (
         <>
-          <div className="mb-3.5">
+          <div className="mb-3.5 flex items-center justify-between gap-3">
             <span className="text-[12.5px] text-muted">
-              {startups.length} {startups.length === 1 ? 'startup' : 'startups'}
+              Showing {showing} of {total} startups
             </span>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {startups.map((startup) => (
-              <StartupCard key={startup.id} startup={startup} />
-            ))}
-          </div>
-          {startupsQuery.data?.next_cursor ? (
-            <div className="mt-6 text-center">
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  setFilters({ ...filters, cursor: startupsQuery.data?.next_cursor ?? undefined })
-                }
+            <div className="flex gap-0.5 rounded-[9px] border border-line-strong bg-white p-[3px]">
+              <button
+                type="button"
+                aria-label="Grid view"
+                aria-pressed={view === 'grid'}
+                onClick={() => setView('grid')}
+                className={`flex h-[26px] w-7 items-center justify-center rounded-[6px] transition-colors ${
+                  view === 'grid' ? 'bg-paper' : ''
+                }`}
               >
-                Load more
-              </Button>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={`h-3.5 w-3.5 ${view === 'grid' ? 'stroke-charcoal' : 'stroke-muted'}`}
+                  aria-hidden
+                >
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                aria-label="List view"
+                aria-pressed={view === 'list'}
+                onClick={() => setView('list')}
+                className={`flex h-[26px] w-7 items-center justify-center rounded-[6px] transition-colors ${
+                  view === 'list' ? 'bg-paper' : ''
+                }`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={`h-3.5 w-3.5 ${view === 'list' ? 'stroke-charcoal' : 'stroke-muted'}`}
+                  aria-hidden
+                >
+                  <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {view === 'grid' ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {startups.map((startup) => (
+                <StartupCard key={startup.id} startup={startup} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {startups.map((startup) => (
+                <StartupListRow key={startup.id} startup={startup} />
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 ? (
+            <div className="mt-6 flex items-center justify-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Previous page"
+                disabled={currentPage <= 1}
+                onClick={() => goToPage(currentPage - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-line-strong bg-white text-[12.5px] font-semibold text-muted transition-colors hover:border-charcoal hover:text-charcoal disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line-strong disabled:hover:text-muted"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`Page ${n}`}
+                  aria-current={n === currentPage ? 'page' : undefined}
+                  onClick={() => goToPage(n)}
+                  className={`h-8 w-8 rounded-[8px] border text-[12.5px] font-semibold transition-colors ${
+                    n === currentPage
+                      ? 'border-charcoal bg-charcoal text-white'
+                      : 'border-line-strong bg-white text-muted hover:border-charcoal hover:text-charcoal'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-label="Next page"
+                disabled={currentPage >= totalPages}
+                onClick={() => goToPage(currentPage + 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-line-strong bg-white text-[12.5px] font-semibold text-muted transition-colors hover:border-charcoal hover:text-charcoal disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line-strong disabled:hover:text-muted"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="h-3.5 w-3.5"
+                  aria-hidden
+                >
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
             </div>
           ) : null}
         </>

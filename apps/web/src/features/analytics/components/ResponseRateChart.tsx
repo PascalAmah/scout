@@ -1,10 +1,22 @@
 import type { RatePoint } from '@scout/types'
+import type { StatDelta } from './StatCard'
 
 const W = 560
 const H = 160
 const PAD_Y = 14
 
-export function ResponseRateChart({ points }: { points: RatePoint[] }) {
+function shortBucket(iso: string): string {
+  const [, month, day] = iso.split('-')
+  return month && day ? `${month}/${day}` : iso
+}
+
+export function ResponseRateChart({
+  points,
+  delta,
+}: {
+  points: RatePoint[]
+  delta?: StatDelta | null
+}) {
   if (points.length === 0) return null
 
   const withRate = points.filter((p) => p.rate !== null) as Array<RatePoint & { rate: number }>
@@ -16,13 +28,22 @@ export function ResponseRateChart({ points }: { points: RatePoint[] }) {
 
   return (
     <div>
-      <div className="mb-3 flex items-end justify-between">
+      <div className="mb-[14px] flex items-start justify-between">
         <div>
-          <span className="font-mono text-xl font-semibold text-[#0F6E56]">
+          <span className="font-mono text-[22px] font-semibold text-emerald-dark">
             {last ? `${last.rate}%` : '—'}
           </span>{' '}
-          <span className="text-[11px] text-[#6B7280]">this period</span>
+          <span className="text-[11.5px] text-muted">this period</span>
         </div>
+        {delta ? (
+          <span
+            className={`text-[11px] font-semibold ${
+              delta.direction === 'up' ? 'text-emerald-dark' : 'text-brick'
+            }`}
+          >
+            {delta.direction === 'up' ? '↗' : '↘'} {delta.text} vs previous period
+          </span>
+        ) : null}
       </div>
       {line ? (
         <svg viewBox={`0 0 ${W} ${H}`} className="h-40 w-full" preserveAspectRatio="none">
@@ -60,11 +81,12 @@ export function ResponseRateChart({ points }: { points: RatePoint[] }) {
           ) : null}
         </svg>
       ) : (
-        <p className="py-10 text-center text-sm text-[#6B7280]">No applications with a response yet.</p>
+        <p className="py-10 text-center text-sm text-muted">No applications with a response yet.</p>
       )}
-      <div className="mt-1.5 flex justify-between text-[10.5px] text-[#9CA3AF]">
-        {points.length > 0 ? <span>{points[0].bucket}</span> : null}
-        {points.length > 1 ? <span>{points[points.length - 1].bucket}</span> : null}
+      <div className="mt-1.5 flex justify-between text-[10.5px] text-muted-2">
+        {points.map((p, i) => (
+          <span key={`${p.bucket}-${i}`}>{shortBucket(p.bucket)}</span>
+        ))}
       </div>
     </div>
   )

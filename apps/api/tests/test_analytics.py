@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.models import Application, Startup, User
+from app.models import Application, Outreach, Startup, User
 
 
 def _register(client: TestClient, email: str = "an@example.com") -> str:
@@ -211,3 +211,54 @@ def test_empty_analytics(client: TestClient, db_session: Session) -> None:
     stages = {s["stage"]: s["count"] for s in r.json()["stages"]}
     assert stages == {"saved": 0, "interested": 0, "applied": 0, "interview": 0, "offer": 0}
     assert all(c["rate"] is None for c in r.json()["conversions"])
+
+
+def test_response_times_groups_by_stage(client: TestClient, db_session: Session) -> None:
+    token = _register(client)
+    user = db_session.query(User).filter(User.email == "an@example.com").one()
+
+    def seed(stage: str, applied_days_ago: int, reply_days_ago: int) -> None:
+        startup = Startup(
+            name=f"Stage {stage}",
+            website=f"https://{stage}.example.com",
+            source="yc",
+            stage=stage,
+            created_by=user.id,
+        )
+        db_session.add(startup)
+        db_session.commit()
+        db_session.refresh(startup)
+        app = Application(
+            user_id=user.id,
+            startup_id=startup.id,
+            status="applied",
+            created_at=datetime.now(UTC) - timedelta(days=30),
+            applied_at=datetime.now(UTC) - timedelta(days=applied_days_ago),
+        )
+        db_session.add(app)
+        db_session.commit()
+        db_session.refresh(app)
+        db_session.add(
+            Outreach(
+                application_id=app.id,
+                channel="email",
+                status="replied",
+                sent_at=datetime.now(UTC) - timedelta(days=applied_days_ago),
+                created_at=datetime.now(UTC) - timedelta(days=applied_days_ago),
+                updated_at=datetime.now(UTC) - timedelta(days=reply_days_ago),
+            )
+        )
+        db_session.commit()
+
+    # Applied 10d ago, replied 5d ago → 5 days.
+    seed("Series A", 10, 5)
+    # Applied 10d ago, replied 8d ago → 2 days (faster → sorts first).
+    seed("Seed", 10, 8)
+
+    r = client.get(f"/v1/analytics/response-times?from={_window()}", headers=_auth(token))
+    assert r.status_code == 200, r.text
+    rows = r.json()
+    assert [row["stage"] for row in rows] == ["Seed", "Series A"]
+    assert rows[0]["avg_days"] == 2.0
+    assert rows[0]["sample"] == 1
+    assert rows[1]["avg_days"] == 5.0

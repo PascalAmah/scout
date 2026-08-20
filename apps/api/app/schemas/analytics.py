@@ -43,3 +43,12 @@ class FunnelConversionOut(BaseModel):
 class FunnelOut(BaseModel):
     stages: list[FunnelStageOut]
     conversions: list[FunnelConversionOut]
+
+
+class StageResponseTime(BaseModel):
+    """Average days from first outreach to a recorded reply, by company stage
+    (mockup "Time to first response" panel)."""
+
+    stage: str
+    avg_days: float
+    sample: int

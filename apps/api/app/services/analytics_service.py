@@ -14,20 +14,21 @@ Period membership is by ``created_at`` (an application "enters the period"
 when it's created); the response-rate series buckets by ``applied_at``.
 """
 
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import Application
+from app.models import Application, Outreach
 from app.schemas.analytics import (
     AnalyticsSummaryOut,
     FunnelConversionOut,
     FunnelOut,
     FunnelStageOut,
     RatePoint,
+    StageResponseTime,
 )
 
 _STATUS_ORDER = ("saved", "interested", "applied", "interview", "offer", "rejected")
@@ -238,3 +239,51 @@ def funnel(
         ),
     ]
     return FunnelOut(stages=stages, conversions=conversions)
+
+
+def response_times(
+    db: Session,
+    user_id,
+    start: datetime,
+    end: datetime,
+    source: str | None,
+) -> list[StageResponseTime]:
+    """Average time from first outreach to a recorded reply, grouped by company
+    stage ("Time to first response"). Reply time is the replied outreach's
+    ``updated_at`` — the moment the user marked it replied (no explicit reply
+    timestamp exists). Contact time is the earliest ``sent_at``, falling back
+    to ``applied_at``. Stages without any recorded reply are omitted."""
+    apps = _period_applications(db, user_id, start, end, source)
+    buckets: dict[str, list[float]] = defaultdict(list)
+
+    for app in apps:
+        if app.startup is None or not app.startup.stage:
+            continue
+        replied = db.scalars(
+            select(Outreach).where(
+                Outreach.application_id == app.id, Outreach.status == "replied"
+            )
+        ).all()
+        if not replied:
+            continue
+        contact = db.scalar(
+            select(func.min(Outreach.sent_at)).where(
+                Outreach.application_id == app.id, Outreach.sent_at.is_not(None)
+            )
+        )
+        base = _utc(contact) if contact else (_utc(app.applied_at) if app.applied_at else None)
+        if base is None:
+            continue
+        reply_ts = min(_utc(r.updated_at) for r in replied)
+        days = (reply_ts - base).total_seconds() / 86_400
+        if days >= 0:
+            buckets[app.startup.stage].append(days)
+
+    rows = [
+        StageResponseTime(
+            stage=stage, avg_days=round(sum(values) / len(values), 1), sample=len(values)
+        )
+        for stage, values in buckets.items()
+    ]
+    rows.sort(key=lambda row: row.avg_days)
+    return rows

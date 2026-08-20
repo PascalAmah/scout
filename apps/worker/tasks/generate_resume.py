@@ -198,8 +198,10 @@ def generate_resume(
         # Stamp the role label so the UI can name this version even when it was
         # generated from a job (matches page) rather than an application — the
         # version row has no application_id to derive a label from. "Engineer @
-        # Acme" style, used by Resume Studio's version list.
-        content.setdefault("role_label", f"{job.title} @ {startup.name}")
+        # Acme" style, used by Resume Studio's version list. Hard-set (not
+        # setdefault) so a stray key from the LLM/heuristic output can never
+        # override the authoritative "job @ startup" label.
+        content["role_label"] = f"{job.title} @ {startup.name}"
 
         version = ResumeVersion(
             resume_id=resume.id,

@@ -44,7 +44,8 @@ def test_bulk_archive(client: TestClient) -> None:
     assert r.status_code == 200, r.text
     assert r.json()["updated"] == 2
 
-    # The pipeline board excludes archived by design — verify via the list filter.
+    # Archived applications remain queryable via the list filter (the pipeline
+    # board surfaces them in the Archived column).
     archived = client.get(
         "/v1/applications?status=archived&limit=100", headers=_auth(token)
     ).json()["data"]

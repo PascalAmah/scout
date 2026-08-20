@@ -1,19 +1,24 @@
 import { useState, type DragEvent } from 'react'
 
 import { useBulkApplications, usePipeline, useUpdateApplicationStatus } from '../hooks'
-import { APPLICATION_STATUSES, type ApplicationStatus } from '../api'
+import type { ApplicationStatus } from '../api'
 import { ApplicationCard } from './ApplicationCard'
 import { Button } from '../../../components/ui/Button'
 
-const COLUMN_LABELS: Record<ApplicationStatus, string> = {
-  saved: 'Saved',
-  interested: 'Interested',
-  applied: 'Applied',
-  interview: 'Interview',
-  offer: 'Offer',
-  rejected: 'Rejected',
-  archived: 'Archived',
-}
+const COLUMNS: { status: ApplicationStatus; label: string; dot: string; empty: string }[] = [
+  { status: 'saved', label: 'Saved', dot: '#9CA3AF', empty: 'No saved startups yet' },
+  { status: 'interested', label: 'Interested', dot: '#B8791A', empty: 'Nothing marked interested' },
+  { status: 'applied', label: 'Applied', dot: '#3E5C8A', empty: 'No applications sent yet' },
+  { status: 'interview', label: 'Interview', dot: '#0F6E56', empty: 'No interviews scheduled' },
+  { status: 'offer', label: 'Offer', dot: '#18A058', empty: 'No offers yet' },
+  { status: 'rejected', label: 'Rejected', dot: '#A23B2A', empty: 'Nothing rejected' },
+  {
+    status: 'archived',
+    label: 'Archived',
+    dot: '#9CA3AF',
+    empty: 'Nothing archived yet — reachable from any stage',
+  },
+]
 
 export function KanbanBoard() {
   const pipelineQuery = usePipeline()
@@ -26,10 +31,10 @@ export function KanbanBoard() {
   const [tagText, setTagText] = useState('')
 
   if (pipelineQuery.isLoading) {
-    return <p className="py-12 text-center text-sm text-[#6B7280]">Loading…</p>
+    return <p className="py-12 text-center text-sm text-muted">Loading…</p>
   }
   if (pipelineQuery.isError) {
-    return <p className="py-12 text-center text-sm text-[#B3261E]">Failed to load pipeline</p>
+    return <p className="py-12 text-center text-sm text-brick">Failed to load pipeline</p>
   }
 
   const data = pipelineQuery.data ?? {}
@@ -78,16 +83,13 @@ export function KanbanBoard() {
 
   return (
     <div>
-      {/* Toolbar: select mode + bulk actions */}
+      {/* Bulk toolbar (select mode) */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Button
-          variant={selectMode ? 'primary' : 'ghost'}
-          onClick={toggleSelectMode}
-        >
+        <Button variant={selectMode ? 'primary' : 'ghost'} onClick={toggleSelectMode}>
           {selectMode ? 'Done selecting' : 'Select'}
         </Button>
         {selectMode ? (
-          <span className="text-sm text-[#6B7280]">
+          <span className="text-sm text-muted">
             {selected.size} {selected.size === 1 ? 'application' : 'applications'} selected
           </span>
         ) : null}
@@ -97,7 +99,7 @@ export function KanbanBoard() {
               value={tagText}
               onChange={(e) => setTagText(e.target.value)}
               placeholder="Tag (e.g. follow-up)"
-              className="w-44 rounded-lg border border-[#D6D3C9] px-3 py-1.5 text-sm outline-none focus:border-[#1F2937]"
+              className="w-44 rounded-lg border border-line-strong px-3 py-1.5 text-sm outline-none focus:border-charcoal"
             />
             <Button variant="ghost" onClick={bulkTag} disabled={!tagText.trim()}>
               Tag
@@ -112,8 +114,8 @@ export function KanbanBoard() {
         ) : null}
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {APPLICATION_STATUSES.filter((s) => s !== 'archived').map((status) => {
+      <div className="flex items-start gap-[14px] overflow-x-auto pb-4">
+        {COLUMNS.map(({ status, label, dot, empty }) => {
           const apps = data[status] ?? []
           const isOver = dragOver === status
           return (
@@ -125,45 +127,41 @@ export function KanbanBoard() {
               }}
               onDragLeave={() => setDragOver((cur) => (cur === status ? null : cur))}
               onDrop={(e) => onDrop(e, status)}
-              className={`flex w-72 shrink-0 flex-col rounded-xl border bg-[#F6F5F0] transition-colors ${
-                isOver ? 'border-[#18A058] ring-2 ring-[#18A058]/30' : 'border-[#E5E3DC]'
+              className={`flex w-[262px] min-h-[120px] shrink-0 flex-col rounded-[14px] p-3 transition-colors ${
+                isOver ? 'bg-[#E9E6DD] ring-2 ring-emerald/40' : 'bg-[#F1EFE9]'
               }`}
             >
-              <div className="flex items-center justify-between border-b border-[#E5E3DC] px-4 py-3">
-                <span className="text-sm font-medium text-[#1F2937]">{COLUMN_LABELS[status]}</span>
-                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-[#6B7280]">
+              <div className="flex items-center justify-between px-[6px] pb-3">
+                <div className="flex items-center gap-[7px]">
+                  <span
+                    className="h-[7px] w-[7px] shrink-0 rounded-full"
+                    style={{ background: dot }}
+                  />
+                  <span className="text-[12.5px] font-bold text-charcoal">{label}</span>
+                </div>
+                <span className="rounded-pill border border-line bg-white px-[7px] py-[1px] font-mono text-[11px] text-muted">
                   {apps.length}
                 </span>
               </div>
-              <div className="flex-1 space-y-3 p-3">
+
+              <div className="flex flex-1 flex-col gap-[10px]">
                 {apps.map((app) => (
-                  <div key={app.id}>
-                    <ApplicationCard
-                      application={app}
-                      selectMode={selectMode}
-                      selected={selected.has(app.id)}
-                      onToggleSelect={() => toggleSelected(app.id)}
-                      onDragStart={(e) => onCardDragStart(e, app.id)}
-                    />
-                    {!selectMode ? (
-                      <div className="mt-1.5 flex gap-1">
-                        {nextStatuses(status).map((next) => (
-                          <button
-                            key={next}
-                            onClick={() => updateStatus.mutate({ applicationId: app.id, status: next })}
-                            className="rounded-full border border-[#D6D3C9] px-2 py-0.5 text-[10px] text-[#6B7280] hover:border-[#1F2937] hover:text-[#1F2937]"
-                          >
-                            {next}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
+                  <ApplicationCard
+                    key={app.id}
+                    application={app}
+                    selectMode={selectMode}
+                    selected={selected.has(app.id)}
+                    onToggleSelect={() => toggleSelected(app.id)}
+                    onDragStart={(e) => onCardDragStart(e, app.id)}
+                    onUpdateStatus={(next) =>
+                      updateStatus.mutate({ applicationId: app.id, status: next })
+                    }
+                  />
                 ))}
                 {apps.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-[#9AA1AB]">
-                    {isOver ? 'Drop to move here' : 'Empty'}
-                  </p>
+                  <div className="rounded-[14px] border-[1.5px] border-dashed border-line-strong px-2 py-[22px] text-center text-[11.5px] text-muted-2">
+                    {isOver ? 'Drop to move here' : empty}
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -172,12 +170,4 @@ export function KanbanBoard() {
       </div>
     </div>
   )
-}
-
-function nextStatuses(current: ApplicationStatus): ApplicationStatus[] {
-  const order: ApplicationStatus[] = ['interested', 'applied', 'interview', 'offer', 'rejected']
-  if (current === 'saved') return order
-  const idx = order.indexOf(current)
-  if (idx === -1 || idx === order.length - 1) return ['saved']
-  return order.slice(idx + 1)
 }

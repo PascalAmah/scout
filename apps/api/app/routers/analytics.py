@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.deps import get_current_user
 from app.models import User
-from app.schemas.analytics import AnalyticsSummaryOut, FunnelOut
+from app.schemas.analytics import AnalyticsSummaryOut, FunnelOut, StageResponseTime
 from app.services import analytics_service
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -49,3 +49,17 @@ def funnel(
     """Conversion funnel across CRM statuses (cumulative "reached stage")."""
     start, end = _window(from_, to)
     return analytics_service.funnel(db, user.id, start, end, source)
+
+
+@router.get("/response-times", response_model=list[StageResponseTime])
+def response_times(
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+    source: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[StageResponseTime]:
+    """Average time to first reply by company stage — mockup "Time to first
+    response". Only stages with at least one recorded reply are returned."""
+    start, end = _window(from_, to)
+    return analytics_service.response_times(db, user.id, start, end, source)

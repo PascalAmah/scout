@@ -13,6 +13,8 @@ function sourceLabel(source: string | undefined): string {
       return 'Y Combinator'
     case 'wellfound':
       return 'Wellfound'
+    case 'workatastartup':
+      return 'Work at a Startup'
     case 'linkedin':
       return 'LinkedIn'
     case 'generic_careers':
