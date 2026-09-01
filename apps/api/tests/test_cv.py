@@ -52,6 +52,28 @@ def test_cv_upload_txt_file(client: TestClient) -> None:
     assert "React" in r.json()["structured_data"]["skills"]
 
 
+def test_roles_ordered_by_frequency_not_alphabetically(client: TestClient) -> None:
+    """A frontend CV mentioning backend in passing must headline as frontend.
+
+    The parser used to sort roles alphabetically, so "Backend Engineer" could
+    rank above "Frontend Engineer" purely by name (see resume-studio bug).
+    """
+    token = _register(client)
+    cv_text = (
+        "Frontend Developer with 5 years of experience building frontend interfaces "
+        "with React, Next.js, and Tailwind CSS. Passionate about frontend performance "
+        "and accessible frontend design. I work with backend engineers on API "
+        "integration."
+    )
+    r = client.post("/v1/cv", data={"text": cv_text}, headers=_auth(token))
+    assert r.status_code == 200
+    roles = r.json()["structured_data"]["roles"]
+    # Most-mentioned role leads; the passing "backend" mention stays present but
+    # no longer outranks the document's actual focus.
+    assert roles[0] == "Frontend Engineer"
+    assert "Backend Engineer" in roles
+
+
 def test_cv_replace(client: TestClient) -> None:
     token = _register(client)
     client.post("/v1/cv", data={"text": "Frontend engineer. React, Vue."}, headers=_auth(token))

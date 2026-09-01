@@ -83,6 +83,7 @@ function ResumeDoc({
 export function BaseResumePanel({ resume, cv }: { resume: ResumeOut; cv: CVProfile | null }) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(resume.title)
+  const [roleLabel, setRoleLabel] = useState(resume.content?.role_label ?? '')
   const [summary, setSummary] = useState(resume.content?.summary ?? '')
   const [skills, setSkills] = useState((resume.content?.skills ?? []).join(', '))
   const [experience, setExperience] = useState(resume.content?.experience ?? [])
@@ -90,6 +91,7 @@ export function BaseResumePanel({ resume, cv }: { resume: ResumeOut; cv: CVProfi
 
   useEffect(() => {
     setTitle(resume.title)
+    setRoleLabel(resume.content?.role_label ?? '')
     setSummary(resume.content?.summary ?? '')
     setSkills((resume.content?.skills ?? []).join(', '))
     setExperience(resume.content?.experience ?? [])
@@ -99,15 +101,27 @@ export function BaseResumePanel({ resume, cv }: { resume: ResumeOut; cv: CVProfi
   const name = parsedName || cv?.name?.trim() || 'Your resume'
   const roles = cv?.structured_data?.roles ?? []
   const years = cv?.structured_data?.years_of_experience
-  const roleLine =
-    [roles[0], years != null ? `${years} years of experience` : null].filter(Boolean).join(' · ') ||
-    null
+  // The subtitle under the name must never contradict the resume itself. A
+  // parsed role is a heuristic guess (ordered by frequency, not authoritative),
+  // so only show one when the resume has no summary of its own. An explicit
+  // role_label you authored always wins.
+  const explicitRole = (resume.content?.role_label ?? '').trim()
+  const hasSummary = Boolean((resume.content?.summary ?? '').trim())
+  const roleParts: Array<string | null> = []
+  if (explicitRole) {
+    roleParts.push(explicitRole)
+  } else if (!hasSummary) {
+    roleParts.push(roles[0] ?? null)
+  }
+  if (years != null) roleParts.push(`${years} years of experience`)
+  const roleLine = roleParts.filter(Boolean).join(' · ') || null
 
   function save() {
     updateResume.mutate({
       title,
       content: {
         name: resume.content?.name,
+        role_label: roleLabel.trim() || undefined,
         summary,
         skills: skills
           .split(',')
@@ -136,6 +150,16 @@ export function BaseResumePanel({ resume, cv }: { resume: ResumeOut; cv: CVProfi
         <div className="px-5 py-4">
           <label className="mt-1 block text-xs font-medium text-muted">Title</label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
+
+          <label className="mt-4 block text-xs font-medium text-muted">
+            Role / headline <span className="font-normal text-muted-2">(optional)</span>
+          </label>
+          <Input
+            value={roleLabel}
+            onChange={(e) => setRoleLabel(e.target.value)}
+            placeholder="e.g. Frontend Engineer"
+            className="mt-1.5"
+          />
 
           <label className="mt-4 block text-xs font-medium text-muted">Summary</label>
           <textarea

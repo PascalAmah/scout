@@ -303,7 +303,19 @@ def parse_cv_text(raw_text: str) -> dict[str, Any]:
 
     lower = text.lower()
     skills = sorted({label for pattern, label in SKILL_PATTERNS if pattern.search(lower)})[:40]
-    roles = sorted({label for pattern, label in ROLE_PATTERNS if pattern.search(lower)})[:20]
+    # Roles are ranked by how often the phrase occurs in the CV (most
+    # representative first; ties broken alphabetically for determinism). A plain
+    # alphabetical sort made ``roles[0]`` arbitrary — "Backend Engineer" could
+    # head a frontend CV purely because "backend" was mentioned in passing.
+    role_counts: dict[str, int] = {}
+    for pattern, label in ROLE_PATTERNS:
+        hits = pattern.findall(lower)
+        if hits:
+            role_counts[label] = role_counts.get(label, 0) + len(hits)
+    roles = [
+        label
+        for label, _count in sorted(role_counts.items(), key=lambda item: (-item[1], item[0]))
+    ][:20]
 
     years: int | None = None
     for pattern in YEAR_PATTERNS:
