@@ -4,6 +4,12 @@ How to take Scout from a local dev environment to production. This covers the
 full stack: Postgres + Redis, the FastAPI backend, the Celery worker + beat,
 the browser extension, and (optionally) the web app.
 
+> **Production branch is `dev`, not `main`.** The deployable, self-contained code
+> lives on `dev`; `main` only holds the Phase 0/1 scaffold. Point Render, the
+> extension, and Vercel's production branch at `dev`. CI/CD workflows that fire on
+> `main` (e.g. `.github/workflows/deploy.yml`) won't run for real deployable
+> code until main is fast-forwarded or the triggers are retargeted.
+
 ## What you're deploying
 
 | Service     | Tech                         | Container                                | Env needed                                       |
