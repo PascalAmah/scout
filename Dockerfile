@@ -26,8 +26,12 @@ COPY apps/api/app ./apps/api/app
 COPY apps/api/alembic ./apps/api/alembic
 COPY apps/api/alembic.ini ./apps/api/
 
+# Entrypoint runs alembic upgrade head, then starts uvicorn — so a fresh
+# Render deploy auto-migrates (no shell access needed on free tier).
+COPY apps/api/entrypoint.sh ./apps/api/entrypoint.sh
+RUN chmod +x /app/apps/api/entrypoint.sh
+
 WORKDIR /app/apps/api
 EXPOSE 8000
 
-# Migrations run as a separate deploy step, not on every boot.
-CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/apps/api/entrypoint.sh"]

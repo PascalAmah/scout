@@ -18,9 +18,12 @@ COPY apps/api/app ./app
 COPY apps/api/alembic ./alembic
 COPY apps/api/alembic.ini ./
 
+# Entrypoint runs alembic upgrade head, then starts uvicorn — so a fresh
+# deploy auto-migrates. Alembic `upgrade head` is idempotent, so re-runs on
+# every boot are safe. Render free tier has no shell to run migrations by hand.
+COPY apps/api/entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
+
 EXPOSE 8000
 
-# Migrations run as a separate deploy step (see compose `migrate` service /
-# deploy workflow), not on every boot. Call the venv binary directly so `uv`
-# never re-syncs deps at container start.
-CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./entrypoint.sh"]
