@@ -30,6 +30,7 @@ function Popup() {
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [detection, setDetection] = useState<DetectionState | null>(null)
@@ -312,15 +313,55 @@ function Popup() {
               <label style={FIELD_LABEL} htmlFor="password">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ ...FIELD_INPUT, marginBottom: 12 }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ ...FIELD_INPUT, marginBottom: 12, paddingRight: 34 }}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    top: '50%',
+                    transform: 'translateY(calc(-50% - 6px))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    padding: 0,
+                    border: 'none',
+                    background: 'none',
+                    color: COLORS.muted2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    width={16}
+                    height={16}
+                    aria-hidden
+                  >
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                    {showPassword ? <path d="M4 4l16 16" /> : null}
+                  </svg>
+                </button>
+              </div>
               {error ? (
                 <p style={{ margin: '0 0 8px', fontSize: 11.5, color: COLORS.brick }}>{error}</p>
               ) : null}

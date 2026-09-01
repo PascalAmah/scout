@@ -75,6 +75,9 @@ export function normalizeLocation(raw: string | null | undefined): string | null
   const lower = t.toLowerCase()
   if (LOCATION_HINTS.has(lower)) return t
   if (LOCATION_HINTS.has(lower.split(' (')[0] ?? '')) return t
+  // ATS boards tag fully-remote roles with a region suffix ("Remote-NORAM",
+  // "Remote-UK&I") or a bare "Remote" — accept those as a location value.
+  if (/^remote(\([^)]*\)|[- ][a-z&]{1,12})?$/i.test(t)) return t
   if (looksLikeCityState(t)) return t
   return null
 }

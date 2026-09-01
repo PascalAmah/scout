@@ -188,6 +188,18 @@ function fallbackDetect(): DetectedPayload | null {
   const jobs: QuickSaveJob[] = Array.from(
     document.querySelectorAll<HTMLAnchorElement>('a[href*="/jobs/"]'),
   )
+    .filter((a) => {
+      // Skip links inside the page footer / nav — those are category pages,
+      // not individual job postings.
+      if (a.closest('footer, nav, [role="navigation"]')) return false;
+      const href = a.getAttribute('href') ?? '';
+      // Only keep links that look like an individual job detail page
+      // (numeric id or a deep slug under /jobs/), not category pages like
+      // /jobs/software-engineer or /jobs/in/san-francisco.
+      if (/\/jobs\/\d+/.test(href)) return true;
+      if (/\/companies\/[^/]+\/jobs\//.test(href)) return true;
+      return false;
+    })
     .map((a) => a.textContent?.replace(/\s+/g, " ").trim() ?? "")
     .filter(
       (t) =>

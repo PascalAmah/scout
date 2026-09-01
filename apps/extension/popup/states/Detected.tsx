@@ -88,15 +88,18 @@ export function Detected({
 
   const filtered = useMemo(() => rows.filter((r) => matchesFilter(r, filter)), [rows, filter])
 
-  // Default: select every visible row once the list first renders (so "Save
-  // all matching" is one click), and keep selections when the filter changes.
+  // Default: select every detected role once the list first renders (so "Save
+  // all matching" is one click). Run only once — re-running whenever rows or
+  // the filter change would re-select roles the user has just deselected.
   useEffect(() => {
     setSelected((prev) => {
+      if (prev.size > 0) return prev
       const next = new Set(prev)
-      for (const row of filtered) next.add(row.key)
+      for (const row of rows) next.add(row.key)
       return next
     })
-  }, [filtered]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const selectedRows = rows.filter((r) => selected.has(r.key))
   const selectedStartups = new Set(selectedRows.map((r) => r.startupName)).size
@@ -303,6 +306,35 @@ export function Detected({
           marginBottom: 10,
         }}
       />
+
+      <button
+        type="button"
+        onClick={() => {
+          const allFilteredSelected = filtered.every((r) => selected.has(r.key))
+          setSelected((prev) => {
+            const next = new Set(prev)
+            for (const r of filtered) {
+              if (allFilteredSelected) next.delete(r.key)
+              else next.add(r.key)
+            }
+            return next
+          })
+        }}
+        style={{
+          display: 'block',
+          width: '100%',
+          textAlign: 'left',
+          fontSize: 11,
+          color: COLORS.muted,
+          background: 'none',
+          border: 'none',
+          padding: '0 0 8px',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        {filtered.every((r) => selected.has(r.key)) ? 'Deselect all' : 'Select all'}
+      </button>
 
       <div
         style={{

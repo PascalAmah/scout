@@ -28,7 +28,10 @@ export function StartupCard({ startup }: { startup: StartupListItem }) {
     : null
   const sub = [stage, source].filter(Boolean).join(' · ') || domain
 
-  const tags = (startup.tags?.length ? startup.tags : startup.tech_stack ?? []).slice(0, 4)
+  const allTags = startup.tags?.length ? startup.tags : startup.tech_stack ?? []
+  const maxVisible = 3
+  const visibleTags = allTags.slice(0, maxVisible)
+  const overflowCount = allTags.length - maxVisible
 
   const enrichment = startup.enrichment_status
   const enrichNote =
@@ -76,18 +79,21 @@ export function StartupCard({ startup }: { startup: StartupListItem }) {
         <WorkspaceStatusBadge status={startup.status} />
       </div>
 
-      {tags.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-charcoal"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      <div className="mt-3 flex h-[22px] gap-1.5 overflow-hidden">
+        {visibleTags.map((tag) => (
+          <span
+            key={tag}
+            className="max-w-[120px] shrink-0 truncate rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-charcoal"
+          >
+            {tag}
+          </span>
+        ))}
+        {overflowCount > 0 ? (
+          <span className="shrink-0 rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-muted-2">
+            +{overflowCount}
+          </span>
+        ) : null}
+      </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3">
         <span className="font-mono text-[11px] text-muted-2">
@@ -96,9 +102,18 @@ export function StartupCard({ startup }: { startup: StartupListItem }) {
             : `Saved ${compactAgo(startup.created_at)}`}
         </span>
         <span className="shrink-0 text-[11px] text-muted">
-          {startup.open_roles_count === 0
-            ? '0 open roles'
-            : `${startup.open_roles_count} open ${startup.open_roles_count === 1 ? 'role' : 'roles'}`}
+          {startup.matching_roles_count > 0 && startup.open_roles_count > 0 ? (
+            <>
+              <span className="font-semibold text-emerald-dark">
+                {startup.matching_roles_count}
+              </span>
+              {` of ${startup.open_roles_count} ${startup.open_roles_count === 1 ? 'role' : 'roles'} match you`}
+            </>
+          ) : startup.open_roles_count === 0 ? (
+            '0 open roles'
+          ) : (
+            `${startup.open_roles_count} open ${startup.open_roles_count === 1 ? 'role' : 'roles'}`
+          )}
         </span>
       </div>
     </Link>

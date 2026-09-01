@@ -106,7 +106,7 @@ def request_password_reset(db: Session, email: str) -> None:
         return
     token = create_reset_token(str(user.id))
     reset_url = f"{settings.web_app_url}/password-reset/confirm?token={token}"
-    send_email(user.email, "Reset your Scout password", reset_password_html(reset_url))
+    send_email(user.email, "Reset your Scout password", reset_password_html(user.email, reset_url))
 
 
 def reset_password(db: Session, token: str, password: str) -> None:

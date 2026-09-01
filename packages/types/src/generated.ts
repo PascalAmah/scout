@@ -1539,6 +1539,11 @@ export interface components {
             created_at: string;
             /** Match Score */
             match_score?: number | null;
+            /**
+             * Relevance
+             * @description Interest relevance of this role vs the user's onboarding target roles: 'high' | 'medium' | 'none'. Null when the user has no target roles set.
+             */
+            relevance?: string | null;
         };
         /** JobPatch */
         JobPatch: {
@@ -2197,6 +2202,12 @@ export interface components {
              * @default 0
              */
             open_roles_count: number;
+            /**
+             * Matching Roles Count
+             * @description Open roles whose relevance to the user's target roles is 'high' or 'medium'.
+             * @default 0
+             */
+            matching_roles_count: number;
         };
         /** StartupOut */
         StartupOut: {

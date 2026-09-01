@@ -63,6 +63,7 @@ degrade to deterministic fallbacks (generic templates, keyword search).
 ```bash
 cd apps/api
 python -m uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 Confirm it's up:
@@ -100,7 +101,7 @@ cd apps/extension
 pnpm dev
 ```
 
-Or load a production build: `pnpm build`, then in `chrome://extensions` enable *Developer mode* → *Load unpacked* → select `apps/extension/build`.
+Or load a production build: `pnpm build`, then in `chrome://extensions` enable _Developer mode_ → _Load unpacked_ → select `apps/extension/build`.
 
 ## 2. Test manually
 
@@ -115,9 +116,9 @@ Or load a production build: `pnpm build`, then in `chrome://extensions` enable *
 ### Via the web app (end to end)
 
 1. Go to **http://localhost:5173/register** and create an account
-2. You land on the Dashboard → click *Sign in* and log in with the same account
+2. You land on the Dashboard → click _Sign in_ and log in with the same account
 3. Log out / log back in to confirm the session persists
-4. Use **http://localhost:5173/password-reset** to request a reset (a real email sends only if `RESEND_API_KEY` is set in `apps/api/.env`; otherwise the endpoint still returns 204)
+4. Use **http://localhost:5173/password-reset** to request a reset (a real email sends only if `SENDLIB_API_KEY` is set in `apps/api/.env`; otherwise the endpoint still returns 204)
 
 ### Demo account (local)
 
@@ -128,14 +129,14 @@ password: supersecret123
 
 ## 3. Run checks
 
-| Command | Where | What it does |
-|---|---|---|
-| `python -m uv run pytest` | `apps/api` | API tests |
-| `python -m uv run ruff check .` | `apps/api` | lint |
-| `python -m uv run mypy app` | `apps/api` | type check |
-| `pnpm typecheck` | `apps/web` / `apps/extension` | TS type check |
-| `pnpm lint` | `apps/web` / `apps/extension` | lint |
-| `pnpm build` | `apps/web` / `apps/extension` | production build |
+| Command                         | Where                         | What it does     |
+| ------------------------------- | ----------------------------- | ---------------- |
+| `python -m uv run pytest`       | `apps/api`                    | API tests        |
+| `python -m uv run ruff check .` | `apps/api`                    | lint             |
+| `python -m uv run mypy app`     | `apps/api`                    | type check       |
+| `pnpm typecheck`                | `apps/web` / `apps/extension` | TS type check    |
+| `pnpm lint`                     | `apps/web` / `apps/extension` | lint             |
+| `pnpm build`                    | `apps/web` / `apps/extension` | production build |
 
 ## Key paths
 

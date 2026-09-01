@@ -58,7 +58,7 @@ export function WorkspacePage() {
     <div>
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-[28px] font-semibold tracking-[-0.4px] text-charcoal">
-          Startup Workspace
+          Workspace
         </h1>
         <Button variant="accent" onClick={handleAdd} loading={createStartup.isPending}>
           <svg

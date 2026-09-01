@@ -29,6 +29,7 @@ export function KanbanBoard() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dragOver, setDragOver] = useState<ApplicationStatus | null>(null)
   const [tagText, setTagText] = useState('')
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
   if (pipelineQuery.isLoading) {
     return <p className="py-12 text-center text-sm text-muted">Loading…</p>
@@ -57,6 +58,25 @@ export function KanbanBoard() {
   const onCardDragStart = (e: DragEvent, applicationId: string) => {
     e.dataTransfer.setData('text/application-id', applicationId)
     e.dataTransfer.effectAllowed = 'move'
+    setDraggingId(applicationId)
+
+    // Replace the browser's default semi-transparent drag ghost
+    // with a clean, full-opacity version of the source card.
+    const source = e.currentTarget as HTMLElement
+    const prevOpacity = source.style.opacity
+    const prevTransform = source.style.transform
+    source.style.opacity = '1'
+    source.style.transform = 'none'
+    e.dataTransfer.setDragImage(source, source.offsetWidth / 2, 12)
+    // Restore original styles immediately after the browser captures the image
+    requestAnimationFrame(() => {
+      source.style.opacity = prevOpacity
+      source.style.transform = prevTransform
+    })
+  }
+
+  const onCardDragEnd = () => {
+    setDraggingId(null)
   }
 
   const onDrop = (e: DragEvent, status: ApplicationStatus) => {
@@ -153,6 +173,8 @@ export function KanbanBoard() {
                     selected={selected.has(app.id)}
                     onToggleSelect={() => toggleSelected(app.id)}
                     onDragStart={(e) => onCardDragStart(e, app.id)}
+                    onDragEnd={onCardDragEnd}
+                    isDragging={draggingId === app.id}
                     onUpdateStatus={(next) =>
                       updateStatus.mutate({ applicationId: app.id, status: next })
                     }

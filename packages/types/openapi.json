@@ -5198,6 +5198,18 @@
               }
             ],
             "title": "Match Score"
+          },
+          "relevance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance",
+            "description": "Interest relevance of this role vs the user's onboarding target roles: 'high' | 'medium' | 'none'. Null when the user has no target roles set."
           }
         },
         "type": "object",
@@ -7165,6 +7177,12 @@
           "open_roles_count": {
             "type": "integer",
             "title": "Open Roles Count",
+            "default": 0
+          },
+          "matching_roles_count": {
+            "type": "integer",
+            "title": "Matching Roles Count",
+            "description": "Open roles whose relevance to the user's target roles is 'high' or 'medium'.",
             "default": 0
           }
         },

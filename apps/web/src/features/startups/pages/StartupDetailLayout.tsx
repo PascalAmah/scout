@@ -110,7 +110,7 @@ export function StartupDetailLayout() {
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-            Startup Workspace
+            Workspace
           </Link>
 
           <div className="mb-3.5 flex flex-wrap items-start justify-between gap-5">

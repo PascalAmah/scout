@@ -43,7 +43,8 @@ class Settings(BaseSettings):
 
     follow_up_days: int = 5
 
-    resend_api_key: str = ""
+    sendlib_api_key: str = ""
+    sendlib_api_url: str = "https://sendlib.samueltuoyo.com/api/send"
     email_from: str = "Scout <hello@yourdomain.com>"
     web_app_url: str = "http://localhost:5173"
 
@@ -91,7 +92,7 @@ PROVIDERS: dict[str, dict] = {
     },
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-20b",
         "embedding_model": "text-embedding-all-minilm-l6-v2",
     },
     "openrouter": {

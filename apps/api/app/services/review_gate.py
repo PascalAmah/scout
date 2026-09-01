@@ -10,21 +10,28 @@ sets it (AI_DESIGN: human in the loop for anything that touches real apps).
 """
 
 from datetime import UTC, datetime
-from typing import Protocol, TypeVar
+from typing import Protocol, cast
 
 from sqlalchemy.orm import Session
 
 from app.core.errors import ScoutError
 
 
-class Reviewable(Protocol):
+class _HasReviewedAt(Protocol):
+    """Runtime shape of a review-gated row.
+
+    ``Outreach.reviewed_at`` and ``ResumeVersion.reviewed_at`` are declared as
+    ``Mapped[datetime | None]`` columns but hold a plain ``datetime | None`` at
+    runtime. Casting to this value-typed protocol lets mypy accept both reading
+    and writing the timestamp without binding the generic type parameter to a
+    ``Mapped``-typed protocol (which mypy can't structurally-solve for ORM
+    models).
+    """
+
     reviewed_at: datetime | None
 
 
-T = TypeVar("T", bound=Reviewable)  # noqa: UP047  # venv runs 3.10; PEP 695 would break it
-
-
-def require_reviewed(obj) -> None:
+def require_reviewed(obj: object) -> None:
     """Raise 409 NOT_REVIEWED if ``obj`` has no ``reviewed_at``."""
     if obj is None or getattr(obj, "reviewed_at", None) is None:
         raise ScoutError(
@@ -34,11 +41,16 @@ def require_reviewed(obj) -> None:
         )
 
 
-def mark_reviewed(db: Session, obj: T) -> T:  # noqa: UP047  # PEP 695 would break the 3.10 venv
-    """Explicitly mark a generated row as reviewed (idempotent)."""
+def mark_reviewed[T](db: Session, obj: T) -> T:
+    """Explicitly mark a generated row as reviewed (idempotent).
+
+    ``T`` is inferred from the caller's concrete model (``Outreach`` or
+    ``ResumeVersion``) so the original type is preserved on the way out.
+    """
+    row = cast(_HasReviewedAt, obj)
     now = datetime.now(UTC)
-    if obj.reviewed_at is None:
-        obj.reviewed_at = now
+    if row.reviewed_at is None:
+        row.reviewed_at = now
         db.add(obj)
         db.commit()
         db.refresh(obj)

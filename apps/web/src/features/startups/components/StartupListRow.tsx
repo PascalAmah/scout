@@ -22,7 +22,10 @@ export function StartupListRow({ startup }: { startup: StartupListItem }) {
       : titleCase(startup.source)
     : null
   const sub = [stage, source].filter(Boolean).join(' · ') || domain
-  const tags = (startup.tags?.length ? startup.tags : startup.tech_stack ?? []).slice(0, 4)
+  const allTags = startup.tags?.length ? startup.tags : startup.tech_stack ?? []
+  const maxVisible = 3
+  const visibleTags = allTags.slice(0, maxVisible)
+  const overflowCount = allTags.length - maxVisible
 
   return (
     <Link
@@ -43,16 +46,21 @@ export function StartupListRow({ startup }: { startup: StartupListItem }) {
         </h3>
         {sub ? <p className="truncate text-xs text-muted">{sub}</p> : null}
       </div>
-      {tags.length > 0 ? (
-        <div className="hidden shrink-0 flex-wrap gap-1.5 lg:flex">
-          {tags.map((tag) => (
+      {visibleTags.length > 0 ? (
+        <div className="hidden shrink-0 gap-1.5 overflow-hidden lg:flex">
+          {visibleTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-charcoal"
+              className="max-w-[100px] shrink-0 truncate rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-charcoal"
             >
               {tag}
             </span>
           ))}
+          {overflowCount > 0 ? (
+            <span className="shrink-0 rounded-[6px] border border-line bg-paper px-2 py-[3px] text-[11px] text-muted-2">
+              +{overflowCount}
+            </span>
+          ) : null}
         </div>
       ) : null}
       <div className="flex shrink-0 items-center gap-1.5">
@@ -64,10 +72,17 @@ export function StartupListRow({ startup }: { startup: StartupListItem }) {
           ? `Enriched ${compactAgo(startup.last_enriched_at)}`
           : `Saved ${compactAgo(startup.created_at)}`}
       </span>
-      <span className="hidden w-20 shrink-0 text-right text-[11px] text-muted sm:block">
-        {startup.open_roles_count === 0
-          ? '0 open roles'
-          : `${startup.open_roles_count} open ${startup.open_roles_count === 1 ? 'role' : 'roles'}`}
+      <span className="hidden w-28 shrink-0 text-right text-[11px] text-muted sm:block">
+        {startup.matching_roles_count > 0 && startup.open_roles_count > 0 ? (
+          <>
+            <span className="font-semibold text-emerald-dark">{startup.matching_roles_count}</span>
+            {`/${startup.open_roles_count} match you`}
+          </>
+        ) : startup.open_roles_count === 0 ? (
+          '0 open roles'
+        ) : (
+          `${startup.open_roles_count} open`
+        )}
       </span>
     </Link>
   )

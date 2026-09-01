@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 # A later load_dotenv never overrides an earlier value. This mirrors
 # apps/api/app/config.py so tasks imported outside the celery entrypoint
 # (tests, scripts) resolve the same keys as the running worker.
-load_dotenv(Path(__file__).resolve().parents[3] / ".env")
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+_ = load_dotenv(Path(__file__).resolve().parents[3] / ".env")
+_ = load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 DEFAULT_PROVIDER = "openai"
 
@@ -58,7 +58,11 @@ def _looks_like_placeholder(value: str) -> bool:
 # Registry of OpenAI-compatible providers. ``base_url`` is the chat.completions
 # endpoint; ``model`` is the default chat model; ``embedding_model`` is None
 # when the provider exposes no embedding API.
-PROVIDERS: dict[str, dict] = {
+# ``base_url`` and ``model`` are always present; ``embedding_model`` may be
+# None when the provider exposes no embedding API.
+ProviderSpec = dict[str, str | None]
+
+PROVIDERS: dict[str, ProviderSpec] = {
     "openai": {
         "base_url": "https://api.openai.com/v1",
         "model": "gpt-4o-mini",
@@ -76,7 +80,7 @@ PROVIDERS: dict[str, dict] = {
     },
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-20b",
         "embedding_model": "text-embedding-all-minilm-l6-v2",
     },
     "openrouter": {
@@ -92,14 +96,14 @@ PROVIDERS: dict[str, dict] = {
 }
 
 
-def _spec(provider: str) -> dict:
+def _spec(provider: str) -> ProviderSpec:
     spec = PROVIDERS.get(provider)
     if spec is None:
         return PROVIDERS[DEFAULT_PROVIDER]
     return spec
 
 
-def chat_config() -> dict:
+def chat_config() -> ProviderSpec:
     """Return the resolved chat client config ``{provider, api_key, base_url, model}``."""
     provider = os.getenv("AI_PROVIDER", DEFAULT_PROVIDER)
     spec = _spec(provider)
@@ -107,7 +111,7 @@ def chat_config() -> dict:
     if _looks_like_placeholder(api_key):
         logger.warning(
             "AI_API_KEY looks like an unfilled placeholder (%r); treating it as unset — "
-            "LLM tasks will fall back to deterministic heuristics.",
+            + "LLM tasks will fall back to deterministic heuristics.",
             api_key[:24],
         )
         api_key = ""
@@ -119,7 +123,7 @@ def chat_config() -> dict:
     }
 
 
-def embedding_config() -> dict | None:
+def embedding_config() -> ProviderSpec | None:
     """Return resolved embedding config, or None when unavailable/unsupported.
 
     None means "no embedding API": callers must fall back to the deterministic

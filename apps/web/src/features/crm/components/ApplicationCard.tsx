@@ -81,6 +81,8 @@ export function ApplicationCard({
   selected = false,
   onToggleSelect,
   onDragStart,
+  onDragEnd,
+  isDragging = false,
   onUpdateStatus,
 }: {
   application: ApplicationOut
@@ -88,6 +90,8 @@ export function ApplicationCard({
   selected?: boolean
   onToggleSelect?: () => void
   onDragStart?: (e: DragEvent) => void
+  onDragEnd?: () => void
+  isDragging?: boolean
   onUpdateStatus?: (status: ApplicationStatus) => void
 }) {
   const startupName = application.startup?.name ?? 'Unknown startup'
@@ -208,7 +212,8 @@ export function ApplicationCard({
       params={{ applicationId: application.id }}
       draggable
       onDragStart={onDragStart}
-      className={`block rounded-[14px] border p-[14px] shadow-sm transition-shadow hover:-translate-y-px hover:shadow-md ${dimmed} ${offerTint}`}
+      onDragEnd={onDragEnd}
+      className={`block rounded-[14px] border p-[14px] shadow-sm transition-all hover:-translate-y-px hover:shadow-md ${dimmed} ${offerTint} ${isDragging ? 'scale-[0.98] ring-2 ring-emerald/30 border-emerald/40 shadow-md' : ''}`}
     >
       {body}
     </Link>

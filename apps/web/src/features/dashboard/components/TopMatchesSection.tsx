@@ -1,26 +1,31 @@
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 
-import { Ring } from '../../../components/ui/Ring'
-import { useMatches } from '../../matches/hooks'
+import { Ring } from "../../../components/ui/Ring";
+import { useMatches } from "../../matches/hooks";
 
 export function TopMatchesSection() {
-  const { data } = useMatches()
-  const matches = data?.data.slice(0, 3) ?? []
+  const { data } = useMatches();
+  const matches = data?.data.slice(0, 3) ?? [];
 
-  if (matches.length === 0) return null
+  if (matches.length === 0) return null;
 
   return (
     <section className="mt-9">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-[16.5px] font-semibold text-charcoal">Top matches this week</h2>
-        <Link to="/matches" className="text-[12.5px] font-semibold text-emerald-dark hover:underline">
+        <h2 className="text-[16.5px] font-semibold text-charcoal">
+          Top matches this week
+        </h2>
+        <Link
+          to="/matches"
+          className="text-[12.5px] font-semibold text-emerald-dark hover:underline"
+        >
           See all matches →
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {matches.map((match) => {
-          const matched = match.explanation?.matched_skills ?? []
-          const gaps = match.explanation?.gaps ?? []
+          const matched = match.explanation?.matched_skills ?? [];
+          const gaps = match.explanation?.gaps ?? [];
           return (
             <Link
               key={match.job_id}
@@ -29,13 +34,19 @@ export function TopMatchesSection() {
             >
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-[14.5px] font-semibold text-charcoal">{match.title}</p>
-                  <p className="truncate text-xs text-muted">{match.startup_name}</p>
+                  <p className="truncate text-[14.5px] font-semibold text-charcoal">
+                    {match.title}
+                  </p>
+                  <p className="truncate text-xs text-muted">
+                    {match.startup_name}
+                  </p>
                 </div>
                 <Ring score={match.score} size={44} />
               </div>
               {match.explanation?.summary ? (
-                <p className="mb-3 text-[12.5px] leading-relaxed text-muted">{match.explanation.summary}</p>
+                <p className="mb-3 line-clamp-3 text-[12.5px] leading-relaxed text-muted">
+                  {match.explanation.summary}
+                </p>
               ) : null}
               <div className="flex flex-wrap gap-1.5">
                 {matched.slice(0, 3).map((skill) => (
@@ -56,9 +67,9 @@ export function TopMatchesSection() {
                 ))}
               </div>
             </Link>
-          )
+          );
         })}
       </div>
     </section>
-  )
+  );
 }

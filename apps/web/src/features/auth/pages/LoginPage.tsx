@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
+import { PasswordInput } from '../../../components/ui/PasswordInput'
 import { ApiRequestError } from '../../../lib/api-client'
 import { useLogin } from '../hooks'
 import { AuthBrandPanel } from '../components/AuthBrandPanel'
@@ -62,9 +63,8 @@ export function LoginPage() {
               />
             </AuthField>
             <AuthField label="Password">
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
