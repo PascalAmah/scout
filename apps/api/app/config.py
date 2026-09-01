@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,27 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://scout:scout@127.0.0.1:5432/scout"
     redis_url: str = "redis://127.0.0.1:6379/0"
+
+    @field_validator("database_url")
+    @classmethod
+    def _force_psycopg_dialect(cls, v: str) -> str:
+        """Force the explicit psycopg (v3) dialect on ``DATABASE_URL``.
+
+        Managed Postgres providers (e.g. Render) expose ``DATABASE_URL`` as a
+        bare ``postgresql://...``, which SQLAlchemy maps to the psycopg2 dialect
+        by default. We deploy with psycopg v3 and do not install psycopg2, so a
+        bare scheme would crash at import with ``No module named 'psycopg2'``.
+        This is the single normalization point shared by the engine
+        (``db/session.py``), alembic migrations (``alembic/env.py``), and the
+        worker (which reuses the API's ``SessionLocal``).
+        """
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        if v.startswith("postgres://"):
+            # ``postgres+psycopg`` is not a registered SQLAlchemy dialect; the
+            # legacy ``postgres`` scheme must expand to the full canonical one.
+            return v.replace("postgres://", "postgresql+psycopg://", 1)
+        return v
 
     jwt_access_secret: str = "dev-only-access-secret-change-me-please-32b"
     jwt_refresh_secret: str = "dev-only-refresh-secret-change-me-please-32b"
