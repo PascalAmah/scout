@@ -2,13 +2,12 @@ import uuid
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.idempotency import idempotency_store
 from app.db.session import get_db
 from app.deps import get_current_user
-from app.models import Founder, Job, MatchScore, Note, SavedStartup, Startup, User
+from app.models import Founder, Job, Note, Startup, User
 from app.schemas.common import Page
 from app.schemas.startup import (
     EnrichmentJobOut,
@@ -41,62 +40,13 @@ def list_startups(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # With a query term, use hybrid (keyword + semantic) ranking. Without one,
-    # fall back to the plain filtered list (recency-ordered) for browsing.
-    if q:
-        saved_rows, total, next_page = startup_service.hybrid_search(db, user, q, page, limit)
-    else:
-        saved_rows, total, next_page = startup_service.list_saved(
-            db, user, stage, hiring_status, tags, source, q, page, limit
-        )
-    data = []
-    startup_ids = [saved.startup_id for saved in saved_rows]
-    open_roles: dict[uuid.UUID, int] = {}
-    if startup_ids:
-        rows = db.execute(
-            select(Job.startup_id, func.count(Job.id))
-            .where(
-                Job.startup_id.in_(startup_ids),
-                Job.deleted_at.is_(None),
-                Job.status != "closed",
-            )
-            .group_by(Job.startup_id)
-        ).all()
-        open_roles = {startup_id: count for startup_id, count in rows}
-    for saved in saved_rows:
-        startup = saved.startup
-        data.append(
-            StartupListItem(
-                **startup_service_startup_fields(startup),
-                status=saved.status,
-                saved_via=saved.saved_via,
-                enrichment_status=startup_service._enrichment_status(db, startup),
-                created_by=startup.created_by,
-                open_roles_count=open_roles.get(startup.id, 0),
-            )
-        )
+    data, total, next_page = startup_service.list_workspace(
+        db, user, stage, hiring_status, tags, source, q, page, limit
+    )
     return {
-    "data": data,
-    "next_cursor": str(next_page) if next_page else None,
-    "total": total,
-}
-
-
-def startup_service_startup_fields(startup) -> dict:
-    return {
-        "id": startup.id,
-        "name": startup.name,
-        "website": startup.website,
-        "stage": startup.stage,
-        "hiring_status": startup.hiring_status,
-        "summary": startup.summary,
-        "tags": startup.tags,
-        "tech_stack": startup.tech_stack,
-        "source": startup.source,
-        "source_url": startup.source_url,
-        "last_enriched_at": startup.last_enriched_at,
-        "created_at": startup.created_at,
-        "updated_at": startup.updated_at,
+        "data": data,
+        "next_cursor": str(next_page) if next_page else None,
+        "total": total,
     }
 
 
@@ -111,9 +61,7 @@ def create_startup(
         cached = idempotency_store.get(str(user.id), x_idempotency_key)
         if cached:
             return JSONResponse(status_code=cached["status"], content=cached["body"])
-    startup, _saved, _already = startup_service.create_startup(db, user, body)
-    startup_service.trigger_enrich(db, user, startup.id)
-    payload = StartupOut.model_validate(startup).model_dump(mode="json")
+    payload = startup_service.create_and_enrich(db, user, body)
     if x_idempotency_key:
         idempotency_store.set(str(user.id), x_idempotency_key, {"status": 201, "body": payload})
     return payload
@@ -124,34 +72,8 @@ def get_startup(
     startup_id: uuid.UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> dict:
-    startup = startup_service.get_detail(db, user, startup_id)
-    saved = db.scalar(
-        select(SavedStartup).where(
-            SavedStartup.user_id == user.id, SavedStartup.startup_id == startup_id
-        )
-    )
-    job_ids = [job.id for job in startup.jobs]
-    score_map: dict[uuid.UUID, float] = {}
-    if job_ids:
-        score_map = {
-            row[0]: float(row[1])
-            for row in db.execute(
-                select(MatchScore.job_id, MatchScore.score).where(
-                    MatchScore.user_id == user.id, MatchScore.job_id.in_(job_ids)
-                )
-            ).all()
-        }
-    for job in startup.jobs:
-        job.match_score = score_map.get(job.id)
-    return {
-        **startup_service_startup_fields(startup),
-        "status": saved.status if saved else "saved",
-        "enrichment_status": startup_service._enrichment_status(db, startup),
-        "founders": startup.founders,
-        "jobs": startup.jobs,
-        "notes": startup_service.list_notes(db, user, startup_id),
-    }
+) -> StartupDetail:
+    return startup_service.get_detail_for_user(db, user, startup_id)
 
 
 @router.patch("/{startup_id}", response_model=StartupOut)

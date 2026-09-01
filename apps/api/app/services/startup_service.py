@@ -5,11 +5,12 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ScoutError
-from app.core.pagination import cursor_page, page_page
+from app.core.pagination import page_page
 from app.models import (
     EnrichmentJob,
     Founder,
     Job,
+    MatchScore,
     Note,
     SavedStartup,
     Startup,
@@ -22,10 +23,14 @@ from app.schemas.startup import (
     JobCreate,
     JobPatch,
     StartupCreate,
+    StartupDetail,
+    StartupListItem,
+    StartupOut,
     StartupPatch,
 )
 from app.services import job_queue
 from app.services.embedding import embed_query
+from app.services.job_relevance import TIER_ORDER, is_relevant, score_relevance
 
 
 def _get_startup(db: Session, startup_id: uuid.UUID) -> Startup:
@@ -68,10 +73,43 @@ def _enrichment_status(db: Session, startup: Startup) -> str:
     return "none"
 
 
+def _normalize_url_origin(url: str | None) -> str | None:
+    """Extract scheme + host from a URL for cross-path deduplication.
+
+    ``https://job-boards.greenhouse.io/remotecom`` and
+    ``https://job-boards.greenhouse.io/remotecom/jobs/123`` both normalise
+    to ``https://job-boards.greenhouse.io`` so they match during dedup.
+    """
+    if not url:
+        return None
+    try:
+        from urllib.parse import urlparse
+
+        p = urlparse(url)
+        if p.scheme and p.hostname:
+            return f"{p.scheme}://{p.hostname}"
+    except Exception:
+        pass
+    return url.lower()
+
+
 def _find_existing(db: Session, data: StartupCreate) -> Startup | None:
+    """Find an existing startup that matches the incoming data.
+
+    Matches by website origin (scheme + host only, ignoring path) so that
+    saves from different pages of the same Greenhouse/Lever board resolve to
+    the same startup.  Also matches by exact source_url as a fallback.
+    """
     conditions = []
     if data.website:
-        conditions.append(func.lower(Startup.website) == data.website.lower())
+        incoming_origin = _normalize_url_origin(data.website)
+        if incoming_origin:
+            # Use ``LIKE 'scheme://host%'`` so both normalised stored values
+            # (e.g. "https://job-boards.greenhouse.io") and legacy full-path
+            # values (e.g. "https://job-boards.greenhouse.io/remotecom") match.
+            conditions.append(
+                func.lower(Startup.website).like(f"{incoming_origin.lower()}%")
+            )
     if data.source_url:
         conditions.append(Startup.source_url == data.source_url)
     if not conditions:
@@ -109,7 +147,7 @@ def create_startup(
 
     startup = Startup(
         name=data.name,
-        website=data.website,
+        website=_normalize_url_origin(data.website) or data.website,
         source=data.source,
         source_url=data.source_url,
         tags=data.tags or None,
@@ -124,6 +162,17 @@ def create_startup(
     db.add(saved)
     db.commit()
     return startup, saved, False
+
+
+def create_and_enrich(db: Session, user: User, data: StartupCreate) -> dict:
+    """Create a startup, queue enrichment, and return the serialized payload.
+
+    Web save path: keeps enrichment triggering + response serialization out of
+    the router, so idempotency-keyed callers store the exact payload returned.
+    """
+    startup, _saved, _already = create_startup(db, user, data)
+    trigger_enrich(db, user, startup.id)
+    return StartupOut.model_validate(startup).model_dump(mode="json")
 
 
 def list_saved(
@@ -242,10 +291,169 @@ def hybrid_search(
     return page_rows, total, next_page
 
 
+# --- Workspace list ---
+
+
+def _target_roles(user: User) -> list[str]:
+    """The user's onboarding target roles, if they completed the wizard."""
+    prefs = user.preferences or {}
+    roles = prefs.get("target_roles")
+    if not isinstance(roles, list):
+        return []
+    return [role for role in roles if isinstance(role, str) and role.strip()]
+
+
+def _annotate_relevance(startup: Startup, user: User) -> list[str]:
+    """Set ``job.relevance`` on each of the startup's jobs; returns the tiers.
+
+    Jobs without target roles for the user keep ``relevance=None`` and no
+    re-ordering happens.
+    """
+    target_roles = _target_roles(user)
+    if not target_roles:
+        return []
+    tiers: list[str] = []
+    for job in startup.jobs:
+        tier = score_relevance(job.title, target_roles)
+        job.relevance = tier  # type: ignore[attr-defined]  # transient, like match_score
+        tiers.append(tier)
+    # Interesting roles first; stable within a tier (enrichment order).
+    startup.jobs.sort(key=lambda job: TIER_ORDER.get(getattr(job, "relevance", None) or "none", 3))
+    return tiers
+
+
+def _startup_fields(startup: Startup) -> dict:
+    return {
+        "id": startup.id,
+        "name": startup.name,
+        "website": startup.website,
+        "stage": startup.stage,
+        "hiring_status": startup.hiring_status,
+        "summary": startup.summary,
+        "tags": startup.tags,
+        "tech_stack": startup.tech_stack,
+        "source": startup.source,
+        "source_url": startup.source_url,
+        "last_enriched_at": startup.last_enriched_at,
+        "created_at": startup.created_at,
+        "updated_at": startup.updated_at,
+    }
+
+
+def _open_and_matching_role_counts(
+    db: Session, user: User, startup_ids: list[uuid.UUID]
+) -> tuple[dict[uuid.UUID, int], dict[uuid.UUID, int]]:
+    """Count each startup's open roles and how many match the user's interests."""
+    open_roles: dict[uuid.UUID, int] = {}
+    matching_roles: dict[uuid.UUID, int] = {}
+    if not startup_ids:
+        return open_roles, matching_roles
+    rows = db.execute(
+        select(Job.startup_id, func.count(Job.id))
+        .where(
+            Job.startup_id.in_(startup_ids),
+            Job.deleted_at.is_(None),
+            Job.status != "closed",
+        )
+        .group_by(Job.startup_id)
+    ).all()
+    open_roles = {startup_id: count for startup_id, count in rows}
+    target_roles = _target_roles(user)
+    if target_roles:
+        title_rows = db.execute(
+            select(Job.startup_id, Job.title).where(
+                Job.startup_id.in_(startup_ids),
+                Job.deleted_at.is_(None),
+                Job.status != "closed",
+            )
+        ).all()
+        for startup_id, title in title_rows:
+            if is_relevant(score_relevance(title, target_roles)):
+                matching_roles[startup_id] = matching_roles.get(startup_id, 0) + 1
+    return open_roles, matching_roles
+
+
+def list_workspace(
+    db: Session,
+    user: User,
+    stage: str | None,
+    hiring_status: str | None,
+    tags: list[str] | None,
+    source: str | None,
+    q: str | None,
+    page: int,
+    limit: int,
+) -> tuple[list[StartupListItem], int, str | None]:
+    """The user's saved startups, with open + interest-relevant role counts.
+
+    With a query term, uses hybrid (keyword + semantic) ranking; without one,
+    falls back to the plain filtered list (recency-ordered) for browsing.
+    Returns the ``Page`` payload pieces: (items, total, next_page).
+    """
+    if q:
+        saved_rows, total, next_page = hybrid_search(db, user, q, page, limit)
+    else:
+        saved_rows, total, next_page = list_saved(
+            db, user, stage, hiring_status, tags, source, q, page, limit
+        )
+    open_roles, matching_roles = _open_and_matching_role_counts(
+        db, user, [saved.startup_id for saved in saved_rows]
+    )
+    data = [
+        StartupListItem(
+            **_startup_fields(saved.startup),
+            status=saved.status,
+            saved_via=saved.saved_via,
+            enrichment_status=_enrichment_status(db, saved.startup),
+            created_by=saved.startup.created_by,
+            open_roles_count=open_roles.get(saved.startup.id, 0),
+            matching_roles_count=matching_roles.get(saved.startup.id, 0),
+        )
+        for saved in saved_rows
+    ]
+    return data, total, next_page
+
+
 def get_detail(db: Session, user: User, startup_id: uuid.UUID) -> Startup:
     startup = _get_startup(db, startup_id)
     _get_saved(db, user, startup_id)
     return startup
+
+
+def get_detail_for_user(db: Session, user: User, startup_id: uuid.UUID) -> StartupDetail:
+    """The workspace detail view for a saved startup, with jobs annotated.
+
+    Tags each job with its match score and interest-relevance tier, then
+    assembles the response payload so the router stays a thin delegate.
+    """
+    startup = get_detail(db, user, startup_id)
+    saved = db.scalar(
+        select(SavedStartup).where(
+            SavedStartup.user_id == user.id, SavedStartup.startup_id == startup_id
+        )
+    )
+    job_ids = [job.id for job in startup.jobs]
+    score_map: dict[uuid.UUID, float] = {}
+    if job_ids:
+        score_map = {
+            row[0]: float(row[1])
+            for row in db.execute(
+                select(MatchScore.job_id, MatchScore.score).where(
+                    MatchScore.user_id == user.id, MatchScore.job_id.in_(job_ids)
+                )
+            ).all()
+        }
+    for job in startup.jobs:
+        job.match_score = score_map.get(job.id)
+    _annotate_relevance(startup, user)
+    return StartupDetail(
+        **_startup_fields(startup),
+        status=saved.status if saved else "saved",
+        enrichment_status=_enrichment_status(db, startup),
+        founders=startup.founders,
+        jobs=startup.jobs,
+        notes=list_notes(db, user, startup_id),
+    )
 
 
 def patch_startup(db: Session, user: User, startup_id: uuid.UUID, patch: StartupPatch) -> Startup:
