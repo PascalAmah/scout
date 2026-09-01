@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 
 import { Button } from '../../../components/ui/Button'
+import { Input } from '../../../components/ui/Input'
 import { useSession } from '../../auth/hooks'
 import {
   useCreateCVProfile,
@@ -11,6 +12,15 @@ import {
   useUpdateCVProfile,
   useUploadCV,
 } from '../../cv/hooks'
+import { SettingsPanel } from '../components/SettingsPanel'
+
+function initialsOf(name: string | null | undefined): string {
+  const parts = (name ?? '?').trim().split(/\s+/).filter(Boolean)
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('')
+}
 
 export function ProfilePage() {
   const { user } = useSession()
@@ -28,8 +38,9 @@ export function ProfilePage() {
 
   const profile = cvQuery.isSuccess ? cvQuery.data : null
   const profiles = profilesQuery.data ?? []
+  const parsed = profile?.structured_data
 
-  const onReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onReplaceFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) upload.mutate({ file })
     e.target.value = ''
@@ -51,96 +62,175 @@ export function ProfilePage() {
     setNewName('')
   }
 
-  const setupDone = Boolean(user?.onboarding_completed_at)
-
   return (
-    <div className="max-w-2xl space-y-8">
-      {/* Setup status — reflects users.onboarding_completed_at */}
-      <section className="flex items-center justify-between gap-4 rounded-xl border border-[#E5E3DC] bg-white p-6">
-        <div>
-          <h2 className="font-serif text-lg font-semibold text-[#1F2937]">Setup</h2>
-          <p className="mt-1 text-sm text-[#6B7280]">
-            {setupDone ? (
-              <>
-                Completed{' '}
-                {new Date(user!.onboarding_completed_at!).toLocaleDateString()} — roles, resume,
-                and location preferences saved.
-              </>
-            ) : (
-              'You skipped the intro wizard — you can run it whenever you like.'
-            )}
-          </p>
+    <div className="space-y-5">
+      <SettingsPanel title="Profile" description="How you appear across Scout">
+        <div className="mb-5 flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-charcoal text-[18px] font-bold text-white">
+            {initialsOf(user?.full_name)}
+          </div>
+          <div>
+            <p className="text-sm text-muted">
+              Identity and contact are set at sign-up.
+            </p>
+            <Link
+              to="/onboarding"
+              className="text-[13px] font-semibold text-emerald-dark hover:underline"
+            >
+              Edit your role &amp; location preferences →
+            </Link>
+          </div>
         </div>
-        <Link to="/onboarding">
-          <Button variant={setupDone ? 'ghost' : 'primary'}>
-            {setupDone ? 'Edit preferences' : 'Finish setup'}
-          </Button>
-        </Link>
-      </section>
+        <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="settings-full-name"
+              className="mb-1.5 block text-xs font-semibold text-charcoal"
+            >
+              Full name
+            </label>
+            <Input
+              id="settings-full-name"
+              value={user?.full_name ?? ''}
+              readOnly
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="settings-email"
+              className="mb-1.5 block text-xs font-semibold text-charcoal"
+            >
+              Email
+            </label>
+            <Input id="settings-email" value={user?.email ?? ''} readOnly />
+          </div>
+        </div>
+      </SettingsPanel>
 
-      <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-        <h2 className="font-serif text-lg font-semibold text-[#1F2937]">CV / Portfolio</h2>
-        <p className="mt-1 text-sm text-[#6B7280]">
-          Multiple profiles let you position yourself differently — “backend” vs “product”. The{' '}
-          <b>default</b> anchors your matches; uploading to it re-ranks them.
-        </p>
+      <SettingsPanel
+        title="CV / Portfolio"
+        description="The anchor for matching — one active profile at a time"
+      >
+{cvQuery.isLoading ? (
+          <p className="text-sm text-muted">Loading your CV…</p>
+        ) : profile ? (
+          <>
+            {/* Active CV card */}
+            <div className="mb-4 flex items-center gap-[14px] rounded-md border border-line bg-paper px-[18px] py-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-emerald-tint">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-[19px] w-[19px] stroke-emerald-dark"
+                  aria-hidden
+                >
+                  <path d="M14 3v5h5M6 3h8l5 5v13H6z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <b className="flex flex-wrap items-center gap-2 text-[13.5px] text-charcoal">
+                  <span className="truncate">
+                    {profile.source_file_key ?? 'Pasted CV'}
+                  </span>
+                  {parsed ? (
+                    <span className="inline-flex items-center gap-1 rounded-pill bg-emerald-tint px-[9px] py-[3px] text-[10.5px] font-bold text-emerald-dark">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        className="h-2 w-2"
+                        aria-hidden
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                      Parsed
+                    </span>
+                  ) : null}
+                </b>
+                <span className="text-[11.5px] text-muted">
+                  Updated {new Date(profile.updated_at).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  variant="secondary"
+                  loading={upload.isPending}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Replace
+                </Button>
+              </div>
+            </div>
 
-        {/* Profile list */}
-        {profiles.length > 0 ? (
-          <ul className="mt-5 divide-y divide-[#F0EEE7] rounded-lg border border-[#E5E3DC]">
-            {profiles.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 text-sm font-medium text-[#1F2937]">
-                    {p.name}
-                    {p.is_default ? (
-                      <span className="rounded-full bg-[#E7F5EE] px-2 py-0.5 text-[10px] font-semibold text-[#0F6E56]">
-                        Default
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="truncate text-xs text-[#6B7280]">
-                    {p.source_file_key ?? 'pasted text'} · updated{' '}
-                    {new Date(p.updated_at).toLocaleDateString()}
-                    {p.last_embedded_at ? ` · embedded` : ''}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  {p.is_default ? (
-                    <Button variant="ghost" onClick={() => fileRef.current?.click()}>
-                      Replace
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      loading={updateProfile.isPending}
-                      onClick={() => updateProfile.mutate({ id: p.id, patch: { is_default: true } })}
+            {parsed?.skills.length ? (
+              <>
+                <p className="mb-[10px] text-[11.5px] font-semibold text-muted">
+                  Parsed skills
+                </p>
+                <div className="mb-[18px] flex flex-wrap gap-1.5">
+                  {parsed.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-[7px] border border-line bg-white px-[10px] py-1 text-[11.5px] text-charcoal"
                     >
-                      Make default
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    loading={deleteProfile.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Delete the “${p.name}” profile?`)) {
-                        deleteProfile.mutate(p.id)
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
+                      {skill}
+                    </span>
+                  ))}
                 </div>
-              </li>
-            ))}
-          </ul>
+              </>
+            ) : null}
+
+            {/* Parsed stats */}
+            <div className="flex gap-6">
+              <div>
+                <b className="block font-mono text-[18px] text-charcoal">
+                  {parsed?.years_of_experience ?? '—'}
+                </b>
+                <span className="text-[11px] text-muted">years experience</span>
+              </div>
+              <div>
+                <b className="block font-mono text-[18px] text-charcoal">
+                  {parsed?.roles.length ?? '—'}
+                </b>
+                <span className="text-[11px] text-muted">roles found</span>
+              </div>
+              <div>
+                <b className="block font-mono text-[18px] text-charcoal">
+                  {parsed?.skills.length ?? '—'}
+                </b>
+                <span className="text-[11px] text-muted">skills extracted</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 text-[11.5px] text-muted-2">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="2"
+                className="h-3.5 w-3.5 stroke-emerald-dark"
+                aria-hidden
+              >
+                <path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" />
+              </svg>
+              Encrypted at rest. Never used to train external models. Delete
+              anytime.
+            </div>
+          </>
         ) : (
-          <p className="mt-5 text-sm text-[#6B7280]">
-            No CV yet — upload one below and it becomes your default profile.
-          </p>
+          <>
+            <p className="mb-4 text-sm text-muted">
+              No CV yet — upload one below and it becomes your default profile.
+            </p>
+            <Button onClick={() => fileRef.current?.click()} loading={upload.isPending}>
+              Upload a PDF or text file
+            </Button>
+          </>
         )}
 
-        {/* Default profile upload (file) */}
+        {/* Hidden file input — replaces the default profile */}
         <input
           ref={fileRef}
           type="file"
@@ -149,133 +239,122 @@ export function ProfilePage() {
           onChange={onReplaceFile}
         />
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button
-            onClick={() => fileRef.current?.click()}
-            loading={upload.isPending}
-          >
-            {profile?.source_file_key ? 'Replace with a file' : 'Upload a PDF or text file'}
-          </Button>
-          <span className="text-xs text-[#6B7280]">or</span>
-        </div>
-
+        {/* Paste-as-replace for the default profile */}
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="…paste your CV text directly (no file needed)"
-          rows={4}
-          className="mt-3 w-full rounded-lg border border-[#D6D3C9] p-3 text-sm text-[#1F2937] outline-none focus:border-[#1F2937]"
+          placeholder="…paste CV text to replace the default profile"
+          rows={3}
+          className="mt-4 w-full rounded-sm border border-line-strong bg-white px-3.5 py-3 text-sm text-charcoal placeholder:text-muted-2 focus:border-emerald focus:outline-2 focus:outline-emerald focus:outline-offset-1"
         />
         <div className="mt-2 flex justify-end">
           <Button variant="ghost" onClick={onReplaceText} disabled={!text.trim()}>
             Use pasted text
           </Button>
         </div>
+{/* Named profiles */}
+        {profiles.length > 0 ? (
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-wide text-muted">
+              Profiles
+            </p>
+            <ul className="divide-y divide-line">
+              {profiles.map((p) => (
+                <li key={p.id} className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 text-[13px] font-medium text-charcoal">
+                      {p.name}
+                      {p.is_default ? (
+                        <span className="rounded-pill bg-emerald-tint px-2 py-0.5 text-[10px] font-semibold text-emerald-dark">
+                          Default
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="truncate text-xs text-muted">
+                      {p.source_file_key ?? 'pasted text'} · updated{' '}
+                      {new Date(p.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    {p.is_default ? (
+                      <Button
+                        variant="ghost"
+                        loading={upload.isPending}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        Replace
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        loading={updateProfile.isPending}
+                        onClick={() =>
+                          updateProfile.mutate({
+                            id: p.id,
+                            patch: { is_default: true },
+                          })
+                        }
+                      >
+                        Make default
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      loading={deleteProfile.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Delete the “${p.name}” profile?`)) {
+                          deleteProfile.mutate(p.id)
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {/* Create a new named profile */}
+        <div className="mt-6 border-t border-line pt-5">
+          <p className="mb-1 text-[11.5px] font-semibold uppercase tracking-wide text-muted">
+            Add a profile
+          </p>
+          <p className="mb-3 text-xs text-muted">
+            Another positioning (e.g. “Product” or “Backend”) without replacing
+            your default.
+          </p>
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Profile name (e.g. Product)"
+          />
+          <textarea
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            placeholder="…paste that CV's text here"
+            rows={3}
+            className="mt-3 w-full rounded-sm border border-line-strong bg-white px-3.5 py-3 text-sm text-charcoal placeholder:text-muted-2 focus:border-emerald focus:outline-2 focus:outline-emerald focus:outline-offset-1"
+          />
+          <div className="mt-2 flex justify-end">
+            <Button
+              onClick={onCreateProfile}
+              loading={createProfile.isPending}
+              disabled={!newName.trim() || !newText.trim()}
+            >
+              Create profile
+            </Button>
+          </div>
+        </div>
 
         {upload.isError || createProfile.isError ? (
-          <p className="mt-3 text-sm text-[#B3261E]">
-            {(upload.error ?? createProfile.error)?.message ?? 'Something went wrong.'}
+          <p className="mt-3 text-sm text-brick">
+            {(upload.error ?? createProfile.error)?.message ??
+              'Something went wrong.'}
           </p>
         ) : null}
-      </section>
-
-      {/* New named profile */}
-      <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-        <h2 className="font-serif text-lg font-semibold text-[#1F2937]">New profile</h2>
-        <p className="mt-1 text-sm text-[#6B7280]">
-          Add another positioning (e.g. “Product” or “Backend”) without replacing your default.
-        </p>
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Profile name (e.g. Product)"
-          className="mt-4 w-full rounded-lg border border-[#D6D3C9] p-3 text-sm text-[#1F2937] outline-none focus:border-[#1F2937]"
-        />
-        <textarea
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          placeholder="…paste that CV's text here"
-          rows={4}
-          className="mt-3 w-full rounded-lg border border-[#D6D3C9] p-3 text-sm text-[#1F2937] outline-none focus:border-[#1F2937]"
-        />
-        <div className="mt-2 flex justify-end">
-          <Button
-            onClick={onCreateProfile}
-            loading={createProfile.isPending}
-            disabled={!newName.trim() || !newText.trim()}
-          >
-            Create profile
-          </Button>
-        </div>
-      </section>
-
-      {profile?.structured_data ? (
-        <section className="rounded-xl border border-[#E5E3DC] bg-white p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg font-semibold text-[#1F2937]">
-              Parsed profile — {profile.name}
-            </h2>
-            {profile.last_embedded_at ? (
-              <span className="text-xs text-[#6B7280]">
-                Last embedded {new Date(profile.last_embedded_at).toLocaleString()}
-              </span>
-            ) : null}
-          </div>
-
-          {profile.structured_data.years_of_experience != null ? (
-            <p className="mt-3 text-sm text-[#6B7280]">
-              <b className="text-[#1F2937]">
-                {profile.structured_data.years_of_experience} years
-              </b>{' '}
-              of experience
-            </p>
-          ) : null}
-
-          {profile.structured_data.roles.length > 0 ? (
-            <div className="mt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Roles</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {profile.structured_data.roles.map((role) => (
-                  <span
-                    key={role}
-                    className="rounded-full border border-[#D6D3C9] bg-white px-3 py-1 text-xs font-medium text-[#1F2937]"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {profile.structured_data.skills.length > 0 ? (
-            <div className="mt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">Skills</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {profile.structured_data.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-md bg-[#E7F5EE] px-2.5 py-1 text-xs font-semibold text-[#0F6E56]"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {profile.structured_data.education.length > 0 ? (
-            <p className="mt-4 text-sm text-[#6B7280]">
-              {profile.structured_data.education.join(' · ')}
-            </p>
-          ) : null}
-
-          <div className="mt-6">
-            <Link to="/matches">
-              <Button variant="ghost">See my matches →</Button>
-            </Link>
-          </div>
-        </section>
-      ) : null}
+      </SettingsPanel>
     </div>
   )
 }
