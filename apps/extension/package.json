@@ -18,7 +18,8 @@
     ],
     "host_permissions": [
       "http://localhost:8000/*",
-      "https://api.scout.app/*"
+      "https://api.scout.app/*",
+      "https://scout-6jlt.onrender.com/*"
     ],
     "action": {
       "default_title": "Save to Scout",
@@ -27,7 +28,8 @@
     "externally_connectable": {
       "matches": [
         "http://localhost:5173/*",
-        "https://scout.app/*"
+        "https://scout.app/*",
+        "https://scout-web-bice.vercel.app/*"
       ]
     }
   },
