@@ -25,6 +25,11 @@ dependencies = [
     "pgvector>=0.3.0",
     "reportlab>=4.2.0",
     "openai>=1.40.0",
+    # Runtime broker client — the API enqueues enrich/generation tasks straight
+    # from request handlers (job_queue.send_task). It must be a runtime dep, not
+    # dev-only: the API Dockerfile builds with `uv sync --no-dev`, and without
+    # celery in the production image the worker never receives anything.
+    "celery>=5.4.0",
 ]
 
 [dependency-groups]
@@ -34,9 +39,6 @@ dev = [
     "ruff>=0.5.0",
     "mypy>=1.10.0",
     "types-reportlab>=4.2.0",
-    # API tests exercise worker tasks directly (e.g. send_reminder_emails),
-    # so the worker's runtime deps must be present in the API dev env.
-    "celery>=5.4.0",
 ]
 
 [tool.uv]

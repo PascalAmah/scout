@@ -1440,6 +1440,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "argon2-cffi" },
+    { name = "celery" },
     { name = "email-validator" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -1459,7 +1460,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "celery" },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
@@ -1471,6 +1471,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.13.0" },
     { name = "argon2-cffi", specifier = ">=23.1.0" },
+    { name = "celery", specifier = ">=5.4.0" },
     { name = "email-validator", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
@@ -1490,7 +1491,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "celery", specifier = ">=5.4.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "mypy", specifier = ">=1.10.0" },
     { name = "pytest", specifier = ">=8.0.0" },
