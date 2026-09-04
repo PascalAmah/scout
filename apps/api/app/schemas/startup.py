@@ -45,6 +45,11 @@ class StartupListItem(StartupOut):
     saved_via: str
     enrichment_status: str
     created_by: uuid.UUID | None
+    open_roles_count: int = 0
+    matching_roles_count: int = Field(
+        default=0,
+        description="Open roles whose relevance to the user's target roles is 'high' or 'medium'.",
+    )
 
 
 class FounderCreate(BaseModel):
@@ -117,6 +122,15 @@ class JobOut(BaseModel):
     url: str | None
     status: str
     created_at: datetime
+    match_score: float | None = None
+    relevance: str | None = Field(
+        default=None,
+        description=(
+            "Interest relevance of this role vs the user's onboarding target "
+            "roles: 'high' | 'medium' | 'none'. Null when the user has no "
+            "target roles set."
+        ),
+    )
 
 
 class NoteCreate(BaseModel):

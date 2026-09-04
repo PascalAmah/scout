@@ -1,14 +1,21 @@
 import { type ReactNode } from 'react'
 
-type Tone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'gray'
+export type BadgeTone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'gray'
 
-const TONES: Record<Tone, string> = {
-  neutral: 'bg-[#F3F1EA] text-[#6B7280] border-[#E5E3DC]',
-  green: 'bg-[#E9F7F0] text-[#0E7A45] border-[#BFE6D1]',
-  amber: 'bg-[#FDF6E7] text-[#92600A] border-[#F0DFB0]',
-  red: 'bg-[#FDECEC] text-[#B3261E] border-[#F3C9C5]',
-  blue: 'bg-[#EAF2FD] text-[#1D4ED8] border-[#C9DDFA]',
-  gray: 'bg-[#EDEEF0] text-[#4B5563] border-[#D6D8DB]',
+/**
+ * Scout status badges (design system §07). Tones map to the semantic status
+ * palette: emerald (interview/offer/hiring), amber (interested/pending),
+ * slate (applied/informational), brick (rejected/failed), neutral gray
+ * (saved/archived). The dot inherits the badge's text color so the offer
+ * badge (emerald fill, white text) gets a white dot automatically.
+ */
+const TONES: Record<BadgeTone, string> = {
+  neutral: 'bg-[#F0EFEA] text-[#5B5F66]',
+  green: 'bg-emerald-tint text-emerald-dark',
+  amber: 'bg-amber-tint text-amber',
+  red: 'bg-brick-tint text-brick',
+  blue: 'bg-slate-tint text-slate',
+  gray: 'bg-[#F0EFEC] text-muted-2',
 }
 
 export function Badge({
@@ -17,13 +24,14 @@ export function Badge({
   className = '',
 }: {
   children: ReactNode
-  tone?: Tone
+  tone?: BadgeTone
   className?: string
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${TONES[tone]} ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-[11px] py-[5px] text-[12.5px] font-semibold ${TONES[tone]} ${className}`}
     >
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
       {children}
     </span>
   )

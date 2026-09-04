@@ -1,5 +1,7 @@
 {
   "name": "@scout/extension",
+  "displayName": "Scout",
+  "description": "Save startups and jobs from around the web into your Scout workspace.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,17 +13,28 @@
   },
   "manifest": {
     "permissions": [
-      "storage"
+      "storage",
+      "tabs"
     ],
     "host_permissions": [
       "http://localhost:8000/*",
-      "https://api.scout.app/*"
+      "https://api.scout.app/*",
+      "https://scout-6jlt.onrender.com/*"
     ],
     "action": {
-      "default_title": "Save to Scout"
+      "default_title": "Save to Scout",
+      "default_popup": "popup.html"
+    },
+    "externally_connectable": {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://scout.app/*",
+        "https://scout-web-bice.vercel.app/*"
+      ]
     }
   },
   "dependencies": {
+    "@scout/types": "workspace:*",
     "plasmo": "^0.90.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

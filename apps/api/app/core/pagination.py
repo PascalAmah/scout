@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import ColumnElement, Select, desc, tuple_
+from sqlalchemy import ColumnElement, Select, desc, func, select, tuple_
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app.core.errors import ScoutError
@@ -50,3 +50,29 @@ def cursor_page(
         last = page[-1]
         next_cursor = encode_cursor(getattr(last, created_col.key), getattr(last, id_col.key))
     return page, next_cursor
+
+
+def page_page(
+    db: Session,
+    stmt: Select[Any],
+    created_col: InstrumentedAttribute[Any],
+    id_col: InstrumentedAttribute[Any],
+    page: int,
+    limit: int,
+) -> tuple[list[Any], int, str | None]:
+    """Offset-based pagination ordered by (created_at desc, id desc).
+
+    Returns (rows, total, next_page). `next_page` is the 1-based page number
+    to load next (None when on the last page). Used by lists that render
+    numbered pager controls alongside a result total.
+    """
+    count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
+    total = int(db.scalar(count_stmt) or 0)
+    stmt = (
+        stmt.order_by(desc(created_col), desc(id_col))
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    rows = list(db.scalars(stmt).all())
+    next_page = page + 1 if page * limit < total else None
+    return rows, total, next_page

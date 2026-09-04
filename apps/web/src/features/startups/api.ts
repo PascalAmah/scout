@@ -1,105 +1,68 @@
 import { queryOptions } from '@tanstack/react-query'
+import type {
+  EnrichmentJobOut as EnrichmentJobOutShared,
+  FounderOut as FounderOutShared,
+  JobOut as JobOutShared,
+  NoteOut as NoteOutShared,
+  Page,
+  StartupDetail as StartupDetailShared,
+  StartupListItem as StartupListItemShared,
+} from '@scout/types'
+
+export type { Page }
 
 import { api } from '../../lib/api-client'
-
-export interface Page<T> {
-  data: T[]
-  next_cursor: string | null
-}
 
 export type EnrichmentStatus = 'none' | 'queued' | 'running' | 'succeeded' | 'failed'
 export type WorkplaceStatus = 'saved' | 'interested' | 'archived'
 
-export interface StartupListItem {
-  id: string
-  name: string
-  website: string | null
-  stage: string | null
-  hiring_status: string | null
-  summary: string | null
-  tags: string[] | null
-  tech_stack: string[] | null
-  source: string | null
-  source_url: string | null
-  last_enriched_at: string | null
-  created_at: string
-  updated_at: string
+export type StartupListItem = Omit<
+  StartupListItemShared,
+  'status' | 'enrichment_status'
+> & {
   status: WorkplaceStatus
-  saved_via: string
   enrichment_status: EnrichmentStatus
-  created_by: string | null
 }
 
-export interface FounderOut {
-  id: string
-  startup_id: string
-  name: string
-  title: string | null
-  linkedin_url: string | null
-  twitter_url: string | null
-  bio: string | null
+export type FounderOut = FounderOutShared
+export type JobOut = JobOutShared
+export type NoteOut = NoteOutShared
+
+export type StartupDetail = Omit<
+  StartupDetailShared,
+  'status' | 'enrichment_status'
+> & {
+  status: WorkplaceStatus
+  enrichment_status: EnrichmentStatus
 }
 
-export interface JobOut {
-  id: string
-  startup_id: string
-  title: string
-  description: string | null
-  location: string | null
-  remote: boolean | null
-  employment_type: string | null
-  seniority: string | null
-  salary_min: number | null
-  salary_max: number | null
-  url: string | null
-  status: string
-  created_at: string
-}
-
-export interface NoteOut {
-  id: string
-  startup_id: string | null
-  founder_id: string | null
-  body: string
-  created_at: string
-  updated_at: string
-}
-
-export interface StartupDetail extends StartupListItem {
-  founders: FounderOut[]
-  jobs: JobOut[]
-  notes: NoteOut[]
-}
-
-export interface EnrichmentJobOut {
-  job_id: string
-  job_type: string
-  status: string
-  started_at: string | null
-  finished_at: string | null
-  error: string | null
-}
+export type EnrichmentJobOut = EnrichmentJobOutShared
 
 export interface StartupFilters {
   stage?: string
   hiring_status?: string
   tags?: string[]
+  source?: string
   q?: string
-  cursor?: string
+  page?: number
   limit?: number
 }
 
 export const startupsQueryOptions = (filters: StartupFilters = {}) =>
   queryOptions({
     queryKey: ['startups', filters],
-    queryFn: () =>
-      api<Page<StartupListItem>>(
-        `/startups?${new URLSearchParams(
-          ['stage', 'hiring_status', 'q', 'cursor', 'limit']
-            .filter((key) => filters[key as keyof StartupFilters] != null)
-            .map((key) => [key, String(filters[key as keyof StartupFilters])]),
-        ).toString()}`,
-      ),
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (filters.stage) params.set('stage', filters.stage)
+      if (filters.hiring_status) params.set('hiring_status', filters.hiring_status)
+      if (filters.source) params.set('source', filters.source)
+      if (filters.q) params.set('q', filters.q)
+      if (filters.page != null) params.set('page', String(filters.page))
+      if (filters.limit != null) params.set('limit', String(filters.limit))
+      for (const tag of filters.tags ?? []) params.append('tags', tag)
+      const qs = params.toString()
+      return api<Page<StartupListItem>>(`/startups${qs ? `?${qs}` : ''}`)
+    },
   })
 
 export function startupQueryOptions(startupId: string) {

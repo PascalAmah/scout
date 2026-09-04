@@ -91,7 +91,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 3 — Generation (Resume Studio) + Match Explanations
+## Phase 3 — Generation (Resume Studio) + Match Explanations — ✅ DONE (2026-08-14)
 **Goal:** this is `ROADMAP.md`'s MVP finish line + immediately following v1.1 gap-fill, combined — build them together since the review-gate logic is shared infrastructure either way.
 
 ### 3.1 Stage 2 re-rank (match explanations)
@@ -117,7 +117,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 4 — Retention Loop
+## Phase 4 — Retention Loop — ✅ DONE (2026-08-15)
 **Goal:** the product starts working *for* the user between sessions, not just when they're actively in it.
 
 1. Add `resume PDF rendering` (R2 + a template/rendering service) — wire `file_key` on `resume_versions`.
@@ -128,7 +128,7 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 
 ---
 
-## Phase 5 — Insight Layer
+## Phase 5 — Insight Layer — ✅ DONE (2026-08-15)
 **Goal:** answer "is this working."
 
 1. Implement `GET /analytics/summary` and `GET /analytics/funnel` per `API_SPEC.md`.
@@ -140,12 +140,12 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 ## Phase 6 — Expansion
 **Goal:** more sources, less manual work, and the assistant.
 
-1. Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`.
-2. Add multiple CV/resume profiles (e.g. "backend" vs "product" positioning).
-3. Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
-4. Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
-5. Build hybrid (keyword + semantic) search across saved startups.
-6. Build the AI Assistant (v3): tool-use agent per `AI_DESIGN.md`'s RAG architecture — typed SQL query tools for structured questions, pgvector semantic search for fuzzy ones, read-only in this scope (no write actions), strict per-user scoping enforced server-side on every tool call.
+1. ✅ **DONE (2026-08-15)** — Add `sync_company` scheduled jobs (Celery Beat) for Wellfound/Techstars/Product Hunt — **only** for sources classified `direct_api` or `permitted_crawl` in the compliance tier table; this must be hard-gated in the job dispatcher, not left to convention, per `ARCHITECTURE.md`. (Wellfound seeded `user_capture` — login-walled/anti-scraping terms — so it correctly gets no server-side sync; flip the tier if a data agreement ever exists.)
+2. ✅ **DONE (2026-08-15)** — Add multiple CV/resume profiles (e.g. "backend" vs "product" positioning).
+3. ✅ **DONE (2026-08-15)** — Build the CRM kanban drag-and-drop view; add bulk actions (bulk tag/archive).
+4. ✅ **DONE (2026-08-16)** — Extend the extension to save directly from LinkedIn job posts/founder profiles — this stays `user_capture`-only, no server crawler, ever, per the compliance tiering.
+5. ✅ **DONE (2026-08-16)** — Build hybrid (keyword + semantic) search across saved startups.
+6. ✅ **DONE (2026-08-16)** — Build the AI Assistant (v3): tool-use agent per `AI_DESIGN.md`'s RAG architecture — typed SQL query tools for structured questions, pgvector semantic search for fuzzy ones, read-only in this scope (no write actions), strict per-user scoping enforced server-side on every tool call.
 7. Consider the microservice split (AI/Search/Notification/Analytics services) only if load actually demands it — this is explicitly a "later, if needed" item in `ARCHITECTURE.md`, not a default.
 
 ---
@@ -177,11 +177,11 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 |---|---|---|
 | Phase 0 — Foundations | ✅ **DONE** (2026-08-11) | Landing (`/`), Login + Register, Password reset (request/confirm), Dashboard shell, Extension popup auth |
 | Phase 1 — Core Loop (Save → Enrich → View) | ✅ **DONE** (2026-08-12) | Workspace list + filters, Startup detail (Overview/Founders/Jobs/Notes tabs), CRM pipeline + application detail, Notifications feed (bell + unread badge), Extension save flow (detect → prefilled → saved) |
-| Phase 2 — Personalization (CV + Matching v1) | pending | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
-| Phase 3 — Generation (Resume Studio) + Match Explanations | pending | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
-| Phase 4 — Retention Loop | pending | Dashboard "needs follow-up" section |
-| Phase 5 — Insight Layer | pending | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
-| Phase 6 — Expansion | pending | CRM kanban drag-and-drop + bulk actions, Assistant chat UI (tool traces), Matches feedback thumbs |
+| Phase 2 — Personalization (CV + Matching v1) | ✅ **DONE** (2026-08-14) | CV upload (Settings → Profile/CV), Matches screen (score only, no "why") |
+| Phase 3 — Generation (Resume Studio) + Match Explanations | ✅ **DONE** (2026-08-14) | Resume Studio (base CV, versions list, diff view, generate flow), Application detail (timeline + attached materials), richer CRM cards, Matches "why this score" |
+| Phase 4 — Retention Loop | ✅ **DONE** (2026-08-15) | Dashboard "needs follow-up" section, Settings → Account digest toggle |
+| Phase 5 — Insight Layer | ✅ **DONE** (2026-08-15) | Analytics screen (funnel + response-rate), Dashboard quick-stats strip |
+| Phase 6 — Expansion | ✅ **DONE** (2026-08-16) | Assistant chat UI (tool traces), Matches feedback thumbs |
 
 ### Verified (2026-08-12) — Phase 1
 - API: 7 pytest pass; ruff + mypy clean (59 files). Worker: 6 pytest pass; ruff clean.
@@ -190,6 +190,67 @@ This plan turns your existing docs (`Scout_PRD.md`, `ARCHITECTURE.md`, `AI_DESIG
 - **Live end-to-end (headless, local HTTP source):** 27/27 checks passed — register → `quick-save` (auto-enrich queued) → `enrich_startup` succeeded (summary, tech stack `[AWS, FastAPI, PostgreSQL, Python]`, stage `series_a`, hiring `hiring`, tags merged, jobs persisted) → `enrichment_complete` notification + unread count → application `saved→interested→applied(applied_at)→interview→offer`, invalid transition rejected with `400`, 3 `application_status_change` notifications, pipeline grouped correctly → re-enrich on unchanged content **skipped** via content-hash cache.
 - Bug fixed during verification: `EnrichmentCache.last_hash` compared `bytes` (from redis) to `str`, so the content-hash skip never fired — now decodes to `str`, with 2 regression tests.
 - Not yet verified headlessly (manual, human): loading the extension in Chrome and saving a real Y Combinator URL (network-restricted sandbox; the yc adapter uses the same pipeline as the verified generic path).
+
+### Verified (2026-08-14) — Phase 2
+- API: 15 pytest pass (CV upload/get + matching added); ruff + mypy clean (66 files). Worker: 10 pytest pass.
+- Web: typecheck, oxlint, `pnpm build` clean (Matches screen, Settings Profile/CV/Account/Integrations, `Ring` component, nav links).
+- **Live end-to-end (headless, real Postgres):** 22/22 checks passed — register → `POST /cv` (pdf/text) → structured parse (roles, skills, `years_of_experience`, education) → `refresh_embeddings` → `last_embedded_at` set → job embed → `compute_match` → `GET /jobs/recommended` sorted by score (top = the matching backend role) → `explanation`/`confidence_band` `null` (Phase 2 deviation): → match detail + force recompute → CV + job embeddings confirmed at **1536 dims**.
+- Embeddings run at 1536 dims (pgvector hnsw caps at 2000); migration `0002_cv_match_embeddings` applied to live `scout_postgres` (head = `0002`).
+- Bug fixed during verification: bare "N years." (no "of experience") wasn't parsed for `years_of_experience` — added a trailing fallback pattern to `YEAR_PATTERNS`.
+- **Frontend fidelity note:** Settings Profile/CV follows `scout_settings.html` closely; Matches is a simplified card grid (ring + meta + description) — mockup's checkbox/bulk bar/filter pills/action buttons/skill chips/why-this-score/feedback are deferred to Phase 3.1 (they need `explanation` + `confidence_band`, which Phase 2 returns as `null`). Account/Integrations are read-only stubs pending their owning phases.
+
+### Verified (2026-08-15) — Phase 4
+- API: 27 pytest pass (follow-up scan/notice dedupe + follow-up generation accept + email reminder task); ruff clean.
+- Worker: 14 pytest pass (AI config + extraction + embeddings fallbacks); ruff clean.
+- Web: typecheck + oxlint clean (Dashboard "needs follow-up" section, Settings → Account digest toggle, Application detail outreach UI).
+- Follow-up loop verified headlessly: `GET /applications/needs-follow-up` lists only due applications (time-since-`applied_at` ≥ threshold), the notice is raised exactly once (deduped by `follow_up_due` notification), `POST /applications/{id}/follow-up` queues `generate_follow_up` and returns `202` (heuristic fallback stored as `draft` outreach — never auto-sent).
+- Digest email verified headlessly: PATCH `/auth/me` toggles `email_reminders_enabled` (persisted, reflected in `/auth/me`); `send_reminder_emails` emails opted-in users one digest of unread notifications and marks them read; un-opted users are skipped. Send itself is a no-op log without `RESEND_API_KEY` (dev-safe).
+- Migration `0004_email_reminders` added (`users.email_reminders_enabled`, default `false`). Not yet applied to live DB.
+
+### Verified (2026-08-15) — Phase 5
+- API: 34 pytest pass (7 new analytics tests); ruff + mypy clean (78 files).
+- Web: typecheck + oxlint + `pnpm build` clean (Analytics screen with funnel + response-rate chart, Dashboard quick-stats strip, Analytics nav link wired).
+- Analytics endpoints verified headlessly: `GET /analytics/summary` returns applications-sent / response-rate / applied→interview / offers with previous-period deltas, a per-status breakdown, and a weekly response-rate series; `GET /analytics/funnel` returns cumulative "reached stage" counts (saved→interested→applied→interview→offer) with stage-over-stage conversion %. Filters (`from`/`to`, `source`) honored; previous-period window equals the current window length; empty state returns zeroed counts + null rates.
+- Snapshot semantics (no status-history table): `rejected` counts as having reached interview (state machine: only reachable from interview); `archived` applications are excluded from the funnel and rate denominators. Documented in the service.
+- Bug fixed during verification: `rejected` was initially ranked above `offer`, so rejections inflated the offer count — now ranked at interview level with a regression test (`test_funnel_rejected_reaches_interview`).
+
+### Verified (2026-08-15) — Phase 6.1
+- API: 34 pytest pass; ruff + mypy clean (79 files). Worker: 28 pytest pass (14 new: sync gate, robots gate, techstars + producthunt adapters, sync_company task); ruff clean.
+- `source_registry` migration `0005` (table + tier seeds) imports clean; registered in `app.models`.
+- Compliance gate verified headlessly: `assert_sync_allowed` accepts `direct_api`/`permitted_crawl`, rejects `restricted`/`user_capture`/inactive; `sync_company` returns `status: blocked` for wellfound (user_capture) and for unknown sources; robots.txt gate blocks disallowed paths and allows missing robots.txt.
+- Adapters verified with mocks: techstars sitemap discovery + HTML cleaning; producthunt GraphQL fetch/discover (loud `NotConfiguredError` without `PRODUCTHUNT_API_TOKEN`).
+- Beat schedule: daily `sync-techstars-daily` + `sync-producthunt-daily` — both hard-gated inside the task, so a source flipped to `restricted` stops syncing automatically.
+- **Note:** Wellfound is seeded `user_capture` (login-walled, anti-scraping ToS) — no server-side sync for it per ARCHITECTURE.md; the registry row is the reviewed config entry to flip if terms change.
+
+### Verified (2026-08-15) — Phase 6.2
+- API: 43 pytest pass (9 new CV-profile tests); ruff + mypy clean (79 files).
+- Migration `0006_cv_profiles_multi`: adds `name` + `is_default` to `cv_profiles`, swaps the per-user unique for `(user_id, name)`, and a partial unique index enforcing one default per user (existing profiles become the default).
+- Multi-profile API verified headlessly: `GET/POST /cv` remain the default-profile aliases (backward-compatible); `GET/POST /cv/profiles` list/create named profiles (first profile auto-becomes default); `PATCH /cv/profiles/{id}` renames / promotes default (exactly one default, `GET /cv` follows it); `DELETE /cv/profiles/{id}` promotes the oldest remaining; deleting the last profile → `404 CV_NOT_FOUND`. Duplicate names → `409`, foreign profile ids → `404`. Matches anchor to the default profile (`matching_service`).
+- Bug fixed during verification: promoting a default could briefly leave two profiles as default in one flush, tripping the one-default partial index (sqlite checks per-row) — now clears + flushes the old default before promoting (deterministic).
+- Web: Settings → Profile/CV reworked — profile list (default badge, make-default, delete, replace), new-profile form (name + paste/file), parsed detail follows the default. Typecheck + lint + build clean.
+
+### Verified (2026-08-15) — Phase 6.3
+- API: 49 pytest pass (6 new bulk-action tests); ruff + mypy clean (79 files).
+- Migration `0007_applications_tags`: adds `applications.tags` (JSON list). `ApplicationPatch`/`ApplicationOut` carry `tags`.
+- `POST /applications/bulk` verified headlessly: bulk archive (any status → `archived`, ownership-checked) and bulk tag (appends tag, deduped). Per-application ownership validation → foreign ids get `404`-style partial results returned as per-id results.
+- Web: Pipeline kanban reworked — native HTML5 drag-and-drop between columns (drop-target highlight, `saved→interested→…` via the same status mutation), select mode with checkbox cards, and a bulk bar (tag input + archive + clear). Status shortcut buttons retained under cards for keyboard/accessibility parity. Typecheck + lint + build clean.
+- Note: the full API suite runs ~5 min (per-test DB fixture spin-up dominates); runs were split per file group rather than one pass.
+
+### Verified (2026-08-16) — Phase 6.4
+- Extension: new `contents/detect-linkedin.ts` content script — detects LinkedIn job posts (`/jobs/view/*`) and founder profiles (`/in/*`) via og: meta + DOM heuristics, builds a `quick-save` payload (startup + job, or startup + founder with `linkedin_url`). SPA route-change re-detection mirrors `detect-yc.ts`. Clean build confirms `https://www.linkedin.com/*` in the manifest.
+- API: `detect_url` already returned `entity_type=founder|job` with `compliance_tier=restricted` for LinkedIn; verified + expanded tests (`TestDetectLinkedIn`). `quick_save` persists founders with socials; LinkedIn saves correctly return `enrichment_status: none` (restricted-tier → no server-side enrichment, per ARCHITECTURE.md).
+- API: 58 pytest pass (5 new detect + founder-profile save tests); ruff + mypy clean (80 files).
+
+### Verified (2026-08-16) — Phase 6.5
+- API: hybrid search — `GET /startups?q=` now blends keyword relevance (name/summary/tags) with cosine similarity over `startup_embeddings` when a query is present; no query → recency-ordered list unchanged. New `app/services/embedding.py` mirrors the worker's `embed_text` (same provider/model/dim + deterministic pseudo-vector fallback) so the API can embed queries at request time; the API now loads `apps/worker/.env` too (single AI-key location). `openai` moved to API runtime deps.
+- Hybrid ranking verified headlessly: name hit outranks summary-only hit; no-match returns empty; no-query returns all. 3 new tests (61 total); ruff + mypy clean (80 files).
+- Web: the Workspace search box already fed `q` — no UI change needed. Typecheck + lint + build clean.
+
+### Verified (2026-08-16) — Phase 6.6
+- Assistant (v3), per AI_DESIGN.md RAG: `POST /assistant/chat` runs a tool-use agent loop — the LLM (OpenAI-compatible, `assistant.v1.txt` prompt in `packages/prompts`) chooses tools, each executed with the authenticated user's ID injected server-side. Tools: `query_saved_startups` (SQL), `semantic_search` (pgvector, startup/job), `get_application_status`, `get_match_explanation` — all read-only. Response returns the grounded answer + tool traces for the UI.
+- Hard guards: no write actions; `ASSISTANT_NOT_CONFIGURED` (503) when no `AI_API_KEY`; unknown tools return an error result to the model; iteration cap prevents runaway tool loops.
+- Web: `_app.assistant` route + `features/assistant/` (AssistantPage, ChatThread, suggestion chips, tool-trace chips), nav "Assistant" enabled. Route tree regenerated via `tsr generate`.
+- Tests: 4 new (tool call → execution → answer; tool error surfaces; unknown tool; no-key 503). API 65, worker 34, ruff + mypy clean (82 files). Web typecheck + lint + build clean.
 
 ## Frontend Implementation Map
 
@@ -201,16 +262,16 @@ Every screen the canonical tree (`AGENTS.md`) names, mapped to the phase that bu
 | `_auth.login`, `_auth.register` | 0 | `scout_auth.html` | done |
 | `password-reset.index`, `password-reset.confirm` | 0 | `scout_auth.html` ("Reset your password" / "Check your email") | done |
 | `_app` shell — sidebar, topbar, notification bell/badge | 1 | `scout_dashboard.html` (topbar) | done |
-| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4/P5 additions pending) |
+| `_app.dashboard` | 0 (shell), 4/5 (follow-up + stats) | `scout_dashboard.html` | done (P4 follow-up section + P5 quick-stats strip) |
 | `_app.startups.index` — Workspace list + filters | 1 | `scout_workspace.html` | done |
 | `_app.startups.$startupId` (+ `index`, `founders`, `jobs`, `notes` tabs) | 1 | `scout_startup_detail.html` | done |
-| `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | pending |
-| `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | pending |
-| `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop) | `scout_crm.html` | done (P6 upgrade pending) |
-| `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (basic; P3 upgrade pending) |
-| `_app.analytics` | 5 | `scout_analytics.html` | pending |
-| `_app.assistant` | 6 | `scout_assistant.html` | pending |
-| `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | pending |
+| `_app.matches` | 2 (score) → 3 (why/feedback) | `scout_matches.html` | done (P2 score-only card grid; P3 adds why/feedback/actions) |
+| `_app.resume-studio.index`, `_app.resume-studio.$versionId` | 3 | `scout_resume_studio.html` | done |
+| `_app.crm.index` — Pipeline | 1 (board w/ buttons) → 6 (drag-drop + bulk) | `scout_crm.html` | done (P6 drag-drop + bulk tag/archive) |
+| `_app.crm.applications.$applicationId` | 3 (full timeline + materials) | `scout_application_detail.html` | done (timeline + attached materials + outreach UI) |
+| `_app.analytics` | 5 | `scout_analytics.html` | done |
+| `_app.assistant` | 6 | `scout_assistant.html` | done |
+| `_app.settings.route` + `profile`, `account`, `integrations` | 0 (shell) → 2 (CV upload) | `scout_settings.html` | done (Profile/CV full; Account/Integrations read-only stubs) |
 | Extension popup (Detected / Saving / Saved / Unsupported / ManualFallback / AuthExpired / login) | 0 (auth) → 1 (save flow) | `scout_extension.html` | done |
 | Email templates (welcome, password reset) | 0 | `scout_email_welcome.html`, `scout_email_reset_password.html` | done (React Email) |
 

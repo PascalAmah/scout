@@ -13,8 +13,26 @@ import httpx
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36 ScoutBot/1.0"
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 )
+
+# workatastartup.com (and some other sources) return HTTP 406 when the request
+# lacks a browser-like Accept / Sec-Fetch-* set, so every fetch goes out with
+# the full header set. Accept-Encoding is deliberately omitted — httpx adds it
+# itself and auto-decompresses the response.
+BROWSER_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,*/*;q=0.8"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 _BLOCK_TAGS = {"p", "div", "br", "li", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article"}
 _SKIP_TAGS = {"script", "style", "noscript", "svg", "header", "nav", "footer"}
@@ -73,7 +91,7 @@ def fetch_text(url: str, *, timeout: float = 20.0) -> str:
     """Fetch a URL and return its cleaned text, or "" on any failure."""
     try:
         with httpx.Client(
-            timeout=timeout, follow_redirects=True, headers={"User-Agent": USER_AGENT}
+            timeout=timeout, follow_redirects=True, headers=BROWSER_HEADERS
         ) as client:
             resp = client.get(url)
             resp.raise_for_status()
@@ -85,7 +103,7 @@ def fetch_text(url: str, *, timeout: float = 20.0) -> str:
 def fetch_html(url: str, *, timeout: float = 20.0) -> str:
     try:
         with httpx.Client(
-            timeout=timeout, follow_redirects=True, headers={"User-Agent": USER_AGENT}
+            timeout=timeout, follow_redirects=True, headers=BROWSER_HEADERS
         ) as client:
             resp = client.get(url)
             resp.raise_for_status()

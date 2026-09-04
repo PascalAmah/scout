@@ -45,11 +45,12 @@ scout/
 │   │   │   │   ├── _app.settings.profile.tsx
 │   │   │   │   ├── _app.settings.account.tsx
 │   │   │   │   └── _app.settings.integrations.tsx
-│   │   │   ├── features/                                # colocated query hooks + components
+│   │   │   ├── features/                                # colocated query hooks + components + pages
 │   │   │   │   ├── startups/
 │   │   │   │   │   ├── api.ts                            # queryOptions, mutations
 │   │   │   │   │   ├── hooks.ts                          # useStartups, useStartup, useSaveStartup
-│   │   │   │   │   └── components/ (StartupCard.tsx, StatusBadge.tsx, FilterBar.tsx)
+│   │   │   │   │   ├── components/ (StartupCard.tsx, StatusBadge.tsx, FilterBar.tsx)
+│   │   │   │   │   └── pages/ (WorkspacePage.tsx, StartupDetailLayout.tsx, StartupOverviewTab.tsx, FoundersTab.tsx, JobsTab.tsx, NotesTab.tsx)
 │   │   │   │   ├── matches/
 │   │   │   │   │   ├── api.ts
 │   │   │   │   │   ├── hooks.ts                          # useMatches, useMatchFeedback
@@ -194,7 +195,8 @@ scout/
 ## Conventions
 
 ### apps/web
-- **Routing:** TanStack Router file-based under `src/routes/`. One file per route; pathless layouts (`_auth`, `_app`) for shells, `$param` for dynamic segments, `.route.tsx` suffix for layout-only routes.
+- **Routing:** TanStack Router file-based under `src/routes/`. One file per route; pathless layouts (`_auth`, `_app`) for shells, `$param` for dynamic segments, `.route.tsx` suffix for layout-only routes. **Route files are declarations only** — `createFileRoute(...)` + the `component:` import. No page JSX, `useQuery`, `api()`, or `useQueryClient` calls in `routes/`.
+- **Pages:** each feature owns `features/<feature>/pages/<PageName>.tsx` (page and layout components, imported by the route file). Pages read params/search via `useParams({ from: '/_app/...' })` / `useSearch({ from: '...' })` with the route's full path, so they stay decoupled from the `Route` object.
 - **Data:** TanStack Query. Every feature owns `features/<feature>/api.ts` (queryOptions + mutations) and `features/<feature>/hooks.ts` (hook wrappers). Components colocated in `features/<feature>/components/`.
 - **Shared UI:** primitives only in `components/ui/`. No feature logic there.
 - **Networking:** `lib/api-client.ts` is the single fetch wrapper, typed against `packages/types` (generated from OpenAPI).
@@ -219,3 +221,1137 @@ scout/
 
 ### Refactoring guidance
 When adding a feature, migrate the current flat layout toward this target as you touch it — do not leave new code in a place the tree doesn't have.
+
+## Scout UI Engineering Guidelines
+
+This is the canonical instruction set for **all web UI implementation work**. The visual references are the source of truth: `docs/mockups/scout_landing_main.html` (landing), `docs/mockups/scout_dashboard.html` (authenticated app), `docs/mockups/scout_design_system.html` (canonical design system). Do not redesign Scout unless explicitly instructed.
+
+### 1. Mission
+
+You are building the Scout web application.
+
+Scout is an AI-powered startup job-search workspace. The UI must feel like a **premium, thoughtful developer/productivity tool**, not a generic AI SaaS dashboard.
+
+Your primary responsibility is to implement the UI **faithfully, cleanly, consistently, and responsively** using the existing Scout design references.
+
+The visual references are:
+
+* `scout_landing_main.html` — landing page visual reference
+* `scout_dashboard.html` — authenticated dashboard visual reference
+* `scout_design_system.html` — canonical design system reference
+
+These files are the visual source of truth.
+
+Do not redesign Scout unless explicitly instructed.
+
+### 2. Design Philosophy
+
+Scout should feel:
+
+* Calm
+* Premium
+* Editorial
+* Technical
+* Human
+* Focused
+* Trustworthy
+* Slightly warm
+* Information-dense without feeling cluttered
+
+Avoid making Scout look like:
+
+* A generic Tailwind dashboard
+* A default shadcn application
+* A crypto dashboard
+* A flashy AI startup
+* A glassmorphism template
+* A neon developer tool
+* A material-design application
+
+Scout's design should communicate:
+
+> "This is a serious workspace for making better career decisions."
+
+Visual hierarchy is more important than decoration.
+
+Prefer whitespace, typography, alignment, subtle borders, and restrained color over excessive gradients, shadows, animations, or decorative elements.
+
+### 3. Source of Truth
+
+Before implementing any new page or component:
+
+1. Inspect the existing Scout design system.
+2. Inspect related reference screens.
+3. Reuse existing design tokens.
+4. Reuse existing components where possible.
+5. Only introduce a new pattern when an existing pattern cannot reasonably solve the problem.
+
+Never create a new visual style simply because it is easier to implement.
+
+If the reference uses a specific:
+
+* radius
+* spacing
+* font
+* button style
+* border
+* color
+* card treatment
+* icon treatment
+* status badge
+* navigation pattern
+
+reuse it.
+
+### 4. Technology
+
+The web application architecture is:
+
+* React
+* Vite
+* TypeScript
+* TanStack Router
+* TanStack Query
+* Tailwind CSS
+* shadcn/ui
+* Zustand
+
+The shared UI package is:
+
+`packages/ui`
+
+Follow the existing architecture.
+
+Do not introduce another component library unless explicitly requested.
+
+Do not replace Tailwind/shadcn with another styling system.
+
+Do not introduce unnecessary dependencies.
+
+### 5. Scout Design Tokens
+
+Use the existing Scout tokens.
+
+Core brand colors:
+
+```css
+--emerald: #18A058;
+--emerald-dark: #0F6E56;
+
+--charcoal: #1F2937;
+--near-black: #0B0F14;
+
+--paper: #FAFAF8;
+--white: #FFFFFF;
+
+--line: #E5E3DC;
+--line-strong: #D6D3C9;
+
+--muted: #6B7280;
+--muted-2: #9CA3AF;
+
+--emerald-tint: #E4F3EA;
+--emerald-tint-strong: #CFEBDA;
+
+--amber: #B8791A;
+--amber-tint: #FBF1DF;
+
+--slate: #3E5C8A;
+--slate-tint: #E8EEF6;
+
+--brick: #A23B2A;
+--brick-tint: #F6E4DF;
+```
+
+Do not invent alternative shades when an existing token is appropriate.
+
+If a new color is genuinely required, first determine whether an existing semantic token can be reused.
+
+### 6. Typography
+
+Scout uses three typefaces:
+
+#### Fraunces
+
+Use for:
+
+* Landing page hero headlines
+* Major editorial/display headings
+* Brand wordmark where appropriate
+* Large marketing statements
+
+#### Inter
+
+Use for:
+
+* Navigation
+* Body text
+* Buttons
+* Forms
+* Labels
+* Dashboard headings
+* Cards
+* UI controls
+
+#### JetBrains Mono
+
+Use for:
+
+* Numeric metrics
+* Technical values
+* Salary ranges
+* Scores
+* Code-like values
+* Technical metadata
+
+Do not use Fraunces for ordinary application UI.
+
+Do not use monospace everywhere.
+
+Typography should create hierarchy without requiring excessive font-size variation.
+
+### 7. Spacing
+
+Use a consistent spacing system.
+
+Prefer:
+
+* 4px
+* 8px
+* 12px
+* 16px
+* 20px
+* 24px
+* 32px
+* 40px
+* 48px
+* 64px
+
+Avoid arbitrary spacing values unless required to reproduce a reference accurately.
+
+Use spacing to establish hierarchy.
+
+Do not compensate for poor layout with random margins.
+
+### 8. Border Radius
+
+Use Scout's established radius language.
+
+Typical values:
+
+```text
+small controls: 8px
+medium controls/cards: 12px
+large cards: 16px
+marketing containers: 18–22px
+pills: 999px
+```
+
+Do not make every element excessively rounded.
+
+Cards should feel structured, not bubbly.
+
+### 9. Borders and Shadows
+
+Scout uses subtle depth.
+
+Prefer:
+
+```css
+border: 1px solid var(--line);
+```
+
+and:
+
+```css
+box-shadow: var(--shadow-sm);
+```
+
+for normal cards.
+
+Use stronger shadows only for:
+
+* floating panels
+* modals
+* major marketing surfaces
+* elevated interactions
+
+Avoid:
+
+* huge shadows
+* colored shadows
+* excessive glow
+* neon effects
+
+The UI should primarily derive hierarchy from **spacing + typography + borders**.
+
+### 10. Buttons
+
+Use the established Scout button hierarchy.
+
+#### Primary
+
+Charcoal background.
+
+Used for:
+
+* Important neutral actions
+* Main navigation actions
+* Authentication actions where appropriate
+
+#### Accent
+
+Emerald background.
+
+Used for:
+
+* Primary Scout actions
+* Save
+* Apply
+* Generate
+* Start
+* Confirm
+
+#### Secondary
+
+White background with border.
+
+Used for:
+
+* Secondary actions
+* Cancel
+* Alternative actions
+
+#### Ghost
+
+Transparent.
+
+Used for:
+
+* Low-priority actions
+* Inline navigation
+* Toolbar actions
+
+#### Destructive
+
+White/light background with brick/red semantic treatment.
+
+Used for:
+
+* Delete
+* Archive where destructive confirmation is appropriate
+
+Buttons should generally be pill-shaped.
+
+Do not create random button variants.
+
+### 11. Icons
+
+Use one consistent icon system throughout the application.
+
+Icons should:
+
+* Be simple
+* Be line-based
+* Have consistent stroke weight
+* Generally use 14–18px sizing
+* Never dominate the interface
+
+Avoid mixing icon styles.
+
+Do not use emojis as UI icons.
+
+Do not add icons merely for decoration.
+
+Icons should communicate meaning.
+
+### 12. Cards
+
+Cards are a major part of Scout's visual language.
+
+Default card:
+
+```text
+background: white
+border: 1px solid var(--line)
+border-radius: 16px
+subtle shadow
+```
+
+Cards should have:
+
+* clear internal hierarchy
+* consistent padding
+* restrained metadata
+* obvious primary information
+* predictable actions
+
+Avoid nested cards whenever possible.
+
+If a card contains another card, make sure the hierarchy is intentional.
+
+Do not turn every section into a card.
+
+Sometimes whitespace and dividers are better.
+
+### 13. Dashboard Layout
+
+The authenticated Scout application uses a workspace layout:
+
+```text
+┌──────────────┬───────────────────────────────┐
+│              │ Topbar                        │
+│   Sidebar    ├───────────────────────────────┤
+│              │                               │
+│              │ Main content                  │
+│              │                               │
+│              │                               │
+└──────────────┴───────────────────────────────┘
+```
+
+The dashboard reference uses:
+
+* dark sidebar
+* warm paper application background
+* sticky topbar
+* centered content area
+* restrained card surfaces
+
+The sidebar should feel like an application workspace, not a marketing navigation.
+
+### 14. Sidebar
+
+Use the established dark Scout sidebar.
+
+Characteristics:
+
+* Near-black background
+* Scout branding at top
+* Section labels
+* Compact navigation items
+* Emerald active state
+* Muted inactive items
+* User/account area at bottom
+* Optional contextual/promotional card at bottom
+
+Active navigation should be visually obvious without becoming loud.
+
+Do not use bright gradients.
+
+Do not make sidebar items huge.
+
+### 15. Topbar
+
+The application topbar should remain lightweight.
+
+Typical structure:
+
+```text
+[Search]                    [Notifications] [User]
+```
+
+Use:
+
+* sticky positioning where appropriate
+* subtle bottom border
+* warm translucent background
+* light backdrop blur if already established
+* compact controls
+
+Do not overload the topbar.
+
+### 16. Page Headers
+
+Application pages should generally follow:
+
+```text
+Eyebrow / section context
+
+Page title
+
+Short supporting description
+
+Primary action
+```
+
+Keep headings concise.
+
+Use Fraunces selectively for major page-level/editorial headings.
+
+Use Inter for ordinary dashboard headings where the reference indicates it.
+
+### 17. Data-Dense Interfaces
+
+Scout contains:
+
+* startup lists
+* job lists
+* applications
+* match scores
+* analytics
+* resume versions
+* enrichment information
+
+Do not solve information density by making everything tiny.
+
+Instead use:
+
+* strong hierarchy
+* whitespace
+* muted secondary text
+* compact metadata
+* semantic badges
+* dividers
+* progressive disclosure
+
+Users should be able to scan a page quickly.
+
+### 18. Status Colors
+
+Use semantic Scout colors consistently.
+
+#### Green / Emerald
+
+Positive:
+
+* hiring
+* interview
+* successful
+* active
+* generated
+* strong match
+
+#### Slate / Blue
+
+Neutral informational:
+
+* applied
+* informational states
+* secondary metadata
+
+#### Amber
+
+Attention:
+
+* pending
+* needs review
+* warning
+* waiting
+
+#### Brick
+
+Negative/destructive:
+
+* rejected
+* failed
+* destructive actions
+* errors
+
+Never use color alone to communicate critical state.
+
+Combine color with:
+
+* text
+* icon
+* badge
+* label
+
+### 19. Match Scores
+
+Scout's AI matching is not just a number.
+
+The UI should present:
+
+```text
+87
+Strong match
+
+Matched skills
+Python
+FastAPI
+PostgreSQL
+
+Gaps
+Kubernetes
+
+Why
+Strong overlap with recent backend + API work.
+```
+
+The backend contract explicitly returns the score, confidence band, matched skills, gaps, and explanation together.
+
+Never design a match UI that displays only:
+
+> 87%
+
+without context.
+
+The user needs to understand **why** Scout thinks the opportunity fits.
+
+### 20. AI UI
+
+AI should feel like an integrated workspace capability, not a chatbot gimmick.
+
+When showing AI-generated information:
+
+* identify it clearly
+* show confidence where relevant
+* expose useful reasoning/context
+* provide edit/review controls
+* avoid excessive "AI" badges
+* never make unsupported claims look authoritative
+
+AI-generated content should feel trustworthy and inspectable.
+
+The AI system explicitly prioritizes grounded information and uses `unknown` instead of fabricated facts. UI should reflect this principle.
+
+### 21. Loading States
+
+Every async operation must have a deliberate loading state.
+
+Examples:
+
+* startup enrichment
+* match computation
+* resume generation
+* outreach generation
+* saving
+* fetching lists
+
+Prefer:
+
+* skeletons
+* subtle spinners
+* progress indicators
+* inline status messages
+
+Avoid replacing the entire screen with a giant spinner.
+
+Loading states should preserve layout stability.
+
+### 22. Empty States
+
+Every important collection needs an intentional empty state.
+
+Examples:
+
+* no saved startups
+* no applications
+* no resume
+* no CV
+* no recommended jobs
+* no notes
+
+An empty state should answer:
+
+1. What is empty?
+2. Why does it matter?
+3. What should the user do next?
+
+Example:
+
+```text
+No startups saved yet.
+
+Save startups from Scout's browser extension and
+they'll appear here with AI-enriched company information.
+
+[Save your first startup]
+```
+
+Do not use generic:
+
+> "No data found."
+
+### 23. Error States
+
+Errors should be human-readable.
+
+Do not expose raw backend errors unless useful for debugging.
+
+Use the API's error semantics to determine the UI state.
+
+Examples:
+
+```text
+Could not enrich this startup.
+
+Scout couldn't retrieve enough information from the
+company website.
+
+[Try again]
+```
+
+For review-gated AI actions:
+
+```text
+Review required
+
+This generated resume must be reviewed before it can
+be downloaded.
+
+[Review resume]
+```
+
+### 24. Forms
+
+Forms should be simple and calm.
+
+Use:
+
+* clear labels
+* concise helper text
+* visible validation
+* consistent input heights
+* consistent border treatment
+* proper focus states
+
+Never rely solely on placeholder text as a label.
+
+Focus states should use Scout's emerald accent subtly.
+
+### 25. Tables and Lists
+
+Prefer cards/list layouts when the content is user-oriented.
+
+Use tables when comparison benefits from aligned columns.
+
+For job/startup lists, prioritize:
+
+```text
+Identity
+Role/company
+Relevant metadata
+Status
+Match
+Primary action
+```
+
+Do not create tables with unnecessary columns.
+
+Information density should serve a decision.
+
+### 26. Responsive Design
+
+Every screen must work across:
+
+* desktop
+* tablet
+* mobile
+
+Do not simply shrink desktop layouts.
+
+At smaller widths:
+
+* collapse navigation appropriately
+* stack cards
+* simplify secondary controls
+* preserve primary actions
+* allow horizontal scrolling only when genuinely necessary
+
+The dashboard reference already establishes responsive behavior for the sidebar and card layouts. Follow that behavior.
+
+### 27. Accessibility
+
+Every interactive component must be accessible.
+
+Requirements:
+
+* semantic HTML
+* keyboard navigation
+* visible focus states
+* accessible labels
+* sufficient contrast
+* proper button/link semantics
+* meaningful `aria-*` attributes where required
+* dialogs must trap focus correctly
+* tooltips cannot be the only source of important information
+
+Do not sacrifice accessibility to reproduce a visual reference.
+
+### 28. Animation
+
+Animation should be subtle and purposeful.
+
+Good uses:
+
+* hover transitions
+* dropdowns
+* dialogs
+* page transitions
+* loading states
+* progress
+* small status changes
+
+Avoid:
+
+* excessive bouncing
+* dramatic entrance animations
+* constant movement
+* distracting gradients
+* animations that delay interaction
+
+Respect `prefers-reduced-motion`.
+
+### 29. Component Architecture
+
+Build reusable components instead of duplicating markup.
+
+Prefer:
+
+```text
+packages/ui/
+  Button
+  Badge
+  Card
+  Input
+  Dialog
+  Dropdown
+  Avatar
+  Tooltip
+  Skeleton
+  EmptyState
+  StatusBadge
+  ScoreRing
+  SearchInput
+```
+
+Application-specific components should live closer to their feature.
+
+For example:
+
+```text
+apps/web/
+  features/
+    startups/
+      components/
+    jobs/
+      components/
+    applications/
+      components/
+    resumes/
+      components/
+```
+
+Do not put domain-specific components into the generic UI package.
+
+### 30. Avoid Component Explosion
+
+Do not create a component for every `<div>`.
+
+Create components when they:
+
+* represent a reusable visual pattern
+* have meaningful behavior
+* have their own state
+* appear in multiple locations
+* make the parent component substantially easier to understand
+
+Prefer simple composition over excessive abstraction.
+
+### 31. API Integration
+
+The frontend must follow the existing API contract.
+
+Do not invent endpoints.
+
+The API is REST-based and uses:
+
+```text
+FastAPI
+JSON
+Bearer JWT
+cursor pagination
+consistent error envelopes
+```
+
+Use TanStack Query for server state.
+
+Do not put API response data into Zustand unless it is genuinely local UI state.
+
+Keep:
+
+* server state → TanStack Query
+* local UI state → Zustand / React state
+
+### 32. Never Fake Backend Data
+
+During implementation, mock data may be used temporarily only when the backend endpoint is genuinely unavailable.
+
+Clearly isolate mocks.
+
+Do not build UI logic around fake API structures that contradict `API_SPEC.md`.
+
+When the API exists, connect the UI to the real endpoint.
+
+Do not invent fields.
+
+For example, if the match API returns:
+
+```json
+{
+  "score": 87.5,
+  "confidence_band": "strong",
+  "explanation": {
+    "matched_skills": [],
+    "gaps": [],
+    "summary": ""
+  }
+}
+```
+
+the UI should use that contract rather than inventing another structure.
+
+### 33. Routing
+
+Use TanStack Router.
+
+Pages should be structured around Scout's product areas:
+
+```text
+/dashboard
+/startups
+/startups/:id
+/jobs
+/jobs/:id
+/applications
+/applications/:id
+/resumes
+/resumes/:id
+/resume-studio
+/assistant
+/settings
+```
+
+Do not create routes unnecessarily.
+
+Keep route-level components focused on composition.
+
+### 34. Product Hierarchy
+
+Scout's core product loop is:
+
+```text
+Discover
+   ↓
+Save
+   ↓
+Enrich
+   ↓
+Understand
+   ↓
+Apply
+   ↓
+Track
+```
+
+The UI should reinforce this flow.
+
+The MVP specifically prioritizes:
+
+* saved startups
+* startup enrichment
+* filters
+* application tracking
+* authentication
+
+Do not make deferred features dominate the MVP interface.
+
+The roadmap explicitly defers matching, resume generation, founder profiles, job postings, analytics, AI Assistant, bulk actions, and kanban from the initial MVP.
+
+Build the current product scope first.
+
+### 35. Landing Page
+
+The landing page should remain visually distinct from the authenticated application.
+
+Use:
+
+* warm paper background
+* centered site shell
+* editorial typography
+* Fraunces hero typography
+* emerald accent
+* restrained motion
+* bento/product previews
+* generous whitespace
+
+Do not turn the landing page into a dashboard.
+
+Do not add excessive marketing gradients.
+
+The existing landing reference should be followed closely.
+
+### 36. Dashboard
+
+The dashboard should prioritize:
+
+1. What needs attention
+2. Recommended opportunities
+3. Saved startups
+4. Application progress
+5. Useful metrics
+
+Do not overwhelm the user with every possible feature.
+
+The dashboard should answer quickly:
+
+> "What should I do next?"
+
+### 37. Visual Consistency Rules
+
+Before considering a screen complete, verify:
+
+* Is the same typography system used?
+* Are the same colors used?
+* Are borders consistent?
+* Are radii consistent?
+* Are button styles reused?
+* Are spacing values consistent?
+* Are icons consistent?
+* Are status colors semantic?
+* Does the screen look like Scout?
+* Does it visually belong beside the existing landing page and dashboard?
+
+If the answer is no, fix the design before moving on.
+
+### 38. Do Not Do This
+
+Never:
+
+* introduce random gradients
+* use glassmorphism
+* use neon colors
+* use excessive rounded containers
+* use huge shadows
+* use emoji as UI icons
+* use arbitrary colors
+* use arbitrary font families
+* duplicate existing components
+* create fake API contracts
+* invent backend fields
+* hardcode production data
+* ignore responsive behavior
+* hide important errors
+* make every section a card
+* overuse animations
+* replace the established Scout aesthetic with a generic SaaS template
+
+### 39. Implementation Workflow
+
+For every new UI feature:
+
+#### Step 1 — Understand
+
+Read:
+
+* relevant product requirements
+* `API_SPEC.md`
+* relevant architecture documentation
+* relevant design reference
+
+#### Step 2 — Identify Existing Patterns
+
+Find reusable:
+
+* components
+* tokens
+* layouts
+* cards
+* buttons
+* badges
+* forms
+* dialogs
+
+#### Step 3 — Build Structure
+
+Implement the semantic layout first.
+
+Do not immediately obsess over pixel-level styling.
+
+#### Step 4 — Apply Scout Design System
+
+Apply:
+
+* typography
+* colors
+* spacing
+* borders
+* radius
+* shadows
+* interaction states
+
+#### Step 5 — Connect Data
+
+Connect the real API using TanStack Query.
+
+Handle:
+
+* loading
+* success
+* empty
+* error
+* retry
+
+#### Step 6 — Responsive Pass
+
+Test:
+
+* desktop
+* tablet
+* mobile
+
+#### Step 7 — Accessibility Pass
+
+Check:
+
+* keyboard navigation
+* focus
+* labels
+* contrast
+* semantics
+
+#### Step 8 — Visual QA
+
+Compare the implementation against the Scout references.
+
+Fix visual drift before proceeding.
+
+### 40. Definition of Done
+
+A UI feature is not complete simply because it renders.
+
+It is complete when:
+
+* [ ] It follows the Scout design system.
+* [ ] It matches the visual language of the reference screens.
+* [ ] It uses existing components where appropriate.
+* [ ] It uses the correct API contract.
+* [ ] It handles loading states.
+* [ ] It handles empty states.
+* [ ] It handles errors.
+* [ ] It works responsively.
+* [ ] It is keyboard accessible.
+* [ ] It has proper focus states.
+* [ ] It does not introduce unnecessary dependencies.
+* [ ] It does not duplicate existing UI patterns.
+* [ ] It does not invent backend data.
+* [ ] It does not introduce unrelated design changes.
+* [ ] It has been visually checked against the reference.
+* [ ] It looks unmistakably like Scout.
+
+### 41. Most Important Rule
+
+When there is a choice between:
+
+**"What would a typical modern SaaS application do?"**
+
+and
+
+**"What does Scout's existing design language indicate?"**
+
+Always choose **Scout**.
+
+Consistency is more important than novelty.
+
+Build Scout as one coherent product, not as a collection of individually designed screens.

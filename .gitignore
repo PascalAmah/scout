@@ -20,10 +20,12 @@ __pycache__/
 # python
 .cache/
 
+# local file storage (dev FILE_STORE_DIR default)
+data/
+
 # tooling
 .plasmo/
 chrome-extension/*
-!.plasmo/
 *.tsbuildinfo
 pytest_cache/
 .pytest_cache/

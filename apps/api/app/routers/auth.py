@@ -6,12 +6,14 @@ from app.deps import get_current_user
 from app.models import User
 from app.schemas.auth import (
     LoginRequest,
+    OnboardingCompleteRequest,
     RefreshRequest,
     RegisterRequest,
     ResetRequest,
     ResetRequestRequest,
     TokenResponse,
     UserOut,
+    UserPatch,
 )
 from app.services import auth_service
 
@@ -38,8 +40,38 @@ def logout(body: RefreshRequest) -> None:
     auth_service.logout(body.refresh_token)
 
 
+@router.post("/onboarding/complete", response_model=UserOut)
+def complete_onboarding(
+    body: OnboardingCompleteRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    """Save the post-signup wizard answers and mark onboarding complete."""
+    return auth_service.complete_onboarding(
+        db,
+        user,
+        body.target_roles,
+        body.remote,
+        body.locations,
+    )
+
+
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)) -> UserOut:
+    return auth_service.user_out(user)
+
+
+@router.patch("/me", response_model=UserOut)
+def patch_me(
+    body: UserPatch,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    if body.email_reminders_enabled is not None:
+        user.email_reminders_enabled = body.email_reminders_enabled
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return auth_service.user_out(user)
 
 

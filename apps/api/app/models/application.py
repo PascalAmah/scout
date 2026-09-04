@@ -4,10 +4,12 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func, text
+from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, Index, String, Uuid, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+Tags = ARRAY(String).with_variant(JSON, "sqlite")
 
 if TYPE_CHECKING:
     from app.models.job import Job
@@ -28,6 +30,7 @@ class Application(Base):
         Uuid, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True, index=True
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="saved")
+    tags: Mapped[list[str] | None] = mapped_column(Tags, nullable=True)
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resume_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

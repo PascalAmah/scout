@@ -8,6 +8,7 @@
     "dev:extension": "pnpm --filter @scout/extension dev",
     "build:web": "pnpm --filter @scout/web build",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "generate:types": "node scripts/generate-types.mjs"
   }
 }

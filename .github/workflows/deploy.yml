@@ -1,0 +1,88 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ghcr.io/${{ github.repository_owner }}/scout-api
+  IMAGE_WORKER: ghcr.io/${{ github.repository_owner }}/scout-worker
+
+jobs:
+  build:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api_digest: ${{ steps.push_api.outputs.digest }}
+      worker_digest: ${{ steps.push_worker.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push API
+        id: push_api
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_API }}:${{ github.sha }}
+            ${{ env.IMAGE_API }}:latest
+
+      - name: Build & push worker
+        id: push_worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_WORKER }}:${{ github.sha }}
+            ${{ env.IMAGE_WORKER }}:latest
+
+  migrate:
+    name: Migrate (prod — needs approval)
+    runs-on: ubuntu-latest
+    needs: build
+    # Gate DB migrations behind a manual approval in prod (ARCHITECTURE.md).
+    # In staging (environment: staging) this runs automatically.
+    environment: staging
+    concurrency: scout-migrate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run migrations
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            ${{ env.IMAGE_API }}@${{ needs.build.outputs.api_digest }} \
+            .venv/bin/alembic upgrade head
+
+  deploy:
+    name: Deploy services
+    runs-on: ubuntu-latest
+    needs: [build, migrate]
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runtime deploy target (Fly / Render / ECS / K8s) is not configured yet.
+      # Hook the platform deploy here, e.g.:
+      #   - uses: superfly/flyctl-actions/setup-flyctl@master
+      #   - run: flyctl deploy --image ${{ env.IMAGE_API }}@${{ needs.build.outputs.api_digest }} --app scout-api
+      #   - run: flyctl deploy --image ${{ env.IMAGE_WORKER }}@${{ needs.build.outputs.worker_digest }} --app scout-worker
+      - name: Deploy API + worker
+        run: echo "Runtime deploy target not configured — deploy images manually"

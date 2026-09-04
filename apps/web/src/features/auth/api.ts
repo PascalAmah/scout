@@ -40,6 +40,30 @@ export function logoutRequest(refreshToken: string): Promise<void> {
   })
 }
 
+export interface UserPatchBody {
+  email_reminders_enabled?: boolean
+}
+
+export function patchUser(body: UserPatchBody): Promise<User> {
+  return api<User>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export interface OnboardingBody {
+  target_roles: string[]
+  remote: boolean
+  locations: string[]
+}
+
+export function completeOnboardingRequest(body: OnboardingBody): Promise<User> {
+  return api<User>('/auth/onboarding/complete', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 export function resetPasswordRequest(email: string): Promise<void> {
   return api<void>('/auth/password/reset-request', {
     method: 'POST',

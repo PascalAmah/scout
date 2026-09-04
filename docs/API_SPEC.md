@@ -45,7 +45,8 @@ Mutating endpoints that may be retried by the extension (e.g. `POST /startups`) 
 | POST | `/auth/login` | Email/password login → access + refresh token | Public |
 | POST | `/auth/refresh` | Exchange refresh token for new access token | Public (refresh token) |
 | POST | `/auth/logout` | Revoke refresh token | User |
-| GET | `/auth/me` | Current user profile | User |
+| GET | `/auth/me` | Current user profile (includes `onboarding_completed_at`, `preferences`) | User |
+| POST | `/auth/onboarding/complete` | Save wizard answers + stamp onboarding completion | User |
 | POST | `/auth/password/reset-request` | Send reset email | Public |
 | POST | `/auth/password/reset` | Complete reset with token | Public |
 
@@ -79,10 +80,10 @@ Mutating endpoints that may be retried by the extension (e.g. `POST /startups`) 
 `POST /startups` request:
 ```json
 {
-  "name": "Acme Robotics",
-  "website": "https://acme.example.com",
+  "name": "Lumina Health",
+  "website": "https://lumina.example.com",
   "source": "yc",
-  "source_url": "https://ycombinator.com/companies/acme",
+  "source_url": "https://ycombinator.com/companies/lumina",
   "tags": ["robotics", "hardware"]
 }
 ```
@@ -90,7 +91,7 @@ Response `201`:
 ```json
 {
   "id": "uuid",
-  "name": "Acme Robotics",
+  "name": "Lumina Health",
   "stage": null,
   "hiring_status": "unknown",
   "enrichment_status": "queued",

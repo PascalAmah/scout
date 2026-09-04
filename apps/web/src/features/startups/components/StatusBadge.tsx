@@ -1,5 +1,4 @@
 import { Badge } from '../../../components/ui/Badge'
-import type { EnrichmentStatus } from '../api'
 
 const STAGE_LABELS: Record<string, string> = {
   pre_seed: 'Pre-seed',
@@ -11,19 +10,11 @@ const STAGE_LABELS: Record<string, string> = {
   unknown: 'Unknown',
 }
 
-const HIRING_TONES: Record<string, 'green' | 'amber' | 'gray'> = {
+const HIRING_TONES: Record<string, 'green' | 'amber' | 'neutral'> = {
   hiring: 'green',
   maybe: 'amber',
-  not_hiring: 'gray',
-  unknown: 'gray',
-}
-
-const ENRICHMENT_TONES: Record<EnrichmentStatus, 'gray' | 'amber' | 'green' | 'red'> = {
-  none: 'gray',
-  queued: 'amber',
-  running: 'amber',
-  succeeded: 'green',
-  failed: 'red',
+  not_hiring: 'neutral',
+  unknown: 'neutral',
 }
 
 export function StageBadge({ stage }: { stage: string | null }) {
@@ -32,16 +23,13 @@ export function StageBadge({ stage }: { stage: string | null }) {
 }
 
 export function HiringBadge({ hiringStatus }: { hiringStatus: string | null }) {
-  const label = (hiringStatus ?? 'unknown').replaceAll('_', ' ')
-  return <Badge tone={HIRING_TONES[hiringStatus ?? 'unknown']}>{label}</Badge>
-}
-
-export function EnrichmentBadge({ status }: { status: EnrichmentStatus }) {
-  return <Badge tone={ENRICHMENT_TONES[status]}>{status}</Badge>
+  const value = hiringStatus ?? 'unknown'
+  const label = value === 'unknown' ? 'Hiring: Unknown' : value.replaceAll('_', ' ')
+  return <Badge tone={HIRING_TONES[value]}>{label}</Badge>
 }
 
 export function WorkspaceStatusBadge({ status }: { status: string }) {
   if (status === 'archived') return <Badge tone="gray">Archived</Badge>
-  if (status === 'interested') return <Badge tone="blue">Interested</Badge>
-  return <Badge tone="green">Saved</Badge>
+  if (status === 'interested') return <Badge tone="amber">Interested</Badge>
+  return <Badge tone="neutral">Saved</Badge>
 }

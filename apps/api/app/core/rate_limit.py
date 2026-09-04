@@ -1,3 +1,6 @@
+import base64
+import json
+import re
 import time
 from collections import defaultdict
 from typing import Any
@@ -9,6 +12,22 @@ from starlette.responses import JSONResponse
 
 from app.config import settings
 from app.core.errors import error_body
+
+
+def _jwt_subject(token: str) -> str | None:
+    """Best-effort user id from a JWT for rate-limit bucketing.
+
+    Decodes the unsigned payload only — this is a bucket key, not an auth
+    boundary, so no signature verification or error handling beyond a parse
+    guard. Falls back to None (IP-only key) on any malformed token."""
+    try:
+        payload = token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        data = json.loads(base64.urlsafe_b64decode(payload))
+        sub = data.get("sub")
+        return sub if isinstance(sub, str) and sub else None
+    except Exception:
+        return None
 
 
 class _Limiter:
@@ -57,6 +76,13 @@ class _Limiter:
 
 
 _limiter = _Limiter(settings.redis_url, limit=100, window_seconds=60)
+# AI-heavy endpoints get a tight budget per API_SPEC (10 req/min per user).
+_ai_limiter = _Limiter(settings.redis_url, limit=10, window_seconds=60)
+_AI_PATH_PATTERNS = (
+    re.compile(r"^/v1/match/compute$"),
+    re.compile(r"^/v1/resumes/[^/]+/generate$"),
+    re.compile(r"^/v1/outreach/generate$"),
+)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -66,11 +92,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.window = window_seconds
 
     async def dispatch(self, request: Request, call_next: Any):
+        if settings.rate_limit_disabled:
+            return await call_next(request)
         client = request.client.host if request.client else "unknown"
         auth = request.headers.get("authorization")
-        if auth:
-            client = f"{client}:{auth.split(' ')[-1][:16]}"
-        if not _limiter.check(client):
+        if auth and auth.lower().startswith("bearer "):
+            subject = _jwt_subject(auth.split(" ")[-1])
+            if subject:
+                client = f"{client}:{subject}"
+        limiter = _limiter
+        path = request.url.path
+        if any(pattern.match(path) for pattern in _AI_PATH_PATTERNS):
+            limiter = _ai_limiter
+        if not limiter.check(client):
             return JSONResponse(
                 status_code=429,
                 headers={"Retry-After": str(self.window)},

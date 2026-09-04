@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
 import {
+  WEB_BASE,
   api,
   clearTokens,
   getTokens,
@@ -21,51 +22,40 @@ import { Detected } from './states/Detected'
 import { Unsupported } from './states/Unsupported'
 import { ManualFallback } from './states/ManualFallback'
 import { AuthExpired } from './states/AuthExpired'
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    width: 320,
-    fontFamily: 'Inter, system-ui, sans-serif',
-    color: '#1F2937',
-    padding: 16,
-  },
-  brand: { fontSize: 17, fontWeight: 600, marginBottom: 12 },
-  label: { display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 },
-  input: {
-    width: '100%',
-    boxSizing: 'border-box',
-    border: '1px solid #D6D3C9',
-    borderRadius: 8,
-    padding: '8px 10px',
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  button: {
-    width: '100%',
-    border: 'none',
-    borderRadius: 999,
-    background: '#1F2937',
-    color: '#fff',
-    padding: '9px 0',
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  hint: { fontSize: 11, color: '#6B7280', marginTop: 10 },
-  error: { fontSize: 12, color: '#A23B2A', margin: '0 0 8px' },
-  muted: { fontSize: 13, color: '#6B7280', marginBottom: 10 },
-  link: { color: '#0F6E56', fontSize: 12 },
-}
+import { LensMark } from './components/LensMark'
+import { COLORS, FIELD_INPUT, FIELD_LABEL, FONTS, btnAccent, btnGhost } from './theme'
 
 function Popup() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [detection, setDetection] = useState<DetectionState | null>(null)
   const [manual, setManual] = useState(false)
+  const [tabInfo, setTabInfo] = useState<{ url?: string; title?: string } | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  /** Re-detect the active tab via the background (fresh payload round-trip). */
+  async function refreshDetection(): Promise<DetectionState | null> {
+    setRefreshing(true)
+    try {
+      const fresh = (await chrome.runtime.sendMessage({ type: 'scout:re-detect-tab' })) as
+        | DetectionState
+        | undefined
+      if (fresh) {
+        setDetection(fresh)
+        return fresh
+      }
+      const stored = await getDetectionState()
+      if (stored) setDetection(stored)
+      return stored
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     void (async () => {
@@ -79,11 +69,35 @@ function Popup() {
         }
       }
       setUser(authed)
-      const state = await getDetectionState()
+
+      // The stored detection state is global and can be stale (from another
+      // tab or an earlier navigation). Ask the background to re-detect the
+      // active tab and hand back the fresh state in one awaited round-trip —
+      // the background only responds after writing the new state, so the
+      // popup can never show another tab's saved/detected state.
+      let state = await getDetectionState()
+      try {
+        const fresh = await refreshDetection()
+        if (fresh) state = fresh
+      } catch {
+        // No background handler (or no content script) — keep the stored state.
+      }
       setDetection(state)
       setLoading(false)
     })()
   }, [])
+
+  async function openManual() {
+    setManual(true)
+    if (tabInfo === null) {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+        setTabInfo(tab ? { url: tab.url, title: tab.title } : {})
+      } catch {
+        setTabInfo({})
+      }
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -108,145 +122,305 @@ function Popup() {
     await setDetectionState({ status: 'none' })
     setUser(null)
     setDetection({ status: 'none' })
+    setManual(false)
     setEmail('')
     setPassword('')
   }
 
+  /**
+   * Save via the background service worker, not the popup — the fetch keeps
+   * running if the user closes the popup, so "safe to close" is true.
+   */
   async function save(payload: DetectedPayload, tags: string[]): Promise<void> {
     await setDetectionState({ status: 'saving', payload })
     setDetection({ status: 'saving', payload })
-    try {
-      const startup = { ...payload.startup, tags }
-      const saved = await api<{
-        startup_id: string
-        job_id: string | null
-        already_saved: boolean
-        enrichment_status: string
-      }>('/extension/quick-save', {
-        method: 'POST',
-        body: JSON.stringify({
-          source: payload.source,
-          source_url: payload.source_url,
-          startup,
-          job: payload.job ?? null,
-        }),
-      })
-      const state = await updateDetectionState({
-        status: 'saved',
-        saved: { startup_id: saved.startup_id, startup_name: payload.startup.name ?? 'Startup' },
-      })
-      setDetection(state)
-    } catch (err) {
-      if (err instanceof Error && (err as { status?: number }).status === 401) {
-        const state = await updateDetectionState({ status: 'auth_required' })
-        setDetection(state)
-        return
-      }
-      const state = await updateDetectionState({
-        status: 'error',
-        error: err instanceof Error ? err.message : 'Something went wrong.',
-      })
-      setDetection(state)
-      throw err
+    const resp = (await chrome.runtime.sendMessage({ type: 'scout:save', payload, tags })) as
+      | { ok: true; state: DetectionState }
+      | { ok: false; status?: number; state: DetectionState }
+    setDetection(resp.state)
+    if (!resp.ok && resp.status !== 401) {
+      throw new Error(resp.state.error ?? 'Something went wrong.')
     }
   }
 
-  if (loading) {
-    return <div style={{ ...styles.container, color: '#6B7280', fontSize: 13 }}>Loading…</div>
+  function savedItemLabel(): string | null {
+    const payload = detection?.payload
+    if (!payload) return null
+    if (payload.job?.title) {
+      const company = payload.startup?.name ?? 'Startup'
+      return `${payload.job.title} at ${company}`
+    }
+    return payload.startup?.name ?? null
+  }
+
+  const stateView = () => {
+    if (detection?.status === 'saved' && detection.saved) {
+      return <Saved state={detection} />
+    }
+    if (detection?.status === 'saving') {
+      return <Saving label={savedItemLabel()} />
+    }
+    if (detection?.status === 'auth_required') {
+      return <AuthExpired onLogin={() => setUser(null)} />
+    }
+    if (detection?.status === 'error') {
+      return (
+        <div
+          style={{
+            background: COLORS.brickTint,
+            border: '1px solid #EFD2CB',
+            borderRadius: 8,
+            padding: '11px 13px',
+          }}
+        >
+          <b style={{ display: 'block', fontSize: 13, color: COLORS.brick, marginBottom: 4 }}>
+            Couldn&apos;t save
+          </b>
+          <p style={{ margin: '0 0 10px', fontSize: 11.5, color: COLORS.brick, lineHeight: 1.5 }}>
+            {detection.error ?? 'Something went wrong.'}
+          </p>
+          <button
+            onClick={() => {
+              if (detection.payload) void save(detection.payload, [])
+              else setDetection({ status: 'none' })
+            }}
+            style={{ ...btnGhost, padding: '6px', fontSize: 12, border: 'none', background: 'none', color: COLORS.brick }}
+          >
+            Try again
+          </button>
+        </div>
+      )
+    }
+    if (manual) {
+      return (
+        <ManualFallback
+          onSave={save}
+          onBack={() => setManual(false)}
+          initialUrl={tabInfo?.url ?? detection?.payload?.source_url}
+          initialTitle={tabInfo?.title}
+        />
+      )
+    }
+    if (detection?.status === 'detected' && detection.payload) {
+      return <Detected payload={detection.payload} onSave={save} onManual={() => void openManual()} />
+    }
+    return <Unsupported onManual={() => void openManual()} />
   }
 
   return (
-    <div style={styles.container}>
-      <div style={{ ...styles.brand, fontFamily: 'Georgia, serif' }}>Scout</div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        body { margin: 0; }
+        @keyframes scout-spin { to { transform: rotate(360deg); } }
+      `}</style>
 
-      {!user ? (
-        <form onSubmit={onSubmit}>
-          <label style={styles.label} htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-          <label style={styles.label} htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-          />
-          {error && <p style={styles.error}>{error}</p>}
-          <button type="submit" disabled={submitting} style={styles.button}>
-            {submitting ? 'Signing in…' : 'Sign in'}
-          </button>
-          <p style={styles.hint}>
-            Uses the same account as the Scout web app.{' '}
-            <a style={styles.link} href="http://localhost:5173/register" target="_blank" rel="noreferrer">
-              Create an account
-            </a>
-          </p>
-        </form>
-      ) : (
-        <>
-          <p style={styles.muted}>
-            Logged in as <strong>{user.email}</strong>.
-          </p>
-          {detection?.status === 'saved' && detection.saved ? (
-            <Saved state={detection} />
-          ) : detection?.status === 'saving' ? (
-            <Saving />
-          ) : detection?.status === 'detected' && detection.payload ? (
-            <Detected payload={detection.payload} onSave={save} onManual={() => setManual(true)} />
-          ) : detection?.status === 'auth_required' ? (
-            <AuthExpired onLogin={() => setUser(null)} />
-          ) : detection?.status === 'error' ? (
-            <div style={{ fontSize: 13, color: '#A23B2A' }}>
-              Couldn't save: {detection.error ?? 'unknown error'}{' '}
-              <button
-                onClick={() => {
-                  setDetection({ status: 'detected' })
-                }}
-                style={{ background: 'none', border: 'none', color: '#0F6E56', fontWeight: 600, cursor: 'pointer' }}
+      <div
+        style={{
+          width: 360,
+          fontFamily: FONTS.sans,
+          color: COLORS.charcoal,
+          background: COLORS.white,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '13px 16px',
+            borderBottom: `1px solid ${COLORS.line}`,
+          }}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <LensMark size={16} />
+            <span style={{ fontFamily: FONTS.serif, fontWeight: 600, fontSize: 14, color: COLORS.charcoal }}>
+              Scout
+            </span>
+          </span>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => void refreshDetection()}
+              aria-label="Refresh page content"
+              title="Refetch this page"
+              disabled={refreshing}
+              style={{
+                width: 20,
+                height: 20,
+                color: refreshing ? COLORS.muted2 : COLORS.muted,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: refreshing ? 'default' : 'pointer',
+                padding: 0,
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="2"
+                width={12}
+                height={12}
+                style={{ stroke: 'currentColor', ...(refreshing ? { animation: 'scout-spin 0.8s linear infinite' } : {}) }}
+                aria-hidden
               >
-                Retry
+                <path d="M21 12a9 9 0 1 1-3-6.7" />
+                <path d="M21 3v6h-6" />
+              </svg>
+            </button>
+            <button
+              onClick={() => window.close()}
+              aria-label="Close"
+              style={{
+                width: 20,
+                height: 20,
+                color: COLORS.muted2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" width={12} height={12} style={{ stroke: 'currentColor' }} aria-hidden>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </span>
+        </div>
+
+        <div style={{ padding: '18px 16px', maxHeight: 540, overflowY: 'auto' }}>
+          {loading ? (
+            <p style={{ margin: 0, fontSize: 13, color: COLORS.muted, textAlign: 'center' }}>Loading…</p>
+          ) : !user ? (
+            <form onSubmit={onSubmit}>
+              <label style={FIELD_LABEL} htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ ...FIELD_INPUT, marginBottom: 10 }}
+              />
+              <label style={FIELD_LABEL} htmlFor="password">
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ ...FIELD_INPUT, marginBottom: 12, paddingRight: 34 }}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    top: '50%',
+                    transform: 'translateY(calc(-50% - 6px))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    padding: 0,
+                    border: 'none',
+                    background: 'none',
+                    color: COLORS.muted2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    width={16}
+                    height={16}
+                    aria-hidden
+                  >
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="3" />
+                    {showPassword ? <path d="M4 4l16 16" /> : null}
+                  </svg>
+                </button>
+              </div>
+              {error ? (
+                <p style={{ margin: '0 0 8px', fontSize: 11.5, color: COLORS.brick }}>{error}</p>
+              ) : null}
+              <button type="submit" disabled={submitting} style={btnAccent}>
+                {submitting ? 'Signing in…' : 'Sign in'}
               </button>
-            </div>
-          ) : manual ? (
-            <ManualFallback onSave={save} onBack={() => setManual(false)} />
-          ) : detection?.status === 'detected' ? (
-            <div style={{ fontSize: 13, color: '#6B7280' }}>
-              Detected on this page.{' '}
-              <button
-                onClick={() => {
-                  setDetection({ status: 'saving' })
-                }}
-                style={{ background: 'none', border: 'none', color: '#0F6E56', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Save
-              </button>
-            </div>
+              <p style={{ margin: '10px 0 0', fontSize: 11, color: COLORS.muted2, lineHeight: 1.5 }}>
+                Uses the same account as the Scout web app.{' '}
+                <a style={{ color: COLORS.emeraldDark, fontWeight: 600 }} href={`${WEB_BASE}/register`} target="_blank" rel="noreferrer">
+                  Create an account
+                </a>
+              </p>
+            </form>
           ) : (
-            <Unsupported onManual={() => setManual(true)} />
+            <>
+              {stateView()}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  marginTop: 16,
+                  paddingTop: 10,
+                  borderTop: `1px solid ${COLORS.line}`,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    color: COLORS.muted2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {user.email}
+                </span>
+                <button
+                  onClick={() => void onLogout()}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    color: COLORS.muted,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            </>
           )}
-          <button
-            onClick={() => void onLogout()}
-            style={{ ...styles.button, marginTop: 16, background: '#fff', border: '1px solid #D6D3C9', color: '#1F2937' }}
-          >
-            Sign out
-          </button>
-        </>
-      )}
-    </div>
+        </div>
+      </div>
+    </>
   )
 }
 

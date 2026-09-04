@@ -88,7 +88,7 @@ Purpose: answer "is this working."
 ### AI Assistant
 Purpose: conversational access to the user's own data, not general chat.
 - Chat interface scoped to the user's saved startups/applications/CV
-- Suggested prompts on empty state ("Which saved startups raised funding recently?", "Draft a follow-up for my Acme application")
+- Suggested prompts on empty state ("Which saved startups raised funding recently?", "Draft a follow-up for my Lumina application")
 - Responses that reference specific startups/jobs link directly to their detail pages
 
 ## Browser Extension UX

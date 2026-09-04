@@ -1,4 +1,5 @@
 import { ApiRequestError, API_BASE, type TokenResponse } from './api-client'
+import { pushSessionToExtension } from './extension-auth'
 
 const ACCESS_KEY = 'scout.access_token'
 const REFRESH_KEY = 'scout.refresh_token'
@@ -41,6 +42,7 @@ export async function refreshAccessToken(): Promise<string> {
       }
       const data = (await res.json()) as TokenResponse
       tokens.set(data.access_token, data.refresh_token)
+      pushSessionToExtension(data.access_token, data.refresh_token)
       return data.access_token
     })().finally(() => {
       refreshing = null
